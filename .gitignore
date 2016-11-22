@@ -3,6 +3,7 @@ Release+Asserts/
 Debug/
 Debug+Asserts/
 Output/
+build/
 
 cscope.*
 *~
