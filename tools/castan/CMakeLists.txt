@@ -6,10 +6,17 @@
 # License. See LICENSE.TXT for details.
 #
 #===------------------------------------------------------------------------===#
-add_subdirectory(gen-random-bout)
-add_subdirectory(kleaver)
-add_subdirectory(klee)
-add_subdirectory(klee-replay)
-add_subdirectory(klee-stats)
-add_subdirectory(ktest-tool)
-add_subdirectory(castan)
+add_executable(castan
+  castan.cpp
+)
+
+set(KLEE_LIBS
+  kleeCore
+)
+
+target_link_libraries(castan ${KLEE_LIBS})
+
+install(TARGETS castan RUNTIME DESTINATION bin)
+
+# The KLEE binary depends on the runtimes
+add_dependencies(castan BuildKLEERuntimes)
