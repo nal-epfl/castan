@@ -1,0 +1,2 @@
+#define MATRIX_ROWS   3000
+#define MATRIX_COLS   3000
