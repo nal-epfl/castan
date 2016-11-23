@@ -15,7 +15,7 @@ LEVEL=..
 #
 # List all of the subdirectories that we will compile.
 #
-PARALLEL_DIRS=Intrinsic klee-libc Runtest
+PARALLEL_DIRS=Intrinsic klee-libc Runtest memory-models
 
 include $(LEVEL)/Makefile.config
 

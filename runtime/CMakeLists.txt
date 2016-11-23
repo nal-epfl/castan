@@ -55,7 +55,7 @@ configure_file("Makefile.cmake.bitcode.rules" "Makefile.cmake.bitcode.rules" COP
 
 # Makefile for root runtime directory
 # Copy over makefiles for libraries
-set(BITCODE_LIBRARIES "Intrinsic" "klee-libc")
+set(BITCODE_LIBRARIES "Intrinsic" "klee-libc", "memory-models")
 if (ENABLE_POSIX_RUNTIME)
   list(APPEND BITCODE_LIBRARIES "POSIX")
 endif()
@@ -128,11 +128,13 @@ set(RUNTIME_FILES_TO_INSTALL)
 if (USE_RUNTIME_BINARY_TYPE_HACK)
   list(APPEND RUNTIME_FILES_TO_INSTALL
     "${KLEE_RUNTIME_DIRECTORY}/kleeRuntimeIntrinsic.bc"
-    "${KLEE_RUNTIME_DIRECTORY}/klee-libc.bc")
+    "${KLEE_RUNTIME_DIRECTORY}/klee-libc.bc"
+    "${KLEE_RUNTIME_DIRECTORY}/memory-models.bc")
 else()
   list(APPEND RUNTIME_FILES_TO_INSTALL
     "${KLEE_RUNTIME_DIRECTORY}/libkleeRuntimeIntrinsic.bca"
-    "${KLEE_RUNTIME_DIRECTORY}/libklee-libc.bca")
+    "${KLEE_RUNTIME_DIRECTORY}/libklee-libc.bca"
+    "${KLEE_RUNTIME_DIRECTORY}/libmemory-models.bca")
 endif()
 
 if (ENABLE_POSIX_RUNTIME)

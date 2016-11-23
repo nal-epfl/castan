@@ -6,14 +6,17 @@
 # License. See LICENSE.TXT for details.
 #
 #===------------------------------------------------------------------------===#
-LEVEL := ./
+LEVEL := ../
+
 include $(LEVEL)/Makefile.cmake.bitcode.config
 
-DIRS += Intrinsic
-DIRS += klee-libc
-DIRS += memory-models
-ifneq ($(ENABLE_POSIX_RUNTIME),0)
-	DIRS += POSIX
+LLVMCC.Flags += -fno-builtin
+
+# FIXME: This is a horrible hack
+ifeq ($(USE_MODULE_INSTEAD_OF_BCA),1)
+	MODULE_NAME=memory-models
+else
+	ARCHIVE_NAME=memory-models
 endif
 
 include $(LEVEL)/Makefile.cmake.bitcode.rules

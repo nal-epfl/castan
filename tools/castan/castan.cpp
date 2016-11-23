@@ -71,6 +71,11 @@
 #include <iterator>
 #include <sstream>
 
+#define MEMORY_MODEL_PREFIX "memory_model_"
+#define MEMORY_MODEL_INIT_SUFFIX "_init"
+#define MEMORY_MODEL_LOAD_SUFFIX "_load"
+#define MEMORY_MODEL_STORE_SUFFIX "_store"
+
 using namespace llvm;
 using namespace klee;
 
@@ -207,6 +212,11 @@ cl::opt<bool>
     Watchdog("watchdog",
              cl::desc("Use a watchdog process to enforce --max-time."),
              cl::init(0));
+
+cl::opt<std::string>
+    MemModel("mem-model", cl::desc("Determines which model to use to model "
+                                   "memory access times (default: generic)."),
+             cl::init("generic"));
 }
 
 extern cl::opt<double> MaxTime;
@@ -415,7 +425,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
   }
 
   if (!NoOutput) {
-    std::vector<std::pair<std::string, std::vector<unsigned char> > > out;
+    std::vector<std::pair<std::string, std::vector<unsigned char>>> out;
     bool success = m_interpreter->getSymbolicSolution(state, out);
 
     if (!success)
@@ -512,10 +522,10 @@ void KleeHandler::processTestCase(const ExecutionState &state,
     }
 
     if (WriteCov) {
-      std::map<const std::string *, std::set<unsigned> > cov;
+      std::map<const std::string *, std::set<unsigned>> cov;
       m_interpreter->getCoveredLines(state, cov);
       llvm::raw_ostream *f = openTestFile("cov", id);
-      for (std::map<const std::string *, std::set<unsigned> >::iterator
+      for (std::map<const std::string *, std::set<unsigned>>::iterator
                it = cov.begin(),
                ie = cov.end();
            it != ie; ++it) {
@@ -1258,6 +1268,95 @@ int main(int argc, char **argv, char **envp) {
                                   /*CheckDivZero=*/CheckDivZero,
                                   /*CheckOvershift=*/CheckOvershift);
 
+  klee_message("Instrumenting memory accesses.");
+  // FIXME: Find a reasonable solution for this.
+  SmallString<128> Path(Opts.LibraryDir);
+#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
+  llvm::sys::path::append(Path, "memory-models.bc");
+#else
+  llvm::sys::path::append(Path, "libmemory-models.bca");
+#endif
+  mainModule = klee::linkWithLibrary(mainModule, Path.c_str());
+  assert(mainModule && "unable to link with memory-model");
+
+  Function *initHandler = mainModule->getFunction(
+      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_INIT_SUFFIX);
+  Function *loadHandler = mainModule->getFunction(
+      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_LOAD_SUFFIX);
+  Function *storeHandler = mainModule->getFunction(
+      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_STORE_SUFFIX);
+  assert(initHandler && loadHandler && storeHandler &&
+         "Can't find specified memory model.");
+  assert(initHandler->getFunctionType()->getNumParams() == 0 &&
+         "Invalid memory model.");
+  assert(loadHandler->getFunctionType()->getNumParams() == 3 &&
+         "Invalid memory model.");
+  assert(loadHandler->getFunctionType()->getParamType(0)->isPointerTy() &&
+         "Invalid memory model.");
+  assert(loadHandler->getFunctionType()->getParamType(1)->isIntegerTy(32) &&
+         "Invalid memory model.");
+  assert(loadHandler->getFunctionType()->getParamType(2)->isIntegerTy(32) &&
+         "Invalid memory model.");
+  assert(storeHandler->getFunctionType()->getNumParams() == 3 &&
+         "Invalid memory model.");
+  assert(storeHandler->getFunctionType()->getParamType(0)->isPointerTy() &&
+         "Invalid memory model.");
+  assert(storeHandler->getFunctionType()->getParamType(1)->isIntegerTy(32) &&
+         "Invalid memory model.");
+  assert(storeHandler->getFunctionType()->getParamType(2)->isIntegerTy(32) &&
+         "Invalid memory model.");
+
+  for (Function &fn : *mainModule) {
+    if (fn.getName().str().compare(0, sizeof(MEMORY_MODEL_PREFIX) - 1,
+                                   MEMORY_MODEL_PREFIX) == 0) {
+      continue;
+    }
+    for (BasicBlock &bb : fn) {
+      for (Instruction &i : bb) {
+        if (LoadInst *li = dyn_cast<LoadInst>(&i)) {
+          Value *args[] = {
+              CastInst::CreatePointerCast(
+                  li->getPointerOperand(),
+                  loadHandler->getFunctionType()->getParamType(0), "", li),
+              ConstantInt::get(mainModule->getContext(),
+                               APInt(loadHandler->getFunctionType()
+                                         ->getParamType(1)
+                                         ->getPrimitiveSizeInBits(),
+                                     li->getType()->getPrimitiveSizeInBits())),
+              ConstantInt::get(mainModule->getContext(),
+                               APInt(loadHandler->getFunctionType()
+                                         ->getParamType(2)
+                                         ->getPrimitiveSizeInBits(),
+                                     li->getAlignment()))};
+          CallInst::Create(
+              loadHandler,
+              ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", li);
+        }
+        if (StoreInst *si = dyn_cast<StoreInst>(&i)) {
+          Value *args[] = {
+              CastInst::CreatePointerCast(
+                  si->getPointerOperand(),
+                  storeHandler->getFunctionType()->getParamType(0), "", si),
+              ConstantInt::get(mainModule->getContext(),
+                               APInt(storeHandler->getFunctionType()
+                                         ->getParamType(1)
+                                         ->getPrimitiveSizeInBits(),
+                                     si->getValueOperand()
+                                         ->getType()
+                                         ->getPrimitiveSizeInBits())),
+              ConstantInt::get(mainModule->getContext(),
+                               APInt(storeHandler->getFunctionType()
+                                         ->getParamType(2)
+                                         ->getPrimitiveSizeInBits(),
+                                     si->getAlignment()))};
+          CallInst::Create(
+              storeHandler,
+              ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", si);
+        }
+      }
+    }
+  }
+
   switch (Libc) {
   case NoLibc: /* silence compiler warning */
     break;
@@ -1302,6 +1401,9 @@ int main(int argc, char **argv, char **envp) {
   if (!mainFn) {
     klee_error("'%s' function not found in module.", EntryPoint.c_str());
   }
+
+  CallInst::Create(initHandler, ArrayRef<Value *>(), "",
+                   mainFn->getEntryBlock().begin());
 
   // FIXME: Change me to std types.
   int pArgc;
