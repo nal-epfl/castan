@@ -10,7 +10,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 %: %.o
 	gcc $(LDFLAGS) -o $@ $<
 
-%.bc: %.c
+%.bc: %.c %
 	clang $(CFLAGS) -emit-llvm -c -o $@ $<
 
 time: $(TARGETS)
