@@ -73,8 +73,10 @@
 
 #define MEMORY_MODEL_PREFIX "memory_model_"
 #define MEMORY_MODEL_INIT_SUFFIX "_init"
+#define MEMORY_MODEL_EXEC_SUFFIX "_exec"
 #define MEMORY_MODEL_LOAD_SUFFIX "_load"
 #define MEMORY_MODEL_STORE_SUFFIX "_store"
+#define MEMORY_MODEL_DONE_SUFFIX "_done"
 
 using namespace llvm;
 using namespace klee;
@@ -99,7 +101,8 @@ cl::opt<std::string>
 cl::list<std::string> InputArgv(cl::ConsumeAfter,
                                 cl::desc("<program arguments>..."));
 
-cl::opt<bool> NoOutput("no-output", cl::desc("Don't generate test files"));
+cl::opt<bool> NoOutput("no-output", cl::desc("Don't generate test files"),
+                       cl::init(true));
 
 cl::opt<bool>
     WarnAllExternals("warn-all-externals",
@@ -1281,13 +1284,23 @@ int main(int argc, char **argv, char **envp) {
 
   Function *initHandler = mainModule->getFunction(
       MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_INIT_SUFFIX);
+  Function *doneHandler = mainModule->getFunction(
+      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_DONE_SUFFIX);
+  Function *execHandler = mainModule->getFunction(
+      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_EXEC_SUFFIX);
   Function *loadHandler = mainModule->getFunction(
       MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_LOAD_SUFFIX);
   Function *storeHandler = mainModule->getFunction(
       MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_STORE_SUFFIX);
-  assert(initHandler && loadHandler && storeHandler &&
-         "Can't find specified memory model.");
+  assert(initHandler && doneHandler && execHandler && loadHandler &&
+         storeHandler && "Can't find specified memory model.");
   assert(initHandler->getFunctionType()->getNumParams() == 0 &&
+         "Invalid memory model.");
+  assert(doneHandler->getFunctionType()->getNumParams() == 0 &&
+         "Invalid memory model.");
+  assert(execHandler->getFunctionType()->getNumParams() == 1 &&
+         "Invalid memory model.");
+  assert(execHandler->getFunctionType()->getParamType(0)->isIntegerTy(32) &&
          "Invalid memory model.");
   assert(loadHandler->getFunctionType()->getNumParams() == 3 &&
          "Invalid memory model.");
@@ -1306,6 +1319,7 @@ int main(int argc, char **argv, char **envp) {
   assert(storeHandler->getFunctionType()->getParamType(2)->isIntegerTy(32) &&
          "Invalid memory model.");
 
+  unsigned int instID = 0;
   for (Function &fn : *mainModule) {
     if (fn.getName().str().compare(0, sizeof(MEMORY_MODEL_PREFIX) - 1,
                                    MEMORY_MODEL_PREFIX) == 0) {
@@ -1313,6 +1327,17 @@ int main(int argc, char **argv, char **envp) {
     }
     for (BasicBlock &bb : fn) {
       for (Instruction &i : bb) {
+        // Add call to exec handler for each instruction.
+        Value *args[] = {ConstantInt::get(mainModule->getContext(),
+                                          APInt(execHandler->getFunctionType()
+                                                    ->getParamType(0)
+                                                    ->getPrimitiveSizeInBits(),
+                                                instID++))};
+        CallInst::Create(
+            execHandler,
+            ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", &i);
+
+        // Add specific handlers for store and load.
         if (LoadInst *li = dyn_cast<LoadInst>(&i)) {
           Value *args[] = {
               CastInst::CreatePointerCast(
@@ -1404,6 +1429,13 @@ int main(int argc, char **argv, char **envp) {
 
   CallInst::Create(initHandler, ArrayRef<Value *>(), "",
                    mainFn->getEntryBlock().begin());
+  for (auto &bb : *mainFn) {
+    for (auto &i : bb) {
+      if (ReturnInst *ri = dyn_cast<ReturnInst>(&i)) {
+        CallInst::Create(doneHandler, ArrayRef<Value *>(), "", ri);
+      }
+    }
+  }
 
   // FIXME: Change me to std types.
   int pArgc;
