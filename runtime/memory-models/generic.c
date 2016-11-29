@@ -77,7 +77,7 @@ void memory_model_generic_check_cache(unsigned int ptr, char write,
                                       unsigned int level) {
   // Check if accessing beyond last cache (DRAM).
   if (!cache_config[level].size) {
-    printf("  %s DRAM.\n", write ? "Writing to" : "Reading from");
+    //     printf("  %s DRAM.\n", write ? "Writing to" : "Reading from");
     hit_counter[level]++;
     return;
   }
@@ -100,11 +100,12 @@ void memory_model_generic_check_cache(unsigned int ptr, char write,
     if (cache[level][index * cache_config[level].associativity + way].ptr ==
         block_ptr) {
       // Cache hit
-      printf("  %s block at 0x%08x in L%d.\n",
-             (write ? (cache_config[level].write_back ? "Writing-back"
-                                                      : "Writing-through")
-                    : "HIT"),
-             block_ptr * BLOCK_SIZE, level + 1);
+      //       printf("  %s block at 0x%08x in L%d.\n",
+      //              (write ? (cache_config[level].write_back ? "Writing-back"
+      //                                                       :
+      //                                                       "Writing-through")
+      //                     : "HIT"),
+      //              block_ptr * BLOCK_SIZE, level + 1);
       if (write && !cache_config[level].write_back) {
         // Write-through to next level.
         memory_model_generic_check_cache(block_ptr * BLOCK_SIZE, write,
@@ -131,13 +132,15 @@ void memory_model_generic_check_cache(unsigned int ptr, char write,
     }
   }
   // Cache miss: evict oldest way.
-  printf("  Evicting %s block at 0x%08x in L%d.\n",
-         cache[level][index * cache_config[level].associativity + lru_way].dirty
-             ? "DIRTY"
-             : "CLEAN",
-         cache[level][index * cache_config[level].associativity + lru_way].ptr *
-             BLOCK_SIZE,
-         level + 1);
+  //   printf("  Evicting %s block at 0x%08x in L%d.\n",
+  //          cache[level][index * cache_config[level].associativity +
+  //          lru_way].dirty
+  //              ? "DIRTY"
+  //              : "CLEAN",
+  //          cache[level][index * cache_config[level].associativity +
+  //          lru_way].ptr *
+  //              BLOCK_SIZE,
+  //          level + 1);
   if (cache[level][index * cache_config[level].associativity + lru_way].dirty) {
     // Write dirty evicted entry to next level.
     memory_model_generic_check_cache(
@@ -145,11 +148,11 @@ void memory_model_generic_check_cache(unsigned int ptr, char write,
             BLOCK_SIZE,
         1, level + 1);
   }
-  printf("  %s block at 0x%08x in L%d.\n",
-         (write ? (cache_config[level].write_back ? "Writing-back"
-                                                  : "Writing-through")
-                : "Reading in"),
-         block_ptr * BLOCK_SIZE, level + 1);
+  //   printf("  %s block at 0x%08x in L%d.\n",
+  //          (write ? (cache_config[level].write_back ? "Writing-back"
+  //                                                   : "Writing-through")
+  //                 : "Reading in"),
+  //          block_ptr * BLOCK_SIZE, level + 1);
   if ((!write) || !cache_config[level].write_back) {
     // Read in or write-through new entry from next level.
     memory_model_generic_check_cache(block_ptr * BLOCK_SIZE, write, level + 1);
@@ -167,15 +170,17 @@ void memory_model_generic_check_cache(unsigned int ptr, char write,
 
 void memory_model_generic_load(void *ptr, unsigned int size,
                                unsigned int alignment) {
-  printf("Loading %d bytes of memory at %p, aligned along %d bytes.\n", size,
-         ptr, alignment);
+  //   printf("Loading %d bytes of memory at %p, aligned along %d bytes.\n",
+  //   size,
+  //          ptr, alignment);
   memory_model_generic_check_cache((unsigned int)ptr, 0, 0);
 }
 
 void memory_model_generic_store(void *ptr, unsigned int size,
                                 unsigned int alignment) {
-  printf("Storing %d bytes of memory at %p, aligned along %d bytes.\n", size,
-         ptr, alignment);
+  //   printf("Storing %d bytes of memory at %p, aligned along %d bytes.\n",
+  //   size,
+  //          ptr, alignment);
   memory_model_generic_check_cache((unsigned int)ptr, 1, 0);
 }
 
