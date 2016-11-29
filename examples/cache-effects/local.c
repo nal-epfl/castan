@@ -5,6 +5,8 @@
 int main() {
   int matrix[MATRIX_ROWS][MATRIX_COLS];
 
+  start();
+
   int i = 0;
   for (unsigned int l = 0; l < sizeof(matrix) / sizeof(matrix[0]); l++) {
     for (unsigned int c = 0; c < sizeof(matrix[0]) / sizeof(matrix[0][0]);
@@ -20,6 +22,8 @@ int main() {
       assert(matrix[l][c] == i++);
     }
   }
+
+  stop();
 
   return 0;
 }
