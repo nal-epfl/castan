@@ -9,7 +9,10 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+#include <klee/klee.h>
 
 #define BLOCK_SIZE 64
 
@@ -22,7 +25,7 @@ struct {
     //     {BLOCK_SIZE, 1, 1},
     //     {BLOCK_SIZE, 1, 1},
     //     {BLOCK_SIZE, 1, 1},
-    //     {0, 0, 0, 8000},
+    //     {0, 0, 0},
 
     // Intel(R) Core(TM) i7-2600S
     {256 * 1024, 8, 1},
@@ -41,11 +44,15 @@ typedef struct {
   char dirty;
 } cache_entry_t;
 
+static int enabled = 0;
+
 cache_entry_t **cache;
 unsigned long current_time = 0;
 
 unsigned long instruction_counter = 0;
 unsigned long *hit_counter;
+
+void memory_model_generic_done();
 
 void memory_model_generic_init() {
   printf("Initializing generic memory model.\n");
@@ -63,12 +70,52 @@ void memory_model_generic_init() {
            cache_config[level].write_back ? "write-back" : "write-through");
     cache[level] =
         calloc(cache_config[level].size / BLOCK_SIZE, sizeof(cache_entry_t));
+    //     char symbol_name[100];
+    //     snprintf(symbol_name, sizeof(symbol_name),
+    //     "memory_model_generic_cache_L%d", level+1);
+    //     klee_make_symbolic(cache[level], cache_config[level].size /
+    //     BLOCK_SIZE * sizeof(cache_entry_t), symbol_name);
   }
 
   hit_counter = calloc(sizeof(*hit_counter), num_levels + 1);
 }
 
+void memory_model_generic_start() { enabled = 1; }
+
+void memory_model_generic_dump() {
+  printf("Cache State:\n");
+  for (unsigned int level = 0; cache_config[level].size; level++) {
+    printf("  L%d State:\n", level + 1);
+    for (unsigned int line = 0; line < cache_config[level].size / BLOCK_SIZE /
+                                           cache_config[level].associativity;
+         line++) {
+      printf("    Line %d:\n", line);
+      for (unsigned int way = 0; way < cache_config[level].associativity;
+           way++) {
+        printf(
+            "      Way %d: 0x%08x accessed %d periods ago, %s.\n", way,
+            cache[level][line * cache_config[level].associativity + way].ptr *
+                BLOCK_SIZE,
+            current_time -
+                cache[level][line * cache_config[level].associativity + way]
+                    .use_time,
+            cache[level][line * cache_config[level].associativity + way].dirty
+                ? "dirty"
+                : "clean");
+      }
+    }
+  }
+}
+
+void memory_model_generic_stop() {
+  memory_model_generic_done();
+  exit(0);
+}
+
 void memory_model_generic_exec(unsigned int id) {
+  if (!enabled) {
+    return;
+  }
   //   printf("Executing instruction number %d.\n", id);
   instruction_counter++;
 }
@@ -170,6 +217,9 @@ void memory_model_generic_check_cache(unsigned int ptr, char write,
 
 void memory_model_generic_load(void *ptr, unsigned int size,
                                unsigned int alignment) {
+  if (!enabled) {
+    return;
+  }
   //   printf("Loading %d bytes of memory at %p, aligned along %d bytes.\n",
   //   size,
   //          ptr, alignment);
@@ -178,6 +228,9 @@ void memory_model_generic_load(void *ptr, unsigned int size,
 
 void memory_model_generic_store(void *ptr, unsigned int size,
                                 unsigned int alignment) {
+  if (!enabled) {
+    return;
+  }
   //   printf("Storing %d bytes of memory at %p, aligned along %d bytes.\n",
   //   size,
   //          ptr, alignment);
@@ -189,7 +242,7 @@ void memory_model_generic_done() {
   printf("  Instructions: %ld\n", instruction_counter);
   unsigned int level;
   for (level = 0; cache_config[level].size; level++) {
-    printf("  L%d Hits: %ld\n", hit_counter[level]);
+    printf("  L%d Hits: %ld\n", level + 1, hit_counter[level]);
   }
   printf("  DRAM Accesses: %ld\n", hit_counter[level]);
 }
