@@ -1,5 +1,5 @@
-TARGETS := ip-asn-lookup
-CFLAGS := -I../../include -Wall -g
+TARGETS := ip-asn-lookup-trie ip-asn-lookup-da
+CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS := -lpcap
 
 default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
@@ -10,7 +10,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 %: %.o
 	gcc $(LDFLAGS) -o $@ $<
 
-%.bc: %.c %
+%.bc: %.c
 	clang $(CFLAGS) -emit-llvm -c -o $@ $<
 
 run-times: $(TARGETS)

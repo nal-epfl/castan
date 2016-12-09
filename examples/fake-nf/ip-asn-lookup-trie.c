@@ -15,6 +15,9 @@
 
 #include <klee/klee.h>
 
+#define DEFAULT_PFX2AS_FILE "routeviews-rv2-20161101-1200.pfx2as"
+#define STDIN_FILENAME "-"
+
 typedef unsigned int asn_t;
 #define NULL_ASN 0
 
@@ -24,6 +27,10 @@ typedef struct prefix_node {
 } prefix_node_t;
 
 prefix_node_t *prefix_tree;
+
+void memory_model_generic_start();
+void memory_model_generic_stop();
+void memory_model_generic_dump();
 
 void set_prefix_asn(struct in_addr *ip, int prefix_len, asn_t asn) {
   prefix_node_t **node = &prefix_tree;
@@ -111,15 +118,21 @@ void process_packet(int linktype, const unsigned char *packet,
   //   printf("Packet for %s routed to AS-%d\n",
   //          inet_ntop(AF_INET, &ip->ip_dst, ip_dst_str, INET_ADDRSTRLEN),
   //          get_ip_asn(&ip->ip_dst));
+  get_ip_asn(&ip->ip_dst);
 }
 
-int main(int argc, char *argv[]) {
-  assert(argc == 3 && "Invalid arguments: need pfx2as file and PCAP file.");
+void load_pfx2as_dummy() {
+  struct in_addr ip;
+  inet_pton(AF_INET, "128.0.0.0", &ip);
+  set_prefix_asn(&ip, 16, 1);
+}
 
-  FILE *pfx2as_file = fopen(argv[1], "r");
+void load_pfx2as_file(const char *pfx2as_filename, long max_entries) {
+  FILE *pfx2as_file = fopen(pfx2as_filename, "r");
   assert(pfx2as_file && "Error opening pfx2as file.");
-  printf("Loading prefix to AS map.\n");
-  while (1) {
+  printf("Loading prefix to AS map from %s.\n", pfx2as_filename);
+
+  for (long count = 0; count != max_entries; count++) {
     char ip_str[INET_ADDRSTRLEN];
     int prefix_len;
     asn_t asn;
@@ -132,7 +145,7 @@ int main(int argc, char *argv[]) {
     assert(fscanf(pfx2as_file, "%d", &prefix_len) == 1 &&
            "Error in pfx2as file format.");
     if (fscanf(pfx2as_file, "%d_", &asn) == 1) {
-      while (getc(pfx2as_file) != '\n')
+      while ((getc)(pfx2as_file) != '\n')
         ;
     }
 
@@ -140,22 +153,65 @@ int main(int argc, char *argv[]) {
     inet_pton(AF_INET, ip_str, &ip);
     set_prefix_asn(&ip, prefix_len, asn);
   }
+}
 
+int main(int argc, char *argv[]) {
+  char *pfx2as_filename = DEFAULT_PFX2AS_FILE, *pcap_filename = STDIN_FILENAME;
+
+  if (argc == 2) {
+    pcap_filename = argv[1];
+  } else if (argc == 3) {
+    pfx2as_filename = argv[1];
+    pcap_filename = argv[2];
+  } else if (argc > 3) {
+    assert(0 && "Too many arguments: provide pfx2as file and PCAP file.");
+  }
+
+  load_pfx2as_file(pfx2as_filename, -1);
+//   load_pfx2as_dummy();
+
+#ifndef __clang__
   char errbuf[PCAP_ERRBUF_SIZE];
-  pcap_t *pcap = pcap_open_offline(argv[2], errbuf);
+  pcap_t *pcap = NULL;
+  if (strncmp(STDIN_FILENAME, pcap_filename, sizeof(STDIN_FILENAME)) == 0) {
+    printf("Loading packets from stdin.\n");
+    pcap = pcap_fopen_offline(stdin, errbuf);
+  } else {
+    printf("Loading packets from %s.\n", pcap_filename);
+    pcap = pcap_open_offline(pcap_filename, errbuf);
+  }
   if (pcap == NULL) {
     fprintf(stderr, "Error reading pcap file: %s\n", errbuf);
     exit(1);
   }
+#endif
 
   const unsigned char *packet;
   struct pcap_pkthdr header;
   unsigned long num_packets = 0;
   start();
+#ifdef __clang__
+  memory_model_generic_start();
+  for (int i = 0; i < 10; i++) {
+    memory_model_generic_dump();
+    static unsigned char
+        packet_buffer[sizeof(struct ether_header) + sizeof(struct ip)];
+    header.caplen = sizeof(struct ether_header) + sizeof(struct ip);
+    packet = packet_buffer;
+    //     klee_make_symbolic((void*)packet, header.caplen, "castan_packet");
+    ((struct ether_header *)packet)->ether_type = htons(ETHERTYPE_IP);
+    ((struct ip *)(packet + sizeof(struct ether_header)))->ip_v = 4;
+    //     inet_pton(AF_INET, "127.0.0.1", &((struct ip*)(packet+sizeof(struct
+    //     ether_header)))->ip_dst);
+    process_packet(DLT_EN10MB, packet, header.caplen);
+  }
+  memory_model_generic_stop();
+#else
   while ((packet = pcap_next(pcap, &header)) != NULL) {
     process_packet(pcap_datalink(pcap), packet, header.caplen);
     num_packets++;
   }
+#endif
   stop(num_packets);
 
   return 0;

@@ -1,4 +1,7 @@
 deps.mk
-ip-asn-lookup.o
-ip-asn-lookup
-ip-asn-lookup.bc
+ip-asn-lookup-da
+ip-asn-lookup-da.bc
+ip-asn-lookup-da.o
+ip-asn-lookup-trie
+ip-asn-lookup-trie.bc
+ip-asn-lookup-trie.o
