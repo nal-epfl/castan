@@ -102,7 +102,7 @@ cl::list<std::string> InputArgv(cl::ConsumeAfter,
                                 cl::desc("<program arguments>..."));
 
 cl::opt<bool> NoOutput("no-output", cl::desc("Don't generate test files"),
-                       cl::init(true));
+                       cl::init(false));
 
 cl::opt<bool>
     WarnAllExternals("warn-all-externals",
@@ -143,7 +143,7 @@ cl::opt<LibcType>
                     clEnumValN(UcLibc, "uclibc",
                                "Link in uclibc (adapted for klee)"),
                     clEnumValEnd),
-         cl::init(NoLibc));
+         cl::init(UcLibc));
 
 cl::opt<bool> WithPOSIXRuntime(
     "posix-runtime",
