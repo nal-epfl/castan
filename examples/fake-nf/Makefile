@@ -22,7 +22,7 @@ run-times: $(TARGETS)
 	done
 
 castan: $(addsuffix .bc,$(TARGETS))
-	parallel "time castan {} 2>&1 | sed 's/^\(.*\)$$/{}: \1/'" ::: $^
+	parallel "time castan {} 2>&1 | tee {}.log" ::: $^
 
 clean:
 	rm -f $(TARGETS) $(addsuffix .o,$(TARGETS)) $(addsuffix .bc,$(TARGETS)) deps.mk
