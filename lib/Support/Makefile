@@ -32,7 +32,7 @@ else
 GIT_TAGS:=0
 endif
 
-.PHONY: $(CompileTimeInfoFile)
+# .PHONY: $(CompileTimeInfoFile)
 $(CompileTimeInfoFile):
 	$(Verb) echo "Regenerating $(CompileTimeInfoFile)"
 	$(Verb) echo '#define KLEE_BUILD_MODE "$(BuildMode)"' > $(CompileTimeInfoFile)
