@@ -165,8 +165,11 @@ int main(int argc, char *argv[]) {
     assert(0 && "Too many arguments: provide pfx2as file and PCAP file.");
   }
 
+#ifdef __clang__
+  load_pfx2as_dummy();
+#else
   load_pfx2as_file(pfx2as_filename, -1);
-//   load_pfx2as_dummy();
+#endif
 
 #ifndef __clang__
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -199,9 +202,10 @@ int main(int argc, char *argv[]) {
     //     klee_make_symbolic((void *)packet, header.caplen, "castan_packet");
     ((struct ether_header *)packet)->ether_type = htons(ETHERTYPE_IP);
     ((struct ip *)(packet + sizeof(struct ether_header)))->ip_v = 4;
-    //     inet_pton(AF_INET, "127.0.0.1", &((struct ip*)(packet+sizeof(struct
-    //     ether_header)))->ip_dst);
+    inet_pton(AF_INET, "127.0.0.1",
+              &((struct ip *)(packet + sizeof(struct ether_header)))->ip_dst);
     process_packet(DLT_EN10MB, packet, header.caplen);
+    //     memory_model_generic_dump();
   }
   memory_model_generic_stop();
 #else

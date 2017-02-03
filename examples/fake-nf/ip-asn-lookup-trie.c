@@ -32,6 +32,8 @@ void memory_model_generic_start();
 void memory_model_generic_stop();
 void memory_model_generic_dump();
 
+void init_prefix_db() {}
+
 void set_prefix_asn(struct in_addr *ip, int prefix_len, asn_t asn) {
   prefix_node_t **node = &prefix_tree;
 
@@ -122,6 +124,8 @@ void process_packet(int linktype, const unsigned char *packet,
 }
 
 void load_pfx2as_dummy() {
+  init_prefix_db();
+
   struct in_addr ip;
   inet_pton(AF_INET, "128.0.0.0", &ip);
   set_prefix_asn(&ip, 16, 1);
@@ -131,6 +135,8 @@ void load_pfx2as_file(const char *pfx2as_filename, long max_entries) {
   FILE *pfx2as_file = fopen(pfx2as_filename, "r");
   assert(pfx2as_file && "Error opening pfx2as file.");
   printf("Loading prefix to AS map from %s.\n", pfx2as_filename);
+
+  init_prefix_db();
 
   for (long count = 0; count != max_entries; count++) {
     char ip_str[INET_ADDRSTRLEN];
@@ -167,8 +173,11 @@ int main(int argc, char *argv[]) {
     assert(0 && "Too many arguments: provide pfx2as file and PCAP file.");
   }
 
+#ifdef __clang__
+  load_pfx2as_dummy();
+#else
   load_pfx2as_file(pfx2as_filename, -1);
-//   load_pfx2as_dummy();
+#endif
 
 #ifndef __clang__
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -198,12 +207,13 @@ int main(int argc, char *argv[]) {
         packet_buffer[sizeof(struct ether_header) + sizeof(struct ip)];
     header.caplen = sizeof(struct ether_header) + sizeof(struct ip);
     packet = packet_buffer;
-    //     klee_make_symbolic((void*)packet, header.caplen, "castan_packet");
+    //     klee_make_symbolic((void *)packet, header.caplen, "castan_packet");
     ((struct ether_header *)packet)->ether_type = htons(ETHERTYPE_IP);
     ((struct ip *)(packet + sizeof(struct ether_header)))->ip_v = 4;
-    //     inet_pton(AF_INET, "127.0.0.1", &((struct ip*)(packet+sizeof(struct
-    //     ether_header)))->ip_dst);
+    inet_pton(AF_INET, "127.0.0.1",
+              &((struct ip *)(packet + sizeof(struct ether_header)))->ip_dst);
     process_packet(DLT_EN10MB, packet, header.caplen);
+    //     memory_model_generic_dump();
   }
   memory_model_generic_stop();
 #else
