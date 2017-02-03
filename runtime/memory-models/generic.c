@@ -24,14 +24,18 @@ struct {
     // Fake cache with a single entry at each of 3 levels.
     //     {BLOCK_SIZE, 1, 1},
     //     {BLOCK_SIZE, 1, 1},
-    //     {BLOCK_SIZE, 1, 1},
+    {BLOCK_SIZE, 1, 1},
+    {0, 0, 0},
+
+    //     // Intel(R) Core(TM) i7-2600S
+    //     {256 * 1024, 8, 1},
+    //     {1024 * 1024, 8, 1},
+    //     {8192 * 1024, 16, 1},
     //     {0, 0, 0},
 
-    // Intel(R) Core(TM) i7-2600S
-    {256 * 1024, 8, 1},
-    {1024 * 1024, 8, 1},
-    {8192 * 1024, 16, 1},
-    {0, 0, 0},
+    //     // Intel(R) Core(TM) i7-2600S - Just L3
+    //     {8192 * 1024, 16, 1},
+    //     {0, 0, 0},
 };
 
 // [addr lsb][assoc-index] -> cache entry
