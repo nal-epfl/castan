@@ -1,0 +1,8 @@
+deps.mk
+lpm-da
+lpm-da.bc
+lpm-da.o
+lpm-trie
+lpm-trie.bc
+lpm-trie.o
+lpm-main.o
