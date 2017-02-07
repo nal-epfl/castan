@@ -14,8 +14,7 @@ typedef struct prefix_node {
 
 prefix_node_t *prefix_tree;
 
-void init_prefix_db() {
-}
+void init_prefix_db() {}
 
 void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
   prefix_node_t **node = &prefix_tree;
@@ -28,9 +27,11 @@ void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
     }
     // Pick child based on IP bit at this depth.
     if (pos < prefix_len) {
-      node = &((*node)->children[(ntohl(ip->s_addr) >>
-                                  (sizeof(ip->s_addr) * 8 - pos - 1)) &
-                                 0x01]);
+      if ((ntohl(ip->s_addr) & 1 << (sizeof(ip->s_addr) * 8 - pos - 1))) {
+        node = &((*node)->children[1]);
+      } else {
+        node = &((*node)->children[0]);
+      }
     }
   }
 
@@ -47,7 +48,11 @@ data_t get_ip_data(struct in_addr *ip) {
   for (int pos = sizeof(ip->s_addr) * 8 - 1; pos >= 0 && node; pos--) {
     data = node->data;
 
-    node = node->children[(ntohl(ip->s_addr) >> pos) & 0x01];
+    if (ntohl(ip->s_addr) & 1 << pos) {
+      node = node->children[1];
+    } else {
+      node = node->children[0];
+    }
   }
 
   return data;
