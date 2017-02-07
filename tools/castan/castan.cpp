@@ -1378,6 +1378,20 @@ int main(int argc, char **argv, char **envp) {
               storeHandler,
               ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", si);
         }
+        // Replace calls to memory model functions.
+        if (CallInst *ci = dyn_cast<CallInst>(&i)) {
+          if (ci->getCalledFunction() &&
+              ci->getCalledFunction()->getName().str().compare(
+                  0, sizeof(MEMORY_MODEL_PREFIX) - 1, MEMORY_MODEL_PREFIX) ==
+                  0) {
+            llvm::Function *fn = mainModule->getFunction(
+                MEMORY_MODEL_PREFIX + MemModel + "_" +
+                ci->getCalledFunction()->getName().str().substr(
+                    sizeof(MEMORY_MODEL_PREFIX) - 1));
+            assert(fn && "Call to invalid memory model function.");
+            ci->setCalledFunction(fn);
+          }
+        }
       }
     }
   }

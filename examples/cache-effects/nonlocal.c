@@ -7,7 +7,7 @@ int main() {
 
   start();
 #ifdef __clang__
-  memory_model_generic_start();
+  memory_model_start();
 #endif
 
   int i = 0;
@@ -25,7 +25,7 @@ int main() {
   }
 
 #ifdef __clang__
-  memory_model_generic_stop();
+  memory_model_stop();
 #endif
   stop();
 

@@ -28,9 +28,9 @@ typedef struct prefix_node {
 
 prefix_node_t *prefix_tree;
 
-void memory_model_generic_start();
-void memory_model_generic_stop();
-void memory_model_generic_dump();
+void memory_model_start();
+void memory_model_stop();
+void memory_model_dump();
 
 void init_prefix_db() {}
 
@@ -200,9 +200,9 @@ int main(int argc, char *argv[]) {
   unsigned long num_packets = 0;
   start();
 #ifdef __clang__
-  memory_model_generic_start();
+  memory_model_start();
   for (int i = 0; i < 10; i++) {
-    memory_model_generic_dump();
+    memory_model_dump();
     static unsigned char
         packet_buffer[sizeof(struct ether_header) + sizeof(struct ip)];
     header.caplen = sizeof(struct ether_header) + sizeof(struct ip);
@@ -213,9 +213,9 @@ int main(int argc, char *argv[]) {
     inet_pton(AF_INET, "127.0.0.1",
               &((struct ip *)(packet + sizeof(struct ether_header)))->ip_dst);
     process_packet(DLT_EN10MB, packet, header.caplen);
-    //     memory_model_generic_dump();
+    //     memory_model_dump();
   }
-  memory_model_generic_stop();
+  memory_model_stop();
 #else
   while ((packet = pcap_next(pcap, &header)) != NULL) {
     process_packet(pcap_datalink(pcap), packet, header.caplen);
