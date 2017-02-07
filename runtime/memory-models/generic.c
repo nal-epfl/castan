@@ -16,7 +16,7 @@
 
 #define BLOCK_SIZE 64
 
-struct {
+static struct {
   unsigned int size;          // bytes
   unsigned int associativity; // ways
   char write_back;            // 0 = write-through; 1 = write-back.
@@ -38,7 +38,6 @@ struct {
     //     {0, 0, 0},
 };
 
-// [addr lsb][assoc-index] -> cache entry
 typedef struct {
   // The stored pointer.
   unsigned int ptr;
@@ -50,11 +49,12 @@ typedef struct {
 
 static int enabled = 0;
 
-cache_entry_t **cache;
-unsigned long current_time = 0;
+// [addr lsb][assoc-index] -> cache entry
+static cache_entry_t **cache;
+static unsigned long current_time = 0;
 
-unsigned long instruction_counter = 0;
-unsigned long *hit_counter;
+static unsigned long instruction_counter = 0;
+static unsigned long *hit_counter;
 
 void memory_model_generic_done();
 
