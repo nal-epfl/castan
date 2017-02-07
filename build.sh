@@ -17,4 +17,5 @@ cd build
 
 [ -f Makefile.config ] || CXXFLAGS=-std=c++11 LDFLAGS=-L/usr/local/src/minisat/build ../configure --with-llvmsrc=/usr/local/src/llvm-3.4 --with-llvmobj=/usr/local/src/llvm-3.4/build --with-stp=/usr/local/src/stp/build --with-uclibc=/usr/local/src/klee-uclibc --enable-posix-runtime
 
+# make -skj`grep -c processor /proc/cpuinfo` ENABLE_OPTIMIZED=0
 make -skj`grep -c processor /proc/cpuinfo` ENABLE_OPTIMIZED=1
