@@ -48,9 +48,11 @@ void set_prefix_asn(struct in_addr *ip, int prefix_len, asn_t asn) {
     }
     // Pick child based on IP bit at this depth.
     if (pos < prefix_len) {
-      node = &((*node)->children[(ntohl(ip->s_addr) >>
-                                  (sizeof(ip->s_addr) * 8 - pos - 1)) &
-                                 0x01]);
+      if (ntohl(ip->s_addr) & 1 << (sizeof(ip->s_addr) * 8 - pos - 1)) {
+        node = &((*node)->children[1]);
+      } else {
+        node = &((*node)->children[0]);
+      }
     }
   }
 
@@ -69,7 +71,11 @@ asn_t get_ip_asn(struct in_addr *ip) {
       asn = node->asn;
     }
 
-    node = node->children[(ntohl(ip->s_addr) >> pos) & 0x01];
+    if (ntohl(ip->s_addr) & 1 << pos) {
+      node = node->children[1];
+    } else {
+      node = node->children[0];
+    }
   }
 
   return asn;
@@ -201,17 +207,18 @@ int main(int argc, char *argv[]) {
   start();
 #ifdef __clang__
   memory_model_start();
-  for (int i = 0; i < 10; i++) {
-    memory_model_dump();
+  for (int i = 0; i < 1; i++) {
+    //     memory_model_dump();
     static unsigned char
         packet_buffer[sizeof(struct ether_header) + sizeof(struct ip)];
     header.caplen = sizeof(struct ether_header) + sizeof(struct ip);
     packet = packet_buffer;
-    //     klee_make_symbolic((void *)packet, header.caplen, "castan_packet");
+    klee_make_symbolic((void *)packet, header.caplen, "castan_packet");
     ((struct ether_header *)packet)->ether_type = htons(ETHERTYPE_IP);
     ((struct ip *)(packet + sizeof(struct ether_header)))->ip_v = 4;
-    inet_pton(AF_INET, "127.0.0.1",
-              &((struct ip *)(packet + sizeof(struct ether_header)))->ip_dst);
+    //     inet_pton(AF_INET, "127.0.0.1",
+    //               &((struct ip *)(packet + sizeof(struct
+    //               ether_header)))->ip_dst);
     process_packet(DLT_EN10MB, packet, header.caplen);
     //     memory_model_dump();
   }
