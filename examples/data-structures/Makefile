@@ -1,4 +1,4 @@
-TARGETS := lpm-trie lpm-da
+TARGETS := lpm-trie lpm-da hash-table
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS :=
 

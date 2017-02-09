@@ -6,3 +6,7 @@ lpm-trie
 lpm-trie.bc
 lpm-trie.o
 lpm-main.o
+hash-table
+hash-table.bc
+hash-table.o
+hash-main.o
