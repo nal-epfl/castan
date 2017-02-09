@@ -14,7 +14,7 @@ void memory_model_dump();
 void memory_model_stop();
 
 int main(int argc, char *argv[]) {
-  init_prefix_db();
+  init_lpm();
 
   struct in_addr set_ip;
   int set_prefix_len;
@@ -32,6 +32,9 @@ int main(int argc, char *argv[]) {
   klee_make_symbolic((void*)&set_data, sizeof(set_data), "set_data");
 //   set_data = 1;
 #else
+  inet_pton(AF_INET, "127.0.0.1", &set_ip);
+  set_prefix_len = 24;
+  set_data = 1;
 #endif
 
 // #ifdef __clang__

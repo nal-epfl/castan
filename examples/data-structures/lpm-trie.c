@@ -14,7 +14,7 @@ typedef struct prefix_node {
 
 prefix_node_t *prefix_tree;
 
-void init_prefix_db() {}
+void init_lpm() {}
 
 void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
   prefix_node_t **node = &prefix_tree;

@@ -16,7 +16,7 @@ struct {
   char prefix_len;
 } * prefix_map;
 
-void init_prefix_db() {
+void init_lpm() {
   prefix_map = calloc(1 << LONGEST_PREFIX, sizeof(*prefix_map));
 }
 
