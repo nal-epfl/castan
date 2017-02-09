@@ -16,11 +16,11 @@ struct {
   char prefix_len;
 } * prefix_map;
 
-void init_lpm() {
+void lpm_init() {
   prefix_map = calloc(1 << LONGEST_PREFIX, sizeof(*prefix_map));
 }
 
-void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
+void lpm_set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
   if (prefix_len > LONGEST_PREFIX) {
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, ip, ip_str, sizeof(ip_str));
@@ -49,7 +49,7 @@ void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
   }
 }
 
-data_t get_ip_data(struct in_addr *ip) {
+data_t lpm_get_ip_data(struct in_addr *ip) {
 //   return prefix_map[ip->s_addr >> (sizeof(ip->s_addr) * 8 - LONGEST_PREFIX)]
 //       .data;
   static int i = 0;

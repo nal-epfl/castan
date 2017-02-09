@@ -14,7 +14,7 @@ void memory_model_dump();
 void memory_model_stop();
 
 int main(int argc, char *argv[]) {
-  init_lpm();
+  lpm_init();
 
   struct in_addr set_ip;
   int set_prefix_len;
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 //   memory_model_dump();
 // #endif
 
-  set_prefix_data(&set_ip, set_prefix_len, set_data);
+  lpm_set_prefix_data(&set_ip, set_prefix_len, set_data);
 
   struct in_addr get_ip;
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
 //   memory_model_dump();
 #endif
 
-  get_ip_data(&get_ip);
+  lpm_get_ip_data(&get_ip);
 
 #ifdef __clang__
 //   memory_model_dump();

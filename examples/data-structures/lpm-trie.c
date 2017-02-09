@@ -14,9 +14,9 @@ typedef struct prefix_node {
 
 prefix_node_t *prefix_tree;
 
-void init_lpm() {}
+void lpm_init() {}
 
-void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
+void lpm_set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
   prefix_node_t **node = &prefix_tree;
 
   // Explore prefix match tree up to the prefix depth.
@@ -38,7 +38,7 @@ void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data) {
   (*node)->data = data;
 }
 
-data_t get_ip_data(struct in_addr *ip) {
+data_t lpm_get_ip_data(struct in_addr *ip) {
   prefix_node_t *node = prefix_tree;
   data_t data;
 

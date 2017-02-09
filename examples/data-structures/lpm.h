@@ -5,6 +5,6 @@
 
 typedef unsigned int data_t;
 
-void init_lpm();
-void set_prefix_data(struct in_addr *ip, int prefix_len, data_t data);
-data_t get_ip_data(struct in_addr *ip);
+void lpm_init();
+void lpm_set_prefix_data(struct in_addr *ip, int prefix_len, data_t data);
+data_t lpm_get_ip_data(struct in_addr *ip);
