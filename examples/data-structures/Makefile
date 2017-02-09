@@ -31,7 +31,11 @@ castan: $(addsuffix .bc,$(TARGETS))
 	parallel "time castan {} 2>&1 | tee {}.log" ::: $^
 
 clean:
-	rm -f $(TARGETS) $(addsuffix .o,$(TARGETS)) $(addsuffix .bc,$(TARGETS)) deps.mk
+	rm -f $(TARGETS)
+	rm -f $(addsuffix .o,$(TARGETS))
+	rm -f $(addsuffix .bc,$(TARGETS))
+	rm -f $(foreach TARGET, $(TARGETS), $(firstword $(subst -, , $(TARGET)))-main.o)
+	rm -f deps.mk
 
 deps.mk: $(wildcard *.c)
 	gcc $(CFLAGS) -M $^ > $@
