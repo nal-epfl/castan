@@ -10,3 +10,10 @@ hash-table
 hash-table.bc
 hash-table.o
 hash-main.o
+ring-array
+ring-array.bc
+ring-array.o
+ring-list
+ring-list.bc
+ring-list.o
+ring-main.o
