@@ -140,6 +140,8 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("__ubsan_handle_mul_overflow", handleMulOverflow, false),
   add("__ubsan_handle_divrem_overflow", handleDivRemOverflow, false),
 
+  add("castan_state_seen", handleCastanStateSeen, true),
+
 #undef addDNR
 #undef add  
 };
@@ -780,4 +782,41 @@ void SpecialFunctionHandler::handleDivRemOverflow(ExecutionState &state,
                                                std::vector<ref<Expr> > &arguments) {
   executor.terminateStateOnError(state, "overflow on division or remainder",
                                  Executor::Overflow);
+}
+
+void SpecialFunctionHandler::handleCastanStateSeen(ExecutionState &state,
+                                KInstruction *target,
+                                std::vector<ref<Expr> > &arguments) {
+  static std::set<std::vector<uint8_t>> knownStates;
+
+  assert(arguments.size()==2 && "invalid number of arguments to castan_state_seen");
+
+  ref<ConstantExpr> address = cast<ConstantExpr>(executor.toUnique(state, arguments[0]));
+  int size = cast<ConstantExpr>(arguments[1])->getZExtValue();
+
+  ObjectPair op;
+  if (!state.addressSpace.resolveOne(address, op))
+    assert(0 && "XXX out of bounds / multiple resolution unhandled");
+  bool res __attribute__ ((unused));
+  assert(executor.solver->mustBeTrue(state, 
+                                     EqExpr::create(address, 
+                                                    op.first->getBaseExpr()),
+                                     res) &&
+         res &&
+         "XXX interior pointer unhandled");
+  const ObjectState *os = op.second;
+
+  std::vector<uint8_t> userState;
+
+  for (int i = 0; i < size; i++) {
+    ref<Expr> cur = os->read8(i);
+    cur = executor.toUnique(state, cur);
+    assert(isa<ConstantExpr>(cur) && 
+           "hit symbolic byte while reading concrete state");
+    userState.push_back(cast<ConstantExpr>(cur)->getZExtValue(8));
+  }
+
+  executor.bindLocal(target, state, ConstantExpr::create(knownStates.count(userState), Expr::Int32));
+
+  knownStates.insert(userState);
 }
