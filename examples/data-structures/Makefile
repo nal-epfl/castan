@@ -1,4 +1,4 @@
-TARGETS := lpm-trie lpm-da hash-table ring-array ring-list
+TARGETS := lpm-trie lpm-da hash-table ring-array ring-list fsm-loop
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS :=
 
@@ -6,6 +6,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 
 .SECONDEXPANSION:
 .SUFFIXES:
+.DELETE_ON_ERROR: 
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
@@ -27,8 +28,10 @@ run-times: $(TARGETS)
 	    | $ awk '{ total += $$1; count++ } END { print total/count }'; \
 	done
 
-castan: $(addsuffix .bc,$(TARGETS))
-	parallel "time castan {} 2>&1 | tee {}.log" ::: $^
+%.log: %.bc
+	time castan --mem-model=wss $< | tee $@
+
+castan: $(addsuffix .log,$(TARGETS))
 
 clean:
 	rm -f $(TARGETS)
