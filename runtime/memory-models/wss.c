@@ -35,6 +35,11 @@ static int memory_model_wss_enabled = 0;
 // Cache entry linked list head.
 static cache_entry_t **memory_model_wss_cache;
 static unsigned long memory_model_wss_instruction_counter = 0;
+// Simpler cache state representing just address presence.
+unsigned int *memory_model_wss_ptrs = NULL;
+unsigned long memory_model_wss_num_ptrs = 0;
+
+int castan_state_seen(void *state, int size);
 
 void memory_model_wss_done();
 
@@ -87,30 +92,50 @@ static cache_entry_t *memory_model_wss_merge_sort(cache_entry_t *l) {
 void memory_model_wss_init() {
   printf("Initializing wss memory model.\n");
   memory_model_wss_cache = calloc(sizeof(cache_entry_t *), NUM_LINES);
+  memory_model_wss_ptrs = malloc(0);
 }
 
-void memory_model_wss_start() { memory_model_wss_enabled = 1; }
+// void memory_model_wss_start() { memory_model_wss_enabled = 1; }
 
 void memory_model_wss_dump() {
   printf("Working Set:\n");
   for (int l = 0; l < NUM_LINES; l++) {
-    printf("  Cache line for 0x%08x:\n", l * BLOCK_SIZE);
+    if (memory_model_wss_cache[l]) {
+      printf("  Cache line for 0x%08x:\n", l * BLOCK_SIZE);
 
-    // Sort cache entries by the number of accesses.
-    memory_model_wss_cache[l] =
-        memory_model_wss_merge_sort(memory_model_wss_cache[l]);
+      // Sort cache entries by the number of accesses.
+      memory_model_wss_cache[l] =
+          memory_model_wss_merge_sort(memory_model_wss_cache[l]);
 
-    for (cache_entry_t *entry = memory_model_wss_cache[l]; entry;
-         entry = entry->next) {
-      printf("    0x%08x, read %ld times, written %ld times\n",
-             entry->ptr * BLOCK_SIZE, entry->read_count, entry->write_count);
+      for (cache_entry_t *entry = memory_model_wss_cache[l]; entry;
+           entry = entry->next) {
+        printf("    0x%08x, read %ld times, written %ld times\n",
+               entry->ptr * BLOCK_SIZE, entry->read_count, entry->write_count);
+      }
     }
+  }
+  printf("  Blocks:\n");
+  for (unsigned long p = 0; p < memory_model_wss_num_ptrs; p++) {
+    printf("    0x%08x\n", memory_model_wss_ptrs[p] * BLOCK_SIZE);
   }
 }
 
-void memory_model_wss_stop() {
-  memory_model_wss_done();
-  exit(0);
+// void memory_model_wss_stop() {
+//   memory_model_wss_done();
+//   exit(0);
+// }
+
+void memory_model_wss_loop() {
+  memory_model_wss_enabled = 1;
+
+  if (castan_state_seen(memory_model_wss_ptrs,
+                        memory_model_wss_num_ptrs *
+                            sizeof(*memory_model_wss_ptrs))) {
+    memory_model_wss_done();
+    exit(0);
+  } else {
+    //     memory_model_wss_dump();
+  }
 }
 
 void memory_model_wss_exec(unsigned int id) {
@@ -119,6 +144,10 @@ void memory_model_wss_exec(unsigned int id) {
   }
   //   printf("Executing instruction number %d.\n", id);
   memory_model_wss_instruction_counter++;
+}
+
+int memory_model_wss_ptrcmp(const void *a, const void *b) {
+  return *((unsigned int *)a) - *((unsigned int *)b);
 }
 
 void memory_model_wss_check_cache(unsigned int ptr, char write) {
@@ -130,22 +159,31 @@ void memory_model_wss_check_cache(unsigned int ptr, char write) {
   cache_entry_t *entry;
   for (entry = memory_model_wss_cache[line]; entry; entry = entry->next) {
     if (entry->ptr == block_ptr) {
-      // Update stats and done.
-      if (write) {
-        entry->write_count++;
-      } else {
-        entry->read_count++;
-      }
-
-      return;
+      break;
     }
   }
 
-  // No cache entry, first access. Add new entry.
-  entry = calloc(1, sizeof(cache_entry_t));
-  entry->ptr = block_ptr;
-  entry->next = memory_model_wss_cache[line];
-  memory_model_wss_cache[line] = entry;
+  if (!entry) {
+    // No cache entry, first access. Add new entry.
+    entry = calloc(1, sizeof(cache_entry_t));
+    entry->ptr = block_ptr;
+    entry->next = memory_model_wss_cache[line];
+    memory_model_wss_cache[line] = entry;
+
+    memory_model_wss_ptrs =
+        realloc(memory_model_wss_ptrs, (memory_model_wss_num_ptrs + 1) *
+                                           sizeof(*memory_model_wss_ptrs));
+    memory_model_wss_ptrs[memory_model_wss_num_ptrs++] = block_ptr;
+    qsort(memory_model_wss_ptrs, memory_model_wss_num_ptrs,
+          sizeof(*memory_model_wss_ptrs), memory_model_wss_ptrcmp);
+  }
+
+  // Update stats.
+  if (write) {
+    entry->write_count++;
+  } else {
+    entry->read_count++;
+  }
 
   return;
 }
