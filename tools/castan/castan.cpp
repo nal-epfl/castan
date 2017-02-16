@@ -9,6 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "castan/Internal/MemoryModel.h"
+
 #include "klee/Config/Version.h"
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
@@ -70,13 +72,6 @@
 #include <iomanip>
 #include <iterator>
 #include <sstream>
-
-#define MEMORY_MODEL_PREFIX "memory_model_"
-#define MEMORY_MODEL_INIT_SUFFIX "_init"
-#define MEMORY_MODEL_EXEC_SUFFIX "_exec"
-#define MEMORY_MODEL_LOAD_SUFFIX "_load"
-#define MEMORY_MODEL_STORE_SUFFIX "_store"
-#define MEMORY_MODEL_DONE_SUFFIX "_done"
 
 using namespace llvm;
 using namespace klee;
@@ -215,11 +210,6 @@ cl::opt<bool>
     Watchdog("watchdog",
              cl::desc("Use a watchdog process to enforce --max-time."),
              cl::init(0));
-
-cl::opt<std::string>
-    MemModel("mem-model", cl::desc("Determines which model to use to model "
-                                   "memory access times (default: generic)."),
-             cl::init("generic"));
 }
 
 extern cl::opt<double> MaxTime;

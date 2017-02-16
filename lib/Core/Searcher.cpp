@@ -9,10 +9,13 @@
 
 #include "Searcher.h"
 
+#include "castan/Internal/MemoryModel.h"
+
 #include "CoreStats.h"
 #include "Executor.h"
 #include "PTree.h"
 #include "StatsTracker.h"
+#include "Memory.h"
 
 #include "klee/ExecutionState.h"
 #include "klee/Statistics.h"
@@ -52,6 +55,11 @@ namespace {
   cl::opt<bool>
   DebugLogMerge("debug-log-merge");
 }
+
+cl::opt<std::string>
+    MemModel("mem-model", cl::desc("Determines which model to use to model "
+                                  "memory access times (default: generic)."),
+            cl::init("generic"));
 
 namespace klee {
   extern RNG theRNG;
@@ -645,4 +653,54 @@ void InterleavedSearcher::update(
   for (std::vector<Searcher*>::const_iterator it = searchers.begin(),
          ie = searchers.end(); it != ie; ++it)
     (*it)->update(current, addedStates, removedStates);
+}
+
+///
+
+long CastanSearcher::getPriority(ExecutionState *state) {
+  std::string varName = MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_PRIORITY_SUFFIX;
+  for (auto it : state->addressSpace.objects) {
+    if (it.first->allocSite->getName() == varName) {
+      ref<ConstantExpr> priorityExpr = dyn_cast<ConstantExpr>(
+          state->addressSpace.findObject(it.first)->read(0, 64));
+      assert(priorityExpr.get() && "Symbolic value in priority variable.");
+      return priorityExpr->getZExtValue(64);
+    }
+  }
+  assert(false && "Priority variable not defined.");
+}
+
+ExecutionState &CastanSearcher::selectState() {
+  return *states.rbegin()->second;
+}
+
+void CastanSearcher::update(ExecutionState *current,
+                            const std::vector<ExecutionState *> &addedStates,
+                            const std::vector<ExecutionState *> &removedStates) {
+  if (current) {
+    bool found = false;
+    for (auto it : states) {
+      if (it.second==current) {
+        states.erase(it);
+        states.insert(std::make_pair(getPriority(current), current));
+        found = true;
+        break;
+      }
+    }
+    assert(found && "invalid current state");
+  }
+  for (auto it : addedStates) {
+    states.insert(std::make_pair(getPriority(it), it));
+  }
+  for (auto rit : removedStates) {
+    bool found = false;
+    for (auto sit : states) {
+      if (rit==sit.second) {
+        states.erase(sit);
+        found = true;
+        break;
+      }
+    }
+    assert(found && "invalid state removed");
+  }
 }

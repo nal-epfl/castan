@@ -76,7 +76,8 @@ namespace klee {
       NURS_Depth,
       NURS_ICnt,
       NURS_CPICnt,
-      NURS_QC
+      NURS_QC,
+      CASTAN
     };
   };
 
@@ -296,6 +297,23 @@ namespace klee {
            it != ie; ++it)
         (*it)->printName(os);
       os << "</InterleavedSearcher>\n";
+    }
+  };
+
+  class CastanSearcher : public Searcher {
+  private:
+    std::set<std::pair<long, ExecutionState*> > states;
+
+    long getPriority(ExecutionState *state);
+
+  public:
+    ExecutionState &selectState();
+    void update(ExecutionState *current,
+                const std::vector<ExecutionState *> &addedStates,
+                const std::vector<ExecutionState *> &removedStates);
+    bool empty() { return states.empty(); }
+    void printName(llvm::raw_ostream &os) {
+      os << "CastanSearcher\n";
     }
   };
 
