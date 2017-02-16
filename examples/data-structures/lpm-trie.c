@@ -5,6 +5,7 @@
 
 #include "lpm.h"
 
+#include <castan/scenario.h>
 #include <klee/klee.h>
 
 typedef struct prefix_node {
@@ -44,6 +45,18 @@ data_t lpm_get_ip_data(struct in_addr *ip) {
 
   memset(&data, 0, sizeof(data));
 
+#ifdef __clang__
+  if (scenario == WORST_CASE) {
+    while (node) {
+      data = node->data;
+      if (node->children[0]) {
+        node = node->children[0];
+      } else {
+        node = node->children[1];
+      }
+    }
+  }
+#else
   // Explore prefix tree and remember the most specific ASN found.
   for (int pos = sizeof(ip->s_addr) * 8 - 1; pos >= 0 && node; pos--) {
     data = node->data;
@@ -54,6 +67,7 @@ data_t lpm_get_ip_data(struct in_addr *ip) {
       node = node->children[0];
     }
   }
+#endif
 
   return data;
 }

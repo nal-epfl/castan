@@ -7,9 +7,10 @@
 
 #include "ring.h"
 
+#include <castan/scenario.h>
 #include <klee/klee.h>
 
-#define RING_SIZE 16
+#define RING_SIZE 128
 
 data_t ring[RING_SIZE];
 int ring_front = 0;
@@ -23,8 +24,20 @@ void ring_enqueue(data_t data) {
     return;
   }
 
+#ifdef __clang__
+  if (scenario == BEST_CASE) {
+    ring[0] = data;
+  } else {
+    static int pos = 0;
+    ring[pos] = data;
+    pos = (pos + 64) % RING_SIZE;
+  }
+#else
   ring[ring_back] = data;
+#endif
+
   ring_back = (ring_back + 1) % RING_SIZE;
+
   empty = 0;
 }
 
@@ -33,7 +46,19 @@ data_t ring_dequeue() {
     return 0;
   }
 
-  data_t data = ring[ring_front];
+  data_t data;
+#ifdef __clang__
+  if (scenario == BEST_CASE) {
+    data = ring[0];
+  } else {
+    static int pos = 0;
+    data = ring[pos];
+    pos = (pos + 64) % RING_SIZE;
+  }
+#else
+  data = ring[ring_front];
+#endif
+
   ring_front = (ring_front + 1) % RING_SIZE;
   empty = ring_front == ring_back;
 
