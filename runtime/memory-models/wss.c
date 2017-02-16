@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <castan/scenario.h>
 #include <klee/klee.h>
 
 #define BLOCK_SIZE 64
@@ -34,10 +35,24 @@ typedef struct cache_entry_t {
 static int memory_model_wss_enabled = 0;
 // Cache entry linked list head.
 static cache_entry_t **memory_model_wss_cache;
+
+// Per loop memory access counters
+static unsigned long memory_model_wss_read_counter = 0;
+static unsigned long memory_model_wss_loop_reads = 0;
+static unsigned long memory_model_wss_write_counter = 0;
+static unsigned long memory_model_wss_loop_writes = 0;
+static unsigned long memory_model_wss_access_counter = 0;
+static unsigned long memory_model_wss_loop_accesses = 0;
+
+// Pe loop instruction counters
 static unsigned long memory_model_wss_instruction_counter = 0;
+static unsigned long memory_model_wss_loop_instructions = 0;
+
 // Simpler cache state representing just address presence.
-unsigned int *memory_model_wss_ptrs = NULL;
-unsigned long memory_model_wss_num_ptrs = 0;
+static unsigned int *memory_model_wss_ptrs = NULL;
+static unsigned long memory_model_wss_num_ptrs = 0;
+
+static long memory_model_wss_priority = 0;
 
 int castan_state_seen(void *state, int size);
 
@@ -93,6 +108,8 @@ void memory_model_wss_init() {
   printf("Initializing wss memory model.\n");
   memory_model_wss_cache = calloc(sizeof(cache_entry_t *), NUM_LINES);
   memory_model_wss_ptrs = malloc(0);
+
+  scenario_init();
 }
 
 // void memory_model_wss_start() { memory_model_wss_enabled = 1; }
@@ -125,17 +142,48 @@ void memory_model_wss_dump() {
 //   exit(0);
 // }
 
+void memory_model_wss_update_loop_counter(unsigned long *counter,
+                                          unsigned long *metric) {
+  if (*metric) {
+    if (scenario == BEST_CASE && *counter < *metric) {
+      *metric = *counter;
+    } else if (scenario == WORST_CASE && *counter > *metric) {
+      *metric = *counter;
+    }
+  } else {
+    *metric = *counter;
+  }
+  *counter = 0;
+}
+
 void memory_model_wss_loop() {
-  memory_model_wss_enabled = 1;
+//   static int loop_count = 0;
+//   printf("Processing loop %d\n", ++loop_count);
+
+  if (memory_model_wss_enabled) {
+    memory_model_wss_update_loop_counter(&memory_model_wss_instruction_counter,
+                                         &memory_model_wss_loop_instructions);
+    memory_model_wss_update_loop_counter(&memory_model_wss_read_counter,
+                                         &memory_model_wss_loop_reads);
+    memory_model_wss_update_loop_counter(&memory_model_wss_write_counter,
+                                         &memory_model_wss_loop_writes);
+    memory_model_wss_update_loop_counter(&memory_model_wss_access_counter,
+                                         &memory_model_wss_loop_accesses);
+  }
 
   if (castan_state_seen(memory_model_wss_ptrs,
                         memory_model_wss_num_ptrs *
-                            sizeof(*memory_model_wss_ptrs))) {
+                            sizeof(*memory_model_wss_ptrs)) &&
+      memory_model_wss_enabled) {
+    //   if (castan_state_seen(&memory_model_wss_num_ptrs,
+    //                         sizeof(memory_model_wss_num_ptrs))) {
     memory_model_wss_done();
     exit(0);
   } else {
     //     memory_model_wss_dump();
   }
+
+  memory_model_wss_enabled = 1;
 }
 
 void memory_model_wss_exec(unsigned int id) {
@@ -174,8 +222,16 @@ void memory_model_wss_check_cache(unsigned int ptr, char write) {
         realloc(memory_model_wss_ptrs, (memory_model_wss_num_ptrs + 1) *
                                            sizeof(*memory_model_wss_ptrs));
     memory_model_wss_ptrs[memory_model_wss_num_ptrs++] = block_ptr;
+    memory_model_wss_enabled = 0;
     qsort(memory_model_wss_ptrs, memory_model_wss_num_ptrs,
           sizeof(*memory_model_wss_ptrs), memory_model_wss_ptrcmp);
+    memory_model_wss_enabled = 1;
+
+    //     if (memory_model_wss_cache[line] == NULL) { // Priority = cache
+    //     lines
+    //     used.
+    memory_model_wss_priority++;
+    //     }
   }
 
   // Update stats.
@@ -184,6 +240,7 @@ void memory_model_wss_check_cache(unsigned int ptr, char write) {
   } else {
     entry->read_count++;
   }
+  memory_model_wss_access_counter++;
 
   return;
 }
@@ -197,6 +254,8 @@ void memory_model_wss_load(void *ptr, unsigned int size,
   //   size,
   //          ptr, alignment);
   memory_model_wss_check_cache((unsigned int)ptr, 0);
+
+  memory_model_wss_read_counter++;
 }
 
 void memory_model_wss_store(void *ptr, unsigned int size,
@@ -208,6 +267,8 @@ void memory_model_wss_store(void *ptr, unsigned int size,
   //   size,
   //          ptr, alignment);
   memory_model_wss_check_cache((unsigned int)ptr, 1);
+
+  memory_model_wss_write_counter++;
 }
 
 void memory_model_wss_done() {
@@ -227,12 +288,13 @@ void memory_model_wss_done() {
   }
 
   printf("Memory Model Stats: "
-         "Instructions: %ld, "
-         "Memory Reads: %ld, "
-         "Memory Writes: %ld, "
-         "Memory Accesses: %ld, "
+         "Instructions per Loop: %ld, "
+         "Memory Reads per Loop: %ld, "
+         "Memory Writes per Loop: %ld, "
+         "Memory Accesses per Loop: %ld, "
          "Working Set Size: %ld, "
          "Maximum Ways Used: %ld\n",
-         memory_model_wss_instruction_counter, read_count, write_count,
-         read_count + write_count, wss, max_ways);
+         memory_model_wss_loop_instructions, memory_model_wss_loop_reads,
+         memory_model_wss_loop_writes, memory_model_wss_loop_accesses, wss,
+         max_ways);
 }
