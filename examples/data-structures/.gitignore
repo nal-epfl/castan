@@ -9,6 +9,10 @@ lpm-trie.o
 lpm-trie.bc.o
 lpm-main.o
 lpm-main.bc.o
+hash-ring
+hash-ring.bc
+hash-ring.o
+hash-ring.bc.o
 hash-table
 hash-table.bc
 hash-table.o

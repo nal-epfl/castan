@@ -1,6 +1,8 @@
-TARGETS := lpm-trie lpm-da hash-table ring-array ring-list fsm-loop
-CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
+TARGETS := lpm-da lpm-trie hash-table hash-ring ring-array ring-list fsm-loop
+CFLAGS := -D_GNU_SOURCE -I../../include -Wall -O0 -g
 LDFLAGS :=
+
+SHELL=/bin/bash -o pipefail
 
 default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 
