@@ -7,19 +7,12 @@
 
 #include <klee/klee.h>
 
-void memory_model_start();
-void memory_model_dump();
-void memory_model_stop();
+void memory_model_loop();
 
 int castan_state_seen(void *state, int size);
 
 int main(int argc, char *argv[]) {
   fsm_init();
-
-#ifdef __clang__
-  memory_model_start();
-//   memory_model_dump();
-#endif
 
   for (unsigned int i = 0; ; i++) {
     fsm_transition_t transition = 0;
@@ -46,11 +39,6 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
-
-#ifdef __clang__
-  //   memory_model_dump();
-  memory_model_stop();
-#endif
 
   return 0;
 }

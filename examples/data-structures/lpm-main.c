@@ -9,9 +9,6 @@
 
 #include <klee/klee.h>
 
-// void memory_model_start();
-// void memory_model_dump();
-// void memory_model_stop();
 void memory_model_loop();
 
 int main(int argc, char *argv[]) {
@@ -29,31 +26,23 @@ int main(int argc, char *argv[]) {
   //                      "set_prefix_len");
   //   klee_assume(set_prefix_len >= 0);
   //   klee_assume(set_prefix_len <= 24);
-  set_prefix_len = 8;
+  set_prefix_len = 24;
 
-//   klee_make_symbolic((void *)&set_data, sizeof(set_data), "set_data");
+  //   klee_make_symbolic((void *)&set_data, sizeof(set_data), "set_data");
   set_data = 1;
 #else
   inet_pton(AF_INET, "127.0.0.1", &set_ip);
-  set_prefix_len = 8;
+  set_prefix_len = 24;
   set_data = 1;
 #endif
 
-  // #ifdef __clang__
-  //   memory_model_start();
-  //   memory_model_dump();
-  // #endif
-
   lpm_set_prefix_data(&set_ip, set_prefix_len, set_data);
 
-  // #ifdef __clang__
-  //   memory_model_start();
-  //   memory_model_dump();
-  // #endif
-
-  while (1) {
 #ifdef __clang__
+  while (1) {
     memory_model_loop();
+#else
+  for (int i = 0; i < 3; i++) {
 #endif
 
     struct in_addr get_ip;
@@ -65,15 +54,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     lpm_get_ip_data(&get_ip);
-    // #ifdef __clang__
-    //   memory_model_dump();
-    // #endif
   }
-
-  // #ifdef __clang__
-  //   memory_model_dump();
-  //   memory_model_stop();
-  // #endif
 
   return 0;
 }
