@@ -174,6 +174,11 @@ namespace {
 		     cl::desc("Simplify symbolic accesses using equalities from other constraints (default=off)"));
 
   cl::opt<bool>
+  ConcretizeSymIndices("concretize-sym-indices",
+                     cl::init(false),
+		     cl::desc("Concretize symbolic accesses (default=off)"));
+
+  cl::opt<bool>
   EqualitySubstitution("equality-substitution",
 		       cl::init(true),
 		       cl::desc("Simplify equality expressions before querying the solver (default=on)."));
@@ -424,6 +429,10 @@ const Module *Executor::setModule(llvm::Module *module,
   }
   
   return module;
+}
+
+const Module *Executor::getModule() {
+  return kmodule ? kmodule->module : NULL;
 }
 
 Executor::~Executor() {
@@ -3329,6 +3338,14 @@ void Executor::executeMemoryOperation(ExecutionState &state,
       address = state.constraints.simplifyExpr(address);
     if (isWrite && !isa<ConstantExpr>(value))
       value = state.constraints.simplifyExpr(value);
+  }
+
+  if (ConcretizeSymIndices && !isa<ConstantExpr>(address)) {
+    address = state.constraints.simplifyExpr(address);
+    ref<ConstantExpr> concreteAddress;
+    assert(solver->getValue(state, address, concreteAddress) &&
+          "Failed to concretize symbolic address.");
+    address = concreteAddress;
   }
 
   // fast path: single in-bounds resolution
