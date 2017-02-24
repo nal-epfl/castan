@@ -52,7 +52,7 @@ static unsigned long memory_model_wss_loop_instructions = 0;
 static unsigned int *memory_model_wss_ptrs = NULL;
 static unsigned long memory_model_wss_num_ptrs = 0;
 
-static long memory_model_wss_priority = 0;
+static volatile long memory_model_wss_priority = 0;
 
 int castan_state_seen(void *state, int size);
 
@@ -157,8 +157,8 @@ void memory_model_wss_update_loop_counter(unsigned long *counter,
 }
 
 void memory_model_wss_loop() {
-//   static int loop_count = 0;
-//   printf("Processing loop %d\n", ++loop_count);
+  //   static int loop_count = 0;
+  //   printf("Processing loop %d\n", ++loop_count);
 
   if (memory_model_wss_enabled) {
     memory_model_wss_update_loop_counter(&memory_model_wss_instruction_counter,
@@ -192,6 +192,8 @@ void memory_model_wss_exec(unsigned int id) {
   }
   //   printf("Executing instruction number %d.\n", id);
   memory_model_wss_instruction_counter++;
+  memory_model_wss_priority =
+      -memory_model_wss_instruction_counter / (memory_model_wss_num_ptrs + 1);
 }
 
 int memory_model_wss_ptrcmp(const void *a, const void *b) {
@@ -199,6 +201,9 @@ int memory_model_wss_ptrcmp(const void *a, const void *b) {
 }
 
 void memory_model_wss_check_cache(unsigned int ptr, char write) {
+  // Concretize pointer.
+  ptr = klee_get_value_i32(ptr);
+
   // Parse pointer.
   unsigned int block_ptr = ptr / BLOCK_SIZE;
   unsigned int line = block_ptr % NUM_LINES;
@@ -230,8 +235,10 @@ void memory_model_wss_check_cache(unsigned int ptr, char write) {
     //     if (memory_model_wss_cache[line] == NULL) { // Priority = cache
     //     lines
     //     used.
-    memory_model_wss_priority++;
+    //     memory_model_wss_priority = memory_model_wss_num_ptrs;
     //     }
+    memory_model_wss_priority =
+        -memory_model_wss_instruction_counter / (memory_model_wss_num_ptrs + 1);
   }
 
   // Update stats.
