@@ -466,6 +466,8 @@ public:
   virtual const llvm::Module *
   setModule(llvm::Module *module, const ModuleOptions &opts);
 
+  virtual const llvm::Module *getModule();
+
   virtual void useSeeds(const std::vector<struct KTest *> *seeds) { 
     usingSeeds = seeds;
   }
