@@ -137,7 +137,7 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     symbolics(state.symbolics),
     arrayNames(state.arrayNames),
 
-    cacheModel(state.cacheModel)
+    cacheModel(state.cacheModel ? state.cacheModel->clone() : NULL)
 {
   for (unsigned int i=0; i<symbolics.size(); i++)
     symbolics[i].first->refCount++;

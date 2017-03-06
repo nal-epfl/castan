@@ -24,6 +24,7 @@ namespace castan {
 class GenericCacheModel : public CacheModel {
 private:
   int enabled = 0;
+  unsigned iteration = 0;
 
   // [level][line][address] -> cache entry
   std::map<uint8_t, std::map<uint32_t, std::map<uint64_t, cache_entry_t>>>
@@ -45,6 +46,10 @@ private:
 public:
   GenericCacheModel();
   GenericCacheModel(const GenericCacheModel &other) {}
+
+  CacheModel *clone() {
+    return new GenericCacheModel(*this);
+  }
 
   klee::ref<klee::Expr> load(klee::TimingSolver *solver,
                              klee::ExecutionState &state,
@@ -68,6 +73,8 @@ public:
   }
   void exec(klee::ExecutionState &state);
   bool loop(klee::ExecutionState &state);
+
+  long getTotalCycles();
 
   std::string dumpStats();
 };

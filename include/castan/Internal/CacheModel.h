@@ -7,6 +7,8 @@
 namespace castan {
 class CacheModel {
 public:
+  virtual CacheModel *clone() = 0;
+
   virtual klee::ref<klee::Expr> load(klee::TimingSolver *solver,
                                      klee::ExecutionState &state,
                                      klee::ref<klee::Expr> address) = 0;
@@ -15,6 +17,8 @@ public:
                                       klee::ref<klee::Expr> address) = 0;
   virtual void exec(klee::ExecutionState &state) = 0;
   virtual bool loop(klee::ExecutionState &state) = 0;
+
+  virtual long getTotalCycles() = 0;
 
   virtual std::string dumpStats() = 0;
 };

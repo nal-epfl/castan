@@ -54,7 +54,7 @@ namespace castan {
 GenericCacheModel::GenericCacheModel() {
   for (unsigned int level = 0; cacheConfig[level].size; level++) {
     klee::klee_message(
-        "Modeling L%d cache of %d kiB as %d-way associative, %s.\n", level + 1,
+        "Modeling L%d cache of %d kiB as %d-way associative, %s.", level + 1,
         cacheConfig[level].size / 1024, cacheConfig[level].associativity,
         cacheConfig[level].writeBack ? "write-back" : "write-through");
   }
@@ -226,7 +226,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
   //                        state.pc->info->file.c_str(), state.pc->info->line);
 
   if (!isa<klee::ConstantExpr>(address)) {
-    //         klee::klee_message("  Symbolic pointer.");
+    //     klee::klee_message("  Symbolic pointer.");
     address = state.constraints.simplifyExpr(address);
 
     bool found = false;
@@ -325,8 +325,6 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
 
 bool GenericCacheModel::loop(klee::ExecutionState &state) {
   if (enabled) {
-    static unsigned iteration = 0;
-    iteration++;
     //     klee::klee_message("Cache after iteration %d:", iteration);
     //     for (auto level : cache) {
     //       klee::klee_message("  L%d (%d lines):", level.first + 1,
@@ -347,7 +345,7 @@ bool GenericCacheModel::loop(klee::ExecutionState &state) {
     //       }
     //     }
 
-    if (iteration >= MaxLoops) {
+    if (++iteration >= MaxLoops) {
       //       klee::klee_message("Exhausted loop count.");
       return false;
     }
@@ -365,6 +363,17 @@ void GenericCacheModel::exec(klee::ExecutionState &state) {
   if (enabled) {
     loopStats.back().instructionCount++;
   }
+}
+
+long GenericCacheModel::getTotalCycles() {
+  long cycles = 0;
+  for (auto it : loopStats) {
+    cycles += it.instructionCount * CPU_CPI;
+    for (auto h : it.hitCount) {
+      cycles += h.second * cacheConfig[h.first].latency;
+    }
+  }
+  return cycles;
 }
 
 std::string GenericCacheModel::dumpStats() {
