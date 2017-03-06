@@ -87,7 +87,7 @@ Searcher *getNewSearcher(Searcher::CoreSearchType type, Executor &executor) {
   case Searcher::NURS_ICnt: searcher = new WeightedRandomSearcher(WeightedRandomSearcher::InstCount); break;
   case Searcher::NURS_CPICnt: searcher = new WeightedRandomSearcher(WeightedRandomSearcher::CPInstCount); break;
   case Searcher::NURS_QC: searcher = new WeightedRandomSearcher(WeightedRandomSearcher::QueryCost); break;
-  case Searcher::CASTAN: searcher = new CastanSearcher(); break;
+  case Searcher::CASTAN: searcher = new CastanSearcher(executor.getModule()); break;
   }
 
   return searcher;

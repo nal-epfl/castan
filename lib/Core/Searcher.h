@@ -20,6 +20,7 @@ namespace llvm {
   class BasicBlock;
   class Function;
   class Instruction;
+  class Module;
   class raw_ostream;
 }
 
@@ -304,9 +305,14 @@ namespace klee {
   private:
     std::set<std::pair<long, ExecutionState*> > states;
 
+//     std::map<const llvm::Instruction *, long> costs;
+
     long getPriority(ExecutionState *state);
 
   public:
+    explicit CastanSearcher(const llvm::Module *module);
+    ~CastanSearcher() {}
+
     ExecutionState &selectState();
     void update(ExecutionState *current,
                 const std::vector<ExecutionState *> &addedStates,

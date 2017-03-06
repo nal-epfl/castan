@@ -9,13 +9,13 @@
 
 #include "Searcher.h"
 
-#include "castan/Internal/MemoryModel.h"
-
 #include "CoreStats.h"
 #include "Executor.h"
 #include "PTree.h"
 #include "StatsTracker.h"
 #include "Memory.h"
+
+#include "castan/Internal/CacheModel.h"
 
 #include "klee/ExecutionState.h"
 #include "klee/Statistics.h"
@@ -55,11 +55,6 @@ namespace {
   cl::opt<bool>
   DebugLogMerge("debug-log-merge");
 }
-
-cl::opt<std::string>
-    MemModel("mem-model", cl::desc("Determines which model to use to model "
-                                  "memory access times (default: generic)."),
-            cl::init("generic"));
 
 namespace klee {
   extern RNG theRNG;
@@ -657,17 +652,122 @@ void InterleavedSearcher::update(
 
 ///
 
+CastanSearcher::CastanSearcher(const llvm::Module *module) {
+//   klee_message("Generating global cost map for directed search.");
+// 
+//   std::map<const llvm::Instruction *, std::set<const llvm::Instruction *> >
+//       predecessors, successors;
+//   std::map<const llvm::Function *, std::set<const llvm::Instruction *> >
+//       callers;
+// 
+//   // Generate ICFG and initialize cost map.
+//   klee_message("  Computing ICFG.");
+//   for (auto &fn : *module) {
+//     for (auto &bb : fn) {
+//       const llvm::Instruction *prevInst = NULL;
+//       for (auto &inst : bb) {
+//         if (prevInst) {
+//           predecessors[&inst].insert(prevInst);
+//           successors[prevInst].insert(&inst);
+//         }
+//         prevInst = &inst;
+// 
+//         if (const llvm::CallInst *ci = dyn_cast<llvm::CallInst>(&inst)) {
+//           if (ci->getCalledFunction()) {
+//             callers[ci->getCalledFunction()].insert(ci);
+//           }
+//         }
+// 
+//         costs[&inst] = LONG_MAX;
+//       }
+//       for (unsigned i = 0; i < bb.getTerminator()->getNumSuccessors(); i++) {
+//         predecessors[&bb.getTerminator()->getSuccessor(i)->front()]
+//             .insert(bb.getTerminator());
+//         successors[bb.getTerminator()]
+//             .insert(&bb.getTerminator()->getSuccessor(i)->front());
+//       }
+//     }
+//   }
+// 
+//   llvm::Function *loopAnnotation
+//       = module->getFunction(MEMORY_MODEL_PREFIX +
+//                              MemModel + MEMORY_MODEL_LOOP_SUFFIX);
+//   for (auto &bb : *loopAnnotation) {
+//     for (auto &inst : bb) {
+//       costs[&inst] = 0;
+//     }
+//   }
+// 
+//   std::set<const llvm::Instruction *> worklist = callers[loopAnnotation];
+//   while (! worklist.empty()) {
+//     auto inst = *worklist.begin();
+//     worklist.erase(inst);
+// 
+//     long min_cost = LONG_MAX;
+//     const llvm::CallInst *ci = dyn_cast<llvm::CallInst>(inst);
+//     if (ci && ci->getCalledFunction() && ! ci->getCalledFunction()->empty()) {
+//       // Look at successor after calling function.
+//       long cost = costs[&ci->getCalledFunction()->front().front()] + 1;
+//       if (cost < min_cost) {
+//         min_cost = cost;
+//       }
+//     } else {
+//       if (successors[inst].empty()) {
+//         // Look at successor after returning from function.
+//         for (auto caller : callers[inst->getParent()->getParent()]) {
+//           for (auto successor : successors[caller]) {
+//             long cost = costs[successor] + 1;
+//             if (cost < min_cost) {
+//               min_cost = cost;
+//             }
+//           }
+//         }
+//       } else {
+//         // Look at successors within function.
+//         for (auto successor : successors[inst]) {
+//           long cost = costs[successor] + 1;
+//           if (cost < min_cost) {
+//             min_cost = cost;
+//           }
+//         }
+//       }
+//     }
+// 
+//     if (min_cost < costs[inst]) {
+//       costs[inst] = min_cost;
+// 
+//       // Add predecessors to worklist.
+//       if (inst == &inst->getParent()->getParent()->front().front()) {
+//         // Predecessors from before function call.
+//         worklist.insert(callers[inst->getParent()->getParent()].begin(),
+//                         callers[inst->getParent()->getParent()].end());
+//       } else {
+//         for (auto predecessor : predecessors[inst]) {
+//           ci = dyn_cast<llvm::CallInst>(predecessor);
+//           if (ci && ci->getCalledFunction()
+//                  && ! ci->getCalledFunction()->empty()) {
+//               for (auto &bb : *ci->getCalledFunction()) {
+//                 for (auto &inst : bb) {
+//                   if (successors[&inst].empty()) {
+//                     worklist.insert(&inst);
+//                   }
+//                 }
+//               }
+//           } else {
+//             worklist.insert(predecessor);
+//           }
+//         }
+//       }
+//     }
+//   }
+}
+
 long CastanSearcher::getPriority(ExecutionState *state) {
-  std::string varName = MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_PRIORITY_SUFFIX;
-  for (auto it : state->addressSpace.objects) {
-    if (it.first->allocSite->getName() == varName) {
-      ref<ConstantExpr> priorityExpr = dyn_cast<ConstantExpr>(
-          state->addressSpace.findObject(it.first)->read(0, 64));
-      assert(priorityExpr.get() && "Symbolic value in priority variable.");
-      return priorityExpr->getZExtValue(64);
-    }
+  if (state->cacheModel) {
+    return state->cacheModel->getTotalCycles();
+  } else {
+    return 0;
   }
-  assert(false && "Priority variable not defined.");
 }
 
 ExecutionState &CastanSearcher::selectState() {
