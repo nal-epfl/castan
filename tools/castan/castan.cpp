@@ -9,7 +9,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "castan/Internal/MemoryModel.h"
+#include "castan/Internal/CacheModel.h"
 
 #include "klee/Config/Version.h"
 #include "klee/ExecutionState.h"
@@ -538,6 +538,11 @@ void KleeHandler::processTestCase(const ExecutionState &state,
       llvm::raw_ostream *f = openTestFile("info", id);
       *f << "Time to generate test case: " << elapsed_time << "s\n";
       delete f;
+    }
+
+    if (state.cacheModel) {
+      std::unique_ptr<llvm::raw_ostream> f(openTestFile("cache", id));
+      *f << state.cacheModel->dumpStats();
     }
   }
 }
@@ -1261,131 +1266,6 @@ int main(int argc, char **argv, char **envp) {
                                   /*CheckDivZero=*/CheckDivZero,
                                   /*CheckOvershift=*/CheckOvershift);
 
-  klee_message("Instrumenting memory accesses.");
-  // FIXME: Find a reasonable solution for this.
-  SmallString<128> Path(Opts.LibraryDir);
-#if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
-  llvm::sys::path::append(Path, "memory-models.bc");
-#else
-  llvm::sys::path::append(Path, "libmemory-models.bca");
-#endif
-  mainModule = klee::linkWithLibrary(mainModule, Path.c_str());
-  assert(mainModule && "unable to link with memory-model");
-
-  Function *initHandler = mainModule->getFunction(
-      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_INIT_SUFFIX);
-  Function *doneHandler = mainModule->getFunction(
-      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_DONE_SUFFIX);
-  Function *execHandler = mainModule->getFunction(
-      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_EXEC_SUFFIX);
-  Function *loadHandler = mainModule->getFunction(
-      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_LOAD_SUFFIX);
-  Function *storeHandler = mainModule->getFunction(
-      MEMORY_MODEL_PREFIX + MemModel + MEMORY_MODEL_STORE_SUFFIX);
-  assert(initHandler && doneHandler && execHandler && loadHandler &&
-         storeHandler && "Can't find specified memory model.");
-  assert(initHandler->getFunctionType()->getNumParams() == 0 &&
-         "Invalid memory model.");
-  assert(doneHandler->getFunctionType()->getNumParams() == 0 &&
-         "Invalid memory model.");
-  assert(execHandler->getFunctionType()->getNumParams() == 1 &&
-         "Invalid memory model.");
-  assert(execHandler->getFunctionType()->getParamType(0)->isIntegerTy(32) &&
-         "Invalid memory model.");
-  assert(loadHandler->getFunctionType()->getNumParams() == 3 &&
-         "Invalid memory model.");
-  assert(loadHandler->getFunctionType()->getParamType(0)->isPointerTy() &&
-         "Invalid memory model.");
-  assert(loadHandler->getFunctionType()->getParamType(1)->isIntegerTy(32) &&
-         "Invalid memory model.");
-  assert(loadHandler->getFunctionType()->getParamType(2)->isIntegerTy(32) &&
-         "Invalid memory model.");
-  assert(storeHandler->getFunctionType()->getNumParams() == 3 &&
-         "Invalid memory model.");
-  assert(storeHandler->getFunctionType()->getParamType(0)->isPointerTy() &&
-         "Invalid memory model.");
-  assert(storeHandler->getFunctionType()->getParamType(1)->isIntegerTy(32) &&
-         "Invalid memory model.");
-  assert(storeHandler->getFunctionType()->getParamType(2)->isIntegerTy(32) &&
-         "Invalid memory model.");
-
-  unsigned int instID = 0;
-  for (Function &fn : *mainModule) {
-    if (fn.getName().str().compare(0, sizeof(MEMORY_MODEL_PREFIX) - 1,
-                                   MEMORY_MODEL_PREFIX) == 0) {
-      continue;
-    }
-    for (BasicBlock &bb : fn) {
-      for (Instruction &i : bb) {
-        // Add call to exec handler for each instruction.
-        Value *args[] = {ConstantInt::get(mainModule->getContext(),
-                                          APInt(execHandler->getFunctionType()
-                                                    ->getParamType(0)
-                                                    ->getPrimitiveSizeInBits(),
-                                                instID++))};
-        CallInst::Create(
-            execHandler,
-            ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", &i);
-
-        // Add specific handlers for store and load.
-        if (LoadInst *li = dyn_cast<LoadInst>(&i)) {
-          Value *args[] = {
-              CastInst::CreatePointerCast(
-                  li->getPointerOperand(),
-                  loadHandler->getFunctionType()->getParamType(0), "", li),
-              ConstantInt::get(mainModule->getContext(),
-                               APInt(loadHandler->getFunctionType()
-                                         ->getParamType(1)
-                                         ->getPrimitiveSizeInBits(),
-                                     li->getType()->getPrimitiveSizeInBits())),
-              ConstantInt::get(mainModule->getContext(),
-                               APInt(loadHandler->getFunctionType()
-                                         ->getParamType(2)
-                                         ->getPrimitiveSizeInBits(),
-                                     li->getAlignment()))};
-          CallInst::Create(
-              loadHandler,
-              ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", li);
-        }
-        if (StoreInst *si = dyn_cast<StoreInst>(&i)) {
-          Value *args[] = {
-              CastInst::CreatePointerCast(
-                  si->getPointerOperand(),
-                  storeHandler->getFunctionType()->getParamType(0), "", si),
-              ConstantInt::get(mainModule->getContext(),
-                               APInt(storeHandler->getFunctionType()
-                                         ->getParamType(1)
-                                         ->getPrimitiveSizeInBits(),
-                                     si->getValueOperand()
-                                         ->getType()
-                                         ->getPrimitiveSizeInBits())),
-              ConstantInt::get(mainModule->getContext(),
-                               APInt(storeHandler->getFunctionType()
-                                         ->getParamType(2)
-                                         ->getPrimitiveSizeInBits(),
-                                     si->getAlignment()))};
-          CallInst::Create(
-              storeHandler,
-              ArrayRef<Value *>(args, sizeof(args) / sizeof(args[0])), "", si);
-        }
-        // Replace calls to memory model functions.
-        if (CallInst *ci = dyn_cast<CallInst>(&i)) {
-          if (ci->getCalledFunction() &&
-              ci->getCalledFunction()->getName().str().compare(
-                  0, sizeof(MEMORY_MODEL_PREFIX) - 1, MEMORY_MODEL_PREFIX) ==
-                  0) {
-            llvm::Function *fn = mainModule->getFunction(
-                MEMORY_MODEL_PREFIX + MemModel + "_" +
-                ci->getCalledFunction()->getName().str().substr(
-                    sizeof(MEMORY_MODEL_PREFIX) - 1));
-            assert(fn && "Call to invalid memory model function.");
-            ci->setCalledFunction(fn);
-          }
-        }
-      }
-    }
-  }
-
   switch (Libc) {
   case NoLibc: /* silence compiler warning */
     break;
@@ -1429,16 +1309,6 @@ int main(int argc, char **argv, char **envp) {
   Function *mainFn = mainModule->getFunction("__user_main");
   if (!mainFn) {
     klee_error("'%s' function not found in module.", EntryPoint.c_str());
-  }
-
-  CallInst::Create(initHandler, ArrayRef<Value *>(), "",
-                   mainFn->getEntryBlock().begin());
-  for (auto &bb : *mainFn) {
-    for (auto &i : bb) {
-      if (ReturnInst *ri = dyn_cast<ReturnInst>(&i)) {
-        CallInst::Create(doneHandler, ArrayRef<Value *>(), "", ri);
-      }
-    }
   }
 
   // FIXME: Change me to std types.

@@ -22,6 +22,10 @@
 #include <set>
 #include <vector>
 
+namespace castan {
+  class CacheModel;
+}
+
 namespace klee {
 class Array;
 class CallPathNode;
@@ -169,6 +173,8 @@ public:
 
   bool merge(const ExecutionState &b);
   void dumpStack(llvm::raw_ostream &out) const;
+
+  castan::CacheModel *cacheModel;
 };
 }
 

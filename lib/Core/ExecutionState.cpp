@@ -16,6 +16,8 @@
 
 #include "klee/Expr.h"
 
+#include "castan/Internal/GenericCacheModel.h"
+
 #include "Memory.h"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 #include "llvm/IR/Function.h"
@@ -38,6 +40,17 @@ using namespace klee;
 namespace { 
   cl::opt<bool>
   DebugLogStateMerge("debug-log-state-merge");
+
+  cl::opt<std::string>
+  CacheModel("cache-model");
+}
+
+castan::CacheModel *createCacheModel() {
+  if (CacheModel == "generic") {
+    return new castan::GenericCacheModel();
+  } else {
+    return NULL;
+  }
 }
 
 /***/
@@ -77,12 +90,14 @@ ExecutionState::ExecutionState(KFunction *kf) :
     instsSinceCovNew(0),
     coveredNew(false),
     forkDisabled(false),
-    ptreeNode(0) {
+    ptreeNode(0),
+    cacheModel(createCacheModel()) {
   pushFrame(0, kf);
 }
 
 ExecutionState::ExecutionState(const std::vector<ref<Expr> > &assumptions)
-    : constraints(assumptions), queryCost(0.), ptreeNode(0) {}
+    : constraints(assumptions), queryCost(0.), ptreeNode(0),
+      cacheModel(createCacheModel()) {}
 
 ExecutionState::~ExecutionState() {
   for (unsigned int i=0; i<symbolics.size(); i++)
@@ -120,7 +135,9 @@ ExecutionState::ExecutionState(const ExecutionState& state):
     coveredLines(state.coveredLines),
     ptreeNode(state.ptreeNode),
     symbolics(state.symbolics),
-    arrayNames(state.arrayNames)
+    arrayNames(state.arrayNames),
+
+    cacheModel(state.cacheModel)
 {
   for (unsigned int i=0; i<symbolics.size(); i++)
     symbolics[i].first->refCount++;

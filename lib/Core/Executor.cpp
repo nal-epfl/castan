@@ -26,6 +26,7 @@
 
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
+#include "klee/ExprBuilder.h"
 #include "klee/Interpreter.h"
 #include "klee/TimerStatIncrementer.h"
 #include "klee/CommandLine.h"
@@ -47,6 +48,8 @@
 #include "klee/Internal/System/Time.h"
 #include "klee/Internal/System/MemoryUsage.h"
 #include "klee/SolverStats.h"
+
+#include "castan/Internal/CacheModel.h"
 
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
 #include "llvm/IR/Function.h"
@@ -1523,6 +1526,9 @@ static inline const llvm::fltSemantics * fpWidthToSemantics(unsigned width) {
 
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 //   klee_message("Executing %s:%d for state %p", ki->info->file.c_str(), ki->info->line, (void *) &state);
+  if (state.cacheModel) {
+    state.cacheModel->exec(state);
+  }
 
   Instruction *i = ki->inst;
   switch (i->getOpcode()) {
@@ -2120,12 +2126,18 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 
   case Instruction::Load: {
     ref<Expr> base = eval(ki, 0, state).value;
+    if (state.cacheModel) {
+      base = state.cacheModel->load(solver, state, base);
+    }
     executeMemoryOperation(state, false, base, 0, ki);
     break;
   }
   case Instruction::Store: {
     ref<Expr> base = eval(ki, 1, state).value;
     ref<Expr> value = eval(ki, 0, state).value;
+    if (state.cacheModel) {
+      base = state.cacheModel->store(solver, state, base);
+    }
     executeMemoryOperation(state, true, base, value, 0);
     break;
   }
@@ -3345,6 +3357,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
     ref<ConstantExpr> concreteAddress;
     assert(solver->getValue(state, address, concreteAddress) &&
           "Failed to concretize symbolic address.");
+    state.constraints.addConstraint(EqExpr::create(concreteAddress, address));
     address = concreteAddress;
   }
 
