@@ -28,13 +28,13 @@ typedef struct prefix_node {
 
 prefix_node_t *prefix_tree;
 
-void memory_model_start();
-void memory_model_stop();
-void memory_model_dump();
+void castan_loop();
 
-void init_prefix_db() {}
+void lpm_init() {
+  prefix_tree = NULL;
+}
 
-void set_prefix_asn(struct in_addr *ip, int prefix_len, asn_t asn) {
+void lpm_set_prefix_asn(struct in_addr *ip, int prefix_len, asn_t asn) {
   prefix_node_t **node = &prefix_tree;
 
   // Explore prefix match tree up to the prefix depth.
@@ -61,7 +61,7 @@ void set_prefix_asn(struct in_addr *ip, int prefix_len, asn_t asn) {
   (*node)->asn = asn;
 }
 
-asn_t get_ip_asn(struct in_addr *ip) {
+asn_t lpm_get_ip_asn(struct in_addr *ip) {
   prefix_node_t *node = prefix_tree;
   asn_t asn = NULL_ASN;
 
@@ -122,19 +122,22 @@ void process_packet(int linktype, const unsigned char *packet,
     return;
   }
 
-  //   char ip_dst_str[INET_ADDRSTRLEN];
-  //   printf("Packet for %s routed to AS-%d\n",
-  //          inet_ntop(AF_INET, &ip->ip_dst, ip_dst_str, INET_ADDRSTRLEN),
-  //          get_ip_asn(&ip->ip_dst));
-  get_ip_asn(&ip->ip_dst);
+#ifdef __clang__
+  lpm_get_ip_asn(&ip->ip_dst);
+#else
+  char ip_dst_str[INET_ADDRSTRLEN];
+  printf("Packet for %s routed to AS-%d\n",
+         inet_ntop(AF_INET, &ip->ip_dst, ip_dst_str, INET_ADDRSTRLEN),
+         lpm_get_ip_asn(&ip->ip_dst));
+#endif
 }
 
 void load_pfx2as_dummy() {
-  init_prefix_db();
+  lpm_init();
 
   struct in_addr ip;
-  inet_pton(AF_INET, "128.0.0.0", &ip);
-  set_prefix_asn(&ip, 16, 1);
+  inet_pton(AF_INET, "127.0.0.0", &ip);
+  lpm_set_prefix_asn(&ip, 16, 1);
 }
 
 void load_pfx2as_file(const char *pfx2as_filename, long max_entries) {
@@ -142,7 +145,7 @@ void load_pfx2as_file(const char *pfx2as_filename, long max_entries) {
   assert(pfx2as_file && "Error opening pfx2as file.");
   printf("Loading prefix to AS map from %s.\n", pfx2as_filename);
 
-  init_prefix_db();
+  lpm_init();
 
   for (long count = 0; count != max_entries; count++) {
     char ip_str[INET_ADDRSTRLEN];
@@ -163,7 +166,7 @@ void load_pfx2as_file(const char *pfx2as_filename, long max_entries) {
 
     struct in_addr ip;
     inet_pton(AF_INET, ip_str, &ip);
-    set_prefix_asn(&ip, prefix_len, asn);
+    lpm_set_prefix_asn(&ip, prefix_len, asn);
   }
 }
 
@@ -183,9 +186,7 @@ int main(int argc, char *argv[]) {
   load_pfx2as_dummy();
 #else
   load_pfx2as_file(pfx2as_filename, -1);
-#endif
 
-#ifndef __clang__
   char errbuf[PCAP_ERRBUF_SIZE];
   pcap_t *pcap = NULL;
   if (strncmp(STDIN_FILENAME, pcap_filename, sizeof(STDIN_FILENAME)) == 0) {
@@ -206,23 +207,19 @@ int main(int argc, char *argv[]) {
   unsigned long num_packets = 0;
   start();
 #ifdef __clang__
-  memory_model_start();
-  for (int i = 0; i < 1; i++) {
-    //     memory_model_dump();
+  while (1) {
+    castan_loop();
     static unsigned char
         packet_buffer[sizeof(struct ether_header) + sizeof(struct ip)];
     header.caplen = sizeof(struct ether_header) + sizeof(struct ip);
     packet = packet_buffer;
     klee_make_symbolic((void *)packet, header.caplen, "castan_packet");
-    ((struct ether_header *)packet)->ether_type = htons(ETHERTYPE_IP);
-    ((struct ip *)(packet + sizeof(struct ether_header)))->ip_v = 4;
-    //     inet_pton(AF_INET, "127.0.0.1",
-    //               &((struct ip *)(packet + sizeof(struct
-    //               ether_header)))->ip_dst);
+    klee_assume(((struct ether_header *)packet)->ether_type == htons(ETHERTYPE_IP));
+    klee_assume(((struct ip *)(packet + sizeof(struct ether_header)))->ip_v == 4);
+//     inet_pton(AF_INET, "127.0.0.1",
+//               &((struct ip *)(packet + sizeof(struct ether_header)))->ip_dst);
     process_packet(DLT_EN10MB, packet, header.caplen);
-    //     memory_model_dump();
   }
-  memory_model_stop();
 #else
   while ((packet = pcap_next(pcap, &header)) != NULL) {
     process_packet(pcap_datalink(pcap), packet, header.caplen);

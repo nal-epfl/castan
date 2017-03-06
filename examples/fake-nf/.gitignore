@@ -5,3 +5,5 @@ ip-asn-lookup-da.o
 ip-asn-lookup-trie
 ip-asn-lookup-trie.bc
 ip-asn-lookup-trie.o
+
+klee-*

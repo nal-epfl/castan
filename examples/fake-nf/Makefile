@@ -2,7 +2,14 @@ TARGETS := ip-asn-lookup-trie ip-asn-lookup-da
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS := -lpcap
 
+SHELL=/bin/bash -o pipefail
+
 default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
+
+.SUFFIXES:
+.DELETE_ON_ERROR:
+.PRECIOUS: $(addsuffix .log,$(TARGETS))
+.PHONY: $(addsuffix .log,$(TARGETS))
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
@@ -21,8 +28,10 @@ run-times: $(TARGETS)
 	    | $ awk '{ total += $$1; count++ } END { print total/count }'; \
 	done
 
-castan: $(addsuffix .bc,$(TARGETS))
-	parallel "time castan {} 2>&1 | tee {}.log" ::: $^
+%.log: %.bc
+	time castan --mem-model=wss --concretize-sym-indices $< | tee $@
+
+castan: $(addsuffix .log,$(TARGETS))
 
 clean:
 	rm -f $(TARGETS) $(addsuffix .o,$(TARGETS)) $(addsuffix .bc,$(TARGETS)) deps.mk
