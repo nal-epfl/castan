@@ -116,8 +116,11 @@ void load_pfx2as_dummy() {
   lpm_init();
 
   struct in_addr ip;
-  inet_pton(AF_INET, "127.0.0.0", &ip);
-  lpm_set_prefix_asn(&ip, 16, 1);
+  inet_pton(AF_INET, "128.0.0.0", &ip);
+  lpm_set_prefix_asn(&ip, 1, 1);
+
+  inet_pton(AF_INET, "170.170.170.170", &ip);
+  lpm_set_prefix_asn(&ip, 32, 1);
 }
 
 void load_pfx2as_file(const char *pfx2as_filename, long max_entries) {
