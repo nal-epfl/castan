@@ -325,7 +325,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
 
 bool GenericCacheModel::loop(klee::ExecutionState &state) {
   if (enabled) {
-    //     klee::klee_message("Cache after iteration %d:", iteration);
+    //     klee::klee_message("Cache after iteration %ld:", loopStats.size());
     //     for (auto level : cache) {
     //       klee::klee_message("  L%d (%d lines):", level.first + 1,
     //                          cacheConfig[level.first].size /
@@ -338,14 +338,15 @@ bool GenericCacheModel::loop(klee::ExecutionState &state) {
     //         for (auto way : line.second) {
     //           klee::klee_message(
     //               "      Address: 0x%016lx, Dirty: %d, Accessed %ld units
-    //               ago.",
-    //               way.first << BLOCK_BITS, way.second.dirty,
-    //               currentTime - way.second.useTime);
+    //                   ago.",
+    //                   way.first
+    //                   << BLOCK_BITS,
+    //               way.second.dirty, currentTime - way.second.useTime);
     //         }
     //       }
     //     }
 
-    if (++iteration >= MaxLoops) {
+    if (loopStats.size() >= MaxLoops) {
       //       klee::klee_message("Exhausted loop count.");
       return false;
     }
@@ -395,10 +396,13 @@ std::string GenericCacheModel::dumpStats() {
     }
     stats << "  Estimated Execution Time: " << cycles << " cycles ("
           << (cycles * 1E9 / CPU_HZ) << "ns @ " << (CPU_HZ / 1E9) << "GHz)\n";
-    stats << "  Estimated Throughput (Single Core): " << (CPU_HZ / cycles / 1E6)
-          << "Mpps, " << (64 * CPU_HZ / cycles / 1E9) << "Gbps (64B packets), "
-          << (1500 * CPU_HZ / cycles / 1E9) << "Gbps (1500B packets), "
-          << (9000 * CPU_HZ / cycles / 1E9) << "Gbps (9000B packets)\n";
+    if (cycles) {
+      stats << "  Estimated Throughput (Single Core): "
+            << (CPU_HZ / cycles / 1E6) << "Mpps, "
+            << (64 * CPU_HZ / cycles / 1E9) << "Gbps (64B packets), "
+            << (1500 * CPU_HZ / cycles / 1E9) << "Gbps (1500B packets), "
+            << (9000 * CPU_HZ / cycles / 1E9) << "Gbps (9000B packets)\n";
+    }
   }
 
   return stats.str();

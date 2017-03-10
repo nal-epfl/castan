@@ -24,7 +24,6 @@ namespace castan {
 class GenericCacheModel : public CacheModel {
 private:
   int enabled = 0;
-  unsigned iteration = 0;
 
   // [level][line][address] -> cache entry
   std::map<uint8_t, std::map<uint32_t, std::map<uint64_t, cache_entry_t>>>
@@ -45,7 +44,9 @@ private:
 
 public:
   GenericCacheModel();
-  GenericCacheModel(const GenericCacheModel &other) {}
+  GenericCacheModel(const GenericCacheModel &other)
+      : enabled(other.enabled), cache(other.cache),
+        currentTime(other.currentTime), loopStats(other.loopStats) {}
 
   CacheModel *clone() { return new GenericCacheModel(*this); }
 
