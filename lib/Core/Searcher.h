@@ -305,7 +305,8 @@ namespace klee {
   private:
     std::set<std::pair<long, ExecutionState*> > states;
 
-//     std::map<const llvm::Instruction *, long> costs;
+    std::map<const llvm::Instruction *, std::pair<bool, long>> costs;
+    std::map<const llvm::Instruction *, long> successorCosts;
 
     long getPriority(ExecutionState *state);
 

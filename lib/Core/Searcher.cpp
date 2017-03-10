@@ -653,134 +653,318 @@ void InterleavedSearcher::update(
 ///
 
 CastanSearcher::CastanSearcher(const llvm::Module *module) {
-//   klee_message("Generating global cost map for directed search.");
-// 
-//   std::map<const llvm::Instruction *, std::set<const llvm::Instruction *> >
-//       predecessors, successors;
-//   std::map<const llvm::Function *, std::set<const llvm::Instruction *> >
-//       callers;
-// 
-//   // Generate ICFG and initialize cost map.
-//   klee_message("  Computing ICFG.");
-//   for (auto &fn : *module) {
-//     for (auto &bb : fn) {
-//       const llvm::Instruction *prevInst = NULL;
-//       for (auto &inst : bb) {
-//         if (prevInst) {
-//           predecessors[&inst].insert(prevInst);
-//           successors[prevInst].insert(&inst);
-//         }
-//         prevInst = &inst;
-// 
-//         if (const llvm::CallInst *ci = dyn_cast<llvm::CallInst>(&inst)) {
-//           if (ci->getCalledFunction()) {
-//             callers[ci->getCalledFunction()].insert(ci);
-//           }
-//         }
-// 
-//         costs[&inst] = LONG_MAX;
-//       }
-//       for (unsigned i = 0; i < bb.getTerminator()->getNumSuccessors(); i++) {
-//         predecessors[&bb.getTerminator()->getSuccessor(i)->front()]
-//             .insert(bb.getTerminator());
-//         successors[bb.getTerminator()]
-//             .insert(&bb.getTerminator()->getSuccessor(i)->front());
-//       }
-//     }
-//   }
-// 
-//   llvm::Function *loopAnnotation
-//       = module->getFunction(MEMORY_MODEL_PREFIX +
-//                              MemModel + MEMORY_MODEL_LOOP_SUFFIX);
-//   for (auto &bb : *loopAnnotation) {
-//     for (auto &inst : bb) {
-//       costs[&inst] = 0;
-//     }
-//   }
-// 
-//   std::set<const llvm::Instruction *> worklist = callers[loopAnnotation];
-//   while (! worklist.empty()) {
-//     auto inst = *worklist.begin();
-//     worklist.erase(inst);
-// 
-//     long min_cost = LONG_MAX;
-//     const llvm::CallInst *ci = dyn_cast<llvm::CallInst>(inst);
-//     if (ci && ci->getCalledFunction() && ! ci->getCalledFunction()->empty()) {
-//       // Look at successor after calling function.
-//       long cost = costs[&ci->getCalledFunction()->front().front()] + 1;
-//       if (cost < min_cost) {
-//         min_cost = cost;
-//       }
-//     } else {
-//       if (successors[inst].empty()) {
-//         // Look at successor after returning from function.
-//         for (auto caller : callers[inst->getParent()->getParent()]) {
-//           for (auto successor : successors[caller]) {
-//             long cost = costs[successor] + 1;
-//             if (cost < min_cost) {
-//               min_cost = cost;
-//             }
-//           }
-//         }
-//       } else {
-//         // Look at successors within function.
-//         for (auto successor : successors[inst]) {
-//           long cost = costs[successor] + 1;
-//           if (cost < min_cost) {
-//             min_cost = cost;
-//           }
-//         }
-//       }
-//     }
-// 
-//     if (min_cost < costs[inst]) {
-//       costs[inst] = min_cost;
-// 
-//       // Add predecessors to worklist.
-//       if (inst == &inst->getParent()->getParent()->front().front()) {
-//         // Predecessors from before function call.
-//         worklist.insert(callers[inst->getParent()->getParent()].begin(),
-//                         callers[inst->getParent()->getParent()].end());
-//       } else {
-//         for (auto predecessor : predecessors[inst]) {
-//           ci = dyn_cast<llvm::CallInst>(predecessor);
-//           if (ci && ci->getCalledFunction()
-//                  && ! ci->getCalledFunction()->empty()) {
-//               for (auto &bb : *ci->getCalledFunction()) {
-//                 for (auto &inst : bb) {
-//                   if (successors[&inst].empty()) {
-//                     worklist.insert(&inst);
-//                   }
-//                 }
-//               }
-//           } else {
-//             worklist.insert(predecessor);
-//           }
-//         }
-//       }
-//     }
-//   }
+  klee_message("Generating global cost map for directed search.");
+
+  std::map<const llvm::Instruction *, std::set<const llvm::Instruction *>>
+      predecessors, successors;
+  std::map<const llvm::Function *, std::set<const llvm::Instruction *>> callers;
+
+  // Generate ICFG and initialize cost map.
+  klee_message("  Computing ICFG.");
+  for (auto &fn : *module) {
+    for (auto &bb : fn) {
+      const llvm::Instruction *prevInst = NULL;
+      for (auto &inst : bb) {
+        if (prevInst) {
+          predecessors[&inst].insert(prevInst);
+          successors[prevInst].insert(&inst);
+        }
+        prevInst = &inst;
+
+        if (const llvm::CallInst *ci = dyn_cast<llvm::CallInst>(&inst)) {
+          if (ci->getCalledFunction()) {
+            callers[ci->getCalledFunction()].insert(ci);
+          }
+        }
+      }
+      for (unsigned i = 0; i < bb.getTerminator()->getNumSuccessors(); i++) {
+        predecessors[&bb.getTerminator()->getSuccessor(i)->front()].insert(
+            bb.getTerminator());
+        successors[bb.getTerminator()].insert(
+            &bb.getTerminator()->getSuccessor(i)->front());
+      }
+    }
+  }
+
+  std::set<const llvm::Instruction *> worklist;
+
+  // Initialize cost map.
+  klee_message("  Initializing cost map.");
+  for (auto &fn : *module) {
+    for (auto &bb : fn) {
+      for (auto &inst : bb) {
+        if (successors[&inst].empty()) {
+          costs[&inst] = std::make_pair(false, 0);
+
+          // Propagate changes to predecessors.
+          worklist.insert(predecessors[&inst].begin(),
+                          predecessors[&inst].end());
+          // Check if entry instruction and propagate to callers.
+          if (&inst ==
+              &inst.getParent()->getParent()->getEntryBlock().front()) {
+            worklist.insert(callers[inst.getParent()->getParent()].begin(),
+                            callers[inst.getParent()->getParent()].end());
+          }
+        } else {
+          costs[&inst] = std::make_pair(false, LONG_MAX);
+        }
+      }
+    }
+  }
+  llvm::Function *loopAnnotation = module->getFunction("castan_loop");
+  assert(loopAnnotation);
+  for (auto inst : callers[loopAnnotation]) {
+    costs[inst] = std::make_pair(true, 0);
+
+    // Propagate changes to predecessors.
+    worklist.insert(predecessors[inst].begin(), predecessors[inst].end());
+    // Check if entry instruction and propagate to callers.
+    if (inst == &(inst->getParent()->getParent()->getEntryBlock().front())) {
+      worklist.insert(callers[inst->getParent()->getParent()].begin(),
+                      callers[inst->getParent()->getParent()].end());
+    }
+  }
+
+  klee_message("  Computing cost map.");
+  while (!worklist.empty()) {
+    auto inst = *worklist.begin();
+    worklist.erase(inst);
+    // Flag if the cost changed and should be propagates back.
+    bool changed = false;
+
+    const llvm::CallInst *ci = dyn_cast<llvm::CallInst>(inst);
+    if (ci && ci->getCalledFunction() == loopAnnotation) {
+    } else if (ci && ci->getCalledFunction() &&
+               !ci->getCalledFunction()->empty()) {
+      std::pair<bool, long> cost;
+      // Check if called function is on direct path.
+      if (costs[&ci->getCalledFunction()->front().front()].first) {
+        cost = std::make_pair(
+            true, costs[&ci->getCalledFunction()->front().front()].second + 1);
+      } else {
+        assert(successors[inst].size() == 1);
+        auto s = *successors[inst].begin();
+        cost = std::make_pair(
+            costs[s].first,
+            (costs[&ci->getCalledFunction()->front().front()].second ==
+                 LONG_MAX ||
+             costs[s].second == LONG_MAX)
+                ? LONG_MAX
+                : (1 + costs[&ci->getCalledFunction()->front().front()].second +
+                   1 + costs[s].second));
+        successorCosts[ci] = costs[s].second;
+      }
+      if (cost != costs[inst]) {
+        costs[inst] = cost;
+        changed = true;
+      }
+    } else {
+      long cost =
+          (isa<llvm::LoadInst>(inst) || isa<llvm::StoreInst>(inst)) ? 4 : 1;
+      // Look at successors within function.
+      for (auto s : successors[inst]) {
+        if (costs[inst].first) {
+          if (costs[s].first && costs[s].second != LONG_MAX &&
+              costs[s].second + cost < costs[inst].second) {
+            costs[inst].second = costs[s].second + cost;
+            changed = true;
+          }
+        } else {
+          if (costs[s].first || (costs[s].second != LONG_MAX &&
+                                 costs[s].second + cost < costs[inst].second)) {
+            costs[inst].second =
+                costs[s].second == LONG_MAX ? LONG_MAX : costs[s].second + cost;
+            costs[inst].first = costs[s].first;
+            changed = true;
+          }
+        }
+      }
+    }
+
+    if (changed) {
+      // Add predecessors to worklist.
+      if (inst == &inst->getParent()->getParent()->front().front()) {
+        // Predecessors from before function call.
+        worklist.insert(callers[inst->getParent()->getParent()].begin(),
+                        callers[inst->getParent()->getParent()].end());
+      } else {
+        worklist.insert(predecessors[inst].begin(), predecessors[inst].end());
+      }
+    }
+  }
+
+  //   klee_message("  Dumping ICFG to ./icfg/.");
+  //   auto result = mkdir("icfg", 0755);
+  //   assert(result == 0 || errno == EEXIST);
+  //
+  //   std::ofstream makefile("icfg/Makefile");
+  //   assert(makefile.good());
+  //   makefile << "%.pdf: %.dot" << std::endl;
+  //   makefile << "\tdot -Tpdf -o $@ $<" << std::endl << std::endl;
+  //
+  //   makefile << "%.svg: %.dot" << std::endl;
+  //   makefile << "\tdot -Tsvg -o $@ $<" << std::endl << std::endl;
+  //
+  //   makefile << "%.cmapx: %.dot" << std::endl;
+  //   makefile << "\tdot -Tcmapx -o $@ $<" << std::endl << std::endl;
+  //
+  //   makefile << "%.html: %.cmapx" << std::endl;
+  //   makefile
+  //       << "\techo \"<html><img src='$(@:.html=.svg)' usemap='#CFG' />\" >
+  //       $@"
+  //       << std::endl;
+  //   makefile << "\tcat $< >> $@" << std::endl;
+  //   makefile << "\techo '</html>' >> $@" << std::endl << std::endl;
+  //
+  //   makefile << "%.clean:" << std::endl;
+  //   makefile << "\trm -f $(@:.clean=.html) $(@:.clean=.svg)
+  //   $(@:.clean=.cmapx)"
+  //            << std::endl
+  //            << std::endl;
+  //
+  //   makefile << "default: all" << std::endl;
+  //
+  //   for (auto &fn : *module) {
+  //     klee::klee_message("Generating %s.dot", fn.getName().str().c_str());
+  //
+  //     std::ofstream dotFile("icfg/" + fn.getName().str() + ".dot");
+  //     assert(dotFile.good());
+  //     // Generate CFG DOT file.
+  //     dotFile << "digraph CFG {" << std::endl;
+  //
+  //     std::string signature;
+  //     llvm::raw_string_ostream ss(signature);
+  //     fn.getFunctionType()->print(ss);
+  //     ss.flush();
+  //     std::replace(signature.begin(), signature.end(), '\"', '\'');
+  //     dotFile << "	label = \"" << fn.getName().str() << ": " << signature
+  //             << "\"" << std::endl;
+  //     dotFile << "	labelloc = \"t\"" << std::endl;
+  //
+  //     unsigned long entryRef = fn.empty()
+  //                                  ? (unsigned long)&fn
+  //                                  : (unsigned
+  //                                  long)&fn.getEntryBlock().front();
+  //     // Add edges to definite callers.
+  //     dotFile << "  edge [color = \"blue\"];" << std::endl;
+  //     for (auto caller : callers[&fn]) {
+  //       dotFile << "  n" << ((unsigned long)caller) << " -> n" << entryRef <<
+  //       ";"
+  //               << std::endl;
+  //       dotFile << "  n" << ((unsigned long)caller) << " [label = \""
+  //               << caller->getParent()->getParent()->getName().str()
+  //               << "\" shape = \"invhouse\" href=\""
+  //               << caller->getParent()->getParent()->getName().str() <<
+  //               ".html\"]"
+  //               << std::endl;
+  //     }
+  //
+  //     // Add all instructions in the function.
+  //     for (auto &bb : fn) {
+  //       for (auto &inst : bb) {
+  //         std::stringstream attributes;
+  //         // Annotate entry / exit points.
+  //         if (successors[&inst].empty()) {
+  //           attributes << "shape = \"doublecircle\"";
+  //         } else if (&inst ==
+  //                    &(inst.getParent()->getParent()->getEntryBlock().front()))
+  //                    {
+  //           attributes << "shape = \"box\"";
+  //         } else {
+  //           attributes << "shape = \"circle\"";
+  //         }
+  //         // Annotate source line and instruction print-out.
+  //         if (costs[&inst].second == LONG_MAX) {
+  //           attributes << " label = \"--\"";
+  //         } else {
+  //           attributes << " label = \"" << costs[&inst].second << "\"";
+  //         }
+  //         attributes << " tooltip = \"" << inst.getOpcodeName() << "\"";
+  //         // Annotate utility color.
+  //         attributes << " style=\"filled\" fillcolor = \""
+  //                    << (costs[&inst].first ? "lightgreen" : "lightblue") <<
+  //                    "\"";
+  //         dotFile << "	n" << ((unsigned long)&inst) << " [" <<
+  //         attributes.str()
+  //                 << "];" << std::endl;
+  //         // Add edges to successors.
+  //         dotFile << "	edge [color = \"black\"];" << std::endl;
+  //         for (auto successor : successors[&inst]) {
+  //           dotFile << "	n" << ((unsigned long)&inst) << " -> n"
+  //                   << ((unsigned long)successor) << ";" << std::endl;
+  //         }
+  //         // Add edges to definite callees.
+  //         dotFile << "	edge [color = \"blue\"];" << std::endl;
+  //         if (const llvm::CallInst *ci = dyn_cast<const
+  //         llvm::CallInst>(&inst)) {
+  //           if (ci->getCalledFunction()) {
+  //             dotFile << "	n" << ((unsigned long)&inst) << " -> n"
+  //                     << ((unsigned long)ci->getCalledFunction()) << ";"
+  //                     << std::endl;
+  //             dotFile << "	n" << ((unsigned long)ci->getCalledFunction())
+  //                     << " [label = \""
+  //                     << ci->getCalledFunction()->getName().str()
+  //                     << "\" shape = \"folder\" href=\""
+  //                     << ci->getCalledFunction()->getName().str() <<
+  //                     ".html\"]"
+  //                     << std::endl;
+  //           } else {
+  //             dotFile
+  //                 << "	IndirectFunction [label = \"*\" shape =
+  //                 \"folder\"]"
+  //                 << std::endl;
+  //             dotFile << "	n" << ((unsigned long)&inst)
+  //                     << " -> IndirectFunction;" << std::endl;
+  //           }
+  //         }
+  //       }
+  //     }
+  //     dotFile << "}" << std::endl;
+  //
+  //     makefile << "all: " << fn.getName().str() << std::endl;
+  //     makefile << fn.getName().str() << ": " << fn.getName().str() << ".html
+  //     "
+  //              << fn.getName().str() << ".svg" << std::endl;
+  //     makefile << "clean: " << fn.getName().str() << ".clean" << std::endl;
+  //   }
 }
 
 long CastanSearcher::getPriority(ExecutionState *state) {
-  if (state->cacheModel) {
-    return state->cacheModel->getTotalCycles();
-  } else {
-    return 0;
+  if (state->cacheModel->getNumIterations() == 0) {
+    return LONG_MAX;
   }
+
+  assert(costs.count(state->pc->inst));
+  long result = state->cacheModel->getTotalCycles();
+
+  result += costs[state->pc->inst].second;
+  if (costs[state->pc->inst].first) {
+    return result / state->cacheModel->getNumIterations();
+  }
+
+  for (klee::ExecutionState::stack_ty::const_reverse_iterator
+           it = state->stack.rbegin(),
+           ie = state->stack.rend();
+       it != ie && it->caller; it++) {
+    result += successorCosts[it->caller->inst];
+    if (costs[it->caller->inst].first) {
+      return result / state->cacheModel->getNumIterations();
+    }
+  }
+  return result / state->cacheModel->getNumIterations();
 }
 
 ExecutionState &CastanSearcher::selectState() {
   return *states.rbegin()->second;
 }
 
-void CastanSearcher::update(ExecutionState *current,
-                            const std::vector<ExecutionState *> &addedStates,
-                            const std::vector<ExecutionState *> &removedStates) {
+void CastanSearcher::update(
+    ExecutionState *current, const std::vector<ExecutionState *> &addedStates,
+    const std::vector<ExecutionState *> &removedStates) {
   if (current) {
     bool found = false;
     for (auto it : states) {
-      if (it.second==current) {
+      if (it.second == current) {
         states.erase(it);
         states.insert(std::make_pair(getPriority(current), current));
         found = true;
@@ -795,7 +979,7 @@ void CastanSearcher::update(ExecutionState *current,
   for (auto rit : removedStates) {
     bool found = false;
     for (auto sit : states) {
-      if (rit==sit.second) {
+      if (rit == sit.second) {
         states.erase(sit);
         found = true;
         break;

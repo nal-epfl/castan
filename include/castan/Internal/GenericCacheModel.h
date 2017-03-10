@@ -47,9 +47,7 @@ public:
   GenericCacheModel();
   GenericCacheModel(const GenericCacheModel &other) {}
 
-  CacheModel *clone() {
-    return new GenericCacheModel(*this);
-  }
+  CacheModel *clone() { return new GenericCacheModel(*this); }
 
   klee::ref<klee::Expr> load(klee::TimingSolver *solver,
                              klee::ExecutionState &state,
@@ -75,6 +73,7 @@ public:
   bool loop(klee::ExecutionState &state);
 
   long getTotalCycles();
+  int getNumIterations() { return loopStats.size(); }
 
   std::string dumpStats();
 };
