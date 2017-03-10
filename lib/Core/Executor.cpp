@@ -121,8 +121,8 @@ using namespace klee;
 namespace {
   cl::opt<bool>
   DumpStatesOnHalt("dump-states-on-halt",
-                   cl::init(true),
-		   cl::desc("Dump test cases for all active states on exit (default=on)"));
+                   cl::init(false),
+		   cl::desc("Dump test cases for all active states on exit (default=off)"));
   
   cl::opt<bool>
   AllowExternalSymCalls("allow-external-sym-calls",
