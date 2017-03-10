@@ -300,30 +300,31 @@ namespace klee {
       os << "</InterleavedSearcher>\n";
     }
   };
+}
 
-  class CastanSearcher : public Searcher {
+namespace castan {
+  class CastanSearcher : public klee::Searcher {
   private:
-    std::set<std::pair<long, ExecutionState*> > states;
+    std::set<std::pair<long, klee::ExecutionState*> > states;
 
     std::map<const llvm::Instruction *, std::pair<bool, long>> costs;
     std::map<const llvm::Instruction *, long> successorCosts;
 
-    long getPriority(ExecutionState *state);
+    long getPriority(klee::ExecutionState *state);
 
   public:
     explicit CastanSearcher(const llvm::Module *module);
     ~CastanSearcher() {}
 
-    ExecutionState &selectState();
-    void update(ExecutionState *current,
-                const std::vector<ExecutionState *> &addedStates,
-                const std::vector<ExecutionState *> &removedStates);
+    klee::ExecutionState &selectState();
+    void update(klee::ExecutionState *current,
+                const std::vector<klee::ExecutionState *> &addedStates,
+                const std::vector<klee::ExecutionState *> &removedStates);
     bool empty() { return states.empty(); }
     void printName(llvm::raw_ostream &os) {
       os << "CastanSearcher\n";
     }
   };
-
 }
 
 #endif
