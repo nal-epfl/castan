@@ -215,8 +215,9 @@ bool CexCachingSolver::lookupAssignment(const Query &query,
 
 bool CexCachingSolver::getAssignment(const Query& query, Assignment *&result) {
   KeyType key;
-  if (lookupAssignment(query, key, result))
-    return true;
+  if (lookupAssignment(query, key, result)) {
+    return result;
+  }
 
   std::vector<const Array*> objects;
   findSymbolicObjects(key.begin(), key.end(), objects);
@@ -252,7 +253,7 @@ bool CexCachingSolver::getAssignment(const Query& query, Assignment *&result) {
   result = binding;
   cache.insert(key, binding);
 
-  return true;
+  return binding;
 }
 
 ///
