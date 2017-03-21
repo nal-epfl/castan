@@ -1,4 +1,4 @@
-TARGETS := ip-asn-lookup-trie ip-asn-lookup-da
+TARGETS := ip-asn-lookup-trie ip-asn-lookup-da nat-hash-table
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS := -lpcap
 
