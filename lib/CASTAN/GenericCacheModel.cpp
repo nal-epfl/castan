@@ -265,7 +265,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
         // Generate constraints on address that would make the miss happen.
         // Constraint cache line:
         // (line<<BLOCK_BITS) == ((maxLines-1)<<BLOCK_BITS & address)
-        constraints.addConstraint(klee::EqExpr::create(
+        klee::ref<klee::Expr> e = constraints.simplifyExpr(klee::EqExpr::create(
             klee::ConstantExpr::create(line.second << BLOCK_BITS,
                                        address->getWidth()),
             klee::AndExpr::create(
@@ -273,14 +273,22 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
                                            address->getWidth()),
                 address)));
 
+        klee::ref<klee::ConstantExpr> ce = dyn_cast<klee::ConstantExpr>(e);
+        if ((!ce.isNull()) && ce->isFalse()) {
+          continue;
+        }
+
+        constraints.addConstraint(e);
+
         // Constrain against hit addresses.
+        bool unsat = false;
         for (uint8_t level = 0; cacheConfig[level].size; level++) {
           uint32_t numLines = cacheConfig[level].size /
                               cacheConfig[level].associativity /
                               (1 << BLOCK_BITS);
           for (auto hitAddress : cache[level][line.second % numLines]) {
             // (! (hit<<BLOCK_BITS == ((-1)<<BLOCK_BITS) & address))
-            constraints.addConstraint(
+            klee::ref<klee::Expr> e = constraints.simplifyExpr(
                 klee::NotExpr::create(klee::EqExpr::create(
                     klee::ConstantExpr::create(hitAddress.first << BLOCK_BITS,
                                                address->getWidth()),
@@ -288,13 +296,26 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
                         klee::ConstantExpr::create((-1) << BLOCK_BITS,
                                                    address->getWidth()),
                         address))));
+
+            klee::ref<klee::ConstantExpr> ce = dyn_cast<klee::ConstantExpr>(e);
+            if ((!ce.isNull()) && ce->isFalse()) {
+              unsat = true;
+              break;
+            }
+
+            constraints.addConstraint(e);
           }
+          if (unsat) {
+            break;
+          }
+        }
+        if (unsat) {
+          continue;
         }
 
         klee::ref<klee::ConstantExpr> concreteAddress;
         if (solver->solver->getValue(klee::Query(constraints, address),
-                                     concreteAddress) &&
-            "Solver fail.") {
+                                     concreteAddress)) {
           //           klee::klee_message("Line fits constraints.");
           state.addConstraint(klee::EqExpr::create(concreteAddress, address));
           address = concreteAddress;
