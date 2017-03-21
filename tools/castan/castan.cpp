@@ -11,6 +11,7 @@
 
 #include "castan/Internal/CacheModel.h"
 
+#include "../../lib/Core/TimingSolver.h"
 #include "klee/Config/Version.h"
 #include "klee/ExecutionState.h"
 #include "klee/Expr.h"
@@ -23,6 +24,8 @@
 #include "klee/Internal/System/Time.h"
 #include "klee/Interpreter.h"
 #include "klee/Statistics.h"
+#include <../../lib/Core/Executor.h>
+#include <../../lib/Core/Memory.h>
 
 #if LLVM_VERSION_CODE > LLVM_VERSION(3, 2)
 #include "llvm/IR/Constants.h"
@@ -56,6 +59,12 @@
 #include "llvm/Support/TargetSelect.h"
 #endif
 #include "llvm/Support/Signals.h"
+
+#include "llvm/IRReader/IRReader.h"
+#include "llvm/Support/SourceMgr.h"
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/ExecutionEngine/Interpreter.h>
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
 #include "llvm/Support/system_error.h"
@@ -408,6 +417,32 @@ llvm::raw_fd_ostream *KleeHandler::openTestFile(const std::string &suffix,
   return openOutputFile(getTestFilename(suffix, id));
 }
 
+int loop_count = 0;
+void castan_loop_stub() {
+  if (loop_count++ >= 1) {
+    throw 0;
+  }
+}
+
+std::vector<uint8_t> packet_value;
+void klee_make_symbolic_stub(void *addr, size_t nbytes, const char *name) {
+  if (std::string("castan_packet") == name) {
+    assert(nbytes == packet_value.size());
+    for (size_t i = 0; i < nbytes; i++) {
+      ((uint8_t *)addr)[i] = packet_value[i];
+    }
+  }
+}
+
+unsigned klee_is_symbolic_stub(uintptr_t n) { return 0; }
+
+void klee_assume_stub(uintptr_t condition) { assert(condition); }
+
+std::vector<int64_t> havoc_values;
+void castan_notify_havoc_stub(int64_t havoc) {
+  havoc_values.push_back(havoc);
+}
+
 /* Outputs all files (.ktest, .pc, .cov etc.) describing a test case */
 void KleeHandler::processTestCase(const ExecutionState &state,
                                   const char *errorMessage,
@@ -416,6 +451,121 @@ void KleeHandler::processTestCase(const ExecutionState &state,
     llvm::errs() << "EXITING ON ERROR:\n" << errorMessage << "\n";
     exit(1);
   }
+
+  // [<packet array, [havoc arrays]>]
+  std::vector<std::pair<const Array *, std::vector<const Array *>>> havocs;
+  for (auto symbol : state.symbolics) {
+    if (symbol.first->name == "castan_packet") {
+      havocs.push_back(
+          std::make_pair(symbol.second, std::vector<const Array *>()));
+    } else if (symbol.first->name == "castan_havoc") {
+      havocs.back().second.push_back(symbol.second);
+    }
+  }
+
+  SMDiagnostic smd;
+  Module *module = ParseIRFile(InputFile, smd, getGlobalContext());
+  assert(module);
+
+  std::string err;
+  std::unique_ptr<llvm::ExecutionEngine> lli(
+      ExecutionEngine::create(module, true, &err));
+  if (!lli) {
+    klee_error("Error loading LLVM interpreter: %s", err.c_str());
+    abort();
+  }
+  llvm::InitializeNativeTarget();
+
+  lli->addGlobalMapping(lli->FindFunctionNamed("castan_loop"),
+                        (void *)castan_loop_stub);
+  lli->addGlobalMapping(lli->FindFunctionNamed("castan_notify_havoc"),
+                        (void *)castan_notify_havoc_stub);
+  lli->addGlobalMapping(lli->FindFunctionNamed("klee_make_symbolic"),
+                        (void *)klee_make_symbolic_stub);
+  lli->addGlobalMapping(lli->FindFunctionNamed("klee_is_symbolic"),
+                        (void *)klee_is_symbolic_stub);
+  lli->addGlobalMapping(lli->FindFunctionNamed("klee_assume"),
+                        (void *)klee_assume_stub);
+
+  int packet_id = 0;
+  for (auto havoc : havocs) {
+    klee_message("Reconciciling packet %d with %ld havocs.", packet_id++,
+                 havoc.second.size());
+
+    // Check if havoc values are consistent with path constraint.
+    ref<Expr> query = klee::ConstantExpr::create(1, Expr::Bool);
+
+    std::vector<const Array *> objects({havoc.first});
+    bool found = false;
+    int instance_id = 1;
+    do {
+      std::vector<std::vector<unsigned char>> values;
+
+      assert(((Executor *)m_interpreter)
+                 ->solver->getInitialValues(state, objects, values));
+
+      if (havoc.second.size()) {
+        std::stringstream ss;
+        for (auto b : values[0]) {
+          ss << " " << ((int)b);
+        }
+        klee_message("  Try %d with packet =%s", instance_id++, ss.str().c_str());
+
+        loop_count = 0;
+        packet_value = values[0];
+        havoc_values.clear();
+        try {
+          lli->runFunctionAsMain(lli->FindFunctionNamed("main"), {InputFile},
+                                 {});
+        } catch (int i) {
+        }
+
+        assert(havoc_values.size() == havoc.second.size());
+
+        for (unsigned i = 0; i < havoc_values.size(); i++) {
+          klee_message("  Havoc %d = %ld (%d bytes)", i, havoc_values[i],
+                       havoc.second[i]->size);
+
+          query = AndExpr::create(
+              EqExpr::create(klee::ConstantExpr::create(
+                                 havoc_values[i], havoc.second[i]->size * 8),
+                             Expr::createTempRead(havoc.second[i],
+                                                  havoc.second[i]->size * 8)),
+              query);
+        }
+      }
+
+      ref<Expr> packetConstraint = klee::ConstantExpr::create(1, Expr::Bool);
+      for (unsigned i = 0; i < values[0].size(); i++) {
+        packetConstraint = AndExpr::create(
+            EqExpr::create(klee::ConstantExpr::create(values[0][i], 8),
+                           ReadExpr::create(UpdateList(havoc.first, NULL),
+                                            klee::ConstantExpr::create(i, 32))),
+            packetConstraint);
+      }
+      query = AndExpr::create(packetConstraint, query);
+
+      bool result = false;
+      if (!(((Executor *)m_interpreter)
+                ->solver->mayBeTrue(state, query, result))) {
+        klee_message("Solver fail!");
+        result = false;
+      }
+      if (result) {
+        klee_message("Havocs fit constraints.");
+        const_cast<ExecutionState *>(&state)->addConstraint(query);
+        found = true;
+        break;
+      }
+
+      if (!found) {
+        const_cast<ExecutionState *>(&state)->addConstraint(
+            Expr::createIsZero(packetConstraint));
+      }
+    } while (!found);
+  }
+
+  exit(0);
 
   if (!NoOutput) {
     std::vector<std::pair<std::string, std::vector<unsigned char>>> out;

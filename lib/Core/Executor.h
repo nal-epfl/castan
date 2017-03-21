@@ -126,7 +126,9 @@ private:
   Searcher *searcher;
 
   ExternalDispatcher *externalDispatcher;
+public:
   TimingSolver *solver;
+private:
   MemoryManager *memory;
   std::set<ExecutionState*> states;
   StatsTracker *statsTracker;
