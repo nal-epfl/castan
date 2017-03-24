@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "castan/Internal/CacheModel.h"
+#include "castan/Internal/RainbowTable.h"
 
 #include "../../lib/Core/TimingSolver.h"
 #include "klee/Config/Version.h"
@@ -35,7 +36,6 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
-#include "llvm/IR/DataLayout.h"
 #else
 #include "llvm/Constants.h"
 #include "llvm/InstrTypes.h"
@@ -60,12 +60,6 @@
 #include "llvm/Support/TargetSelect.h"
 #endif
 #include "llvm/Support/Signals.h"
-
-#include "llvm/IRReader/IRReader.h"
-#include "llvm/Support/SourceMgr.h"
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/Interpreter.h>
 
 #if LLVM_VERSION_CODE < LLVM_VERSION(3, 5)
 #include "llvm/Support/system_error.h"
@@ -220,6 +214,10 @@ cl::opt<bool>
     Watchdog("watchdog",
              cl::desc("Use a watchdog process to enforce --max-time."),
              cl::init(0));
+
+cl::opt<std::string>
+    RainbowTableFile("rainbow-table",
+                     cl::desc("Rainbow table file to use to reverse havocs."));
 }
 
 extern cl::opt<double> MaxTime;
@@ -418,30 +416,6 @@ llvm::raw_fd_ostream *KleeHandler::openTestFile(const std::string &suffix,
   return openOutputFile(getTestFilename(suffix, id));
 }
 
-int loop_count = 0;
-void castan_loop_stub() {
-  if (loop_count++ >= 1) {
-    throw 0;
-  }
-}
-
-std::vector<uint8_t> packet_value;
-void klee_make_symbolic_stub(void *addr, size_t nbytes, const char *name) {
-  if (std::string("castan_packet") == name) {
-    assert(nbytes == packet_value.size());
-    for (size_t i = 0; i < nbytes; i++) {
-      ((uint8_t *)addr)[i] = packet_value[i];
-    }
-  }
-}
-
-unsigned klee_is_symbolic_stub(uintptr_t n) { return 0; }
-
-void klee_assume_stub(uintptr_t condition) { assert(condition); }
-
-std::vector<int64_t> havoc_values;
-void castan_notify_havoc_stub(int64_t havoc) { havoc_values.push_back(havoc); }
-
 /* Outputs all files (.ktest, .pc, .cov etc.) describing a test case */
 void KleeHandler::processTestCase(const ExecutionState &state,
                                   const char *errorMessage,
@@ -451,280 +425,141 @@ void KleeHandler::processTestCase(const ExecutionState &state,
     exit(1);
   }
 
-  // [<packet array, [havoc arrays]>]
-  std::vector<std::pair<const Array *, std::vector<const Array *>>> havocs;
+  // [<packet array, [<[havoc input byte exprs], havoc output array>>]]
+  std::vector<
+      std::pair<const Array *,
+                std::vector<std::pair<std::vector<ref<Expr>>, const Array *>>>>
+      havocs;
   for (auto symbol : state.symbolics) {
     if (symbol.first->name == "castan_packet") {
-      havocs.push_back(
-          std::make_pair(symbol.second, std::vector<const Array *>()));
-    } else if (symbol.first->name == "castan_havoc") {
-      havocs.back().second.push_back(symbol.second);
-    }
-  }
-
-  SMDiagnostic smd;
-  Module *module = ParseIRFile(InputFile, smd, getGlobalContext());
-  assert(module);
-
-  std::string err;
-  std::unique_ptr<llvm::ExecutionEngine> lli(
-      ExecutionEngine::create(module, false, &err));
-  if (!lli) {
-    klee_error("Error loading LLVM interpreter: %s", err.c_str());
-    abort();
-  }
-  llvm::InitializeNativeTarget();
-
-  lli->addGlobalMapping(lli->FindFunctionNamed("castan_loop"),
-                        (void *)castan_loop_stub);
-  lli->addGlobalMapping(lli->FindFunctionNamed("castan_notify_havoc"),
-                        (void *)castan_notify_havoc_stub);
-  lli->addGlobalMapping(lli->FindFunctionNamed("klee_make_symbolic"),
-                        (void *)klee_make_symbolic_stub);
-  lli->addGlobalMapping(lli->FindFunctionNamed("klee_is_symbolic"),
-                        (void *)klee_is_symbolic_stub);
-  lli->addGlobalMapping(lli->FindFunctionNamed("klee_assume"),
-                        (void *)klee_assume_stub);
-
-  int packet_id = 0;
-  for (auto havoc : havocs) {
-    if (havoc.second.size()) {
-      klee_message("Reconciciling packet %d with %ld havocs.", packet_id++,
-                   havoc.second.size());
-
-      // Check if havoc values are consistent with path constraint.
-      ref<Expr> query = klee::ConstantExpr::create(1, Expr::Bool);
-
-      std::vector<const Array *> objects({havoc.first});
-      bool found = false;
-      int instance_id = 1;
-      do {
-        std::vector<std::vector<unsigned char>> values;
-
-        assert(((Executor *)m_interpreter)
-                   ->solver->getInitialValues(state, objects, values));
-
-        std::stringstream ss;
-        for (auto b : values[0]) {
-          ss << " " << ((int)b);
-        }
-        klee_message("  Try %d with packet =%s", instance_id++,
-                     ss.str().c_str());
-
-        loop_count = 0;
-        packet_value = values[0];
-        havoc_values.clear();
-        try {
-          lli->runFunctionAsMain(lli->FindFunctionNamed("main"), {InputFile},
-                                 {});
-        } catch (int i) {
-        }
-
-        assert(havoc_values.size() == havoc.second.size());
-
-        for (unsigned i = 0; i < havoc_values.size(); i++) {
-          klee_message("  Havoc %d = %ld (%d bytes)", i, havoc_values[i],
-                       havoc.second[i]->size);
-
-          query = AndExpr::create(
-              EqExpr::create(klee::ConstantExpr::create(
-                                 havoc_values[i], havoc.second[i]->size * 8),
-                             Expr::createTempRead(havoc.second[i],
-                                                  havoc.second[i]->size * 8)),
-              query);
-        }
-
-        ref<Expr> packetConstraint = klee::ConstantExpr::create(1, Expr::Bool);
-        for (unsigned i = 0; i < values[0].size(); i++) {
-          packetConstraint = AndExpr::create(
-              EqExpr::create(
-                  klee::ConstantExpr::create(values[0][i], 8),
-                  ReadExpr::create(UpdateList(havoc.first, NULL),
-                                   klee::ConstantExpr::create(i, 32))),
-              packetConstraint);
-        }
-        query = AndExpr::create(packetConstraint, query);
-
-        bool result = false;
-        if (!(((Executor *)m_interpreter)
-                  ->solver->mayBeTrue(state, query, result))) {
-          klee_message("Solver fail!");
-          result = false;
-        }
-        if (result) {
-          klee_message("Havocs fit constraints.");
-          const_cast<ExecutionState *>(&state)->addConstraint(query);
-          found = true;
-          break;
-        }
-
-        if (!found) {
-          const_cast<ExecutionState *>(&state)->addConstraint(
-              Expr::createIsZero(packetConstraint));
-        }
-      } while (!found);
-    }
-  }
-
-  // [<packet array, [<[hash input byte exprs], hash output havoc>>]]
-  std::vector<std::pair<const Array *,
-                        std::vector<std::pair<std::vector<ref<Expr>>, const Array *>>>>
-      hashes;
-  for (auto symbol : state.symbolics) {
-    if (symbol.first->name == "castan_packet") {
-      hashes.push_back(std::make_pair(
-          symbol.second, std::vector<std::pair<std::vector<ref<Expr>>, const Array *>>()));
-    } else if (symbol.first->name == "castan_hash_in") {
-      hashes.back().second.emplace_back(std::make_pair(std::vector<ref<Expr>>(), (const Array *) NULL));
+      havocs.push_back(std::make_pair(
+          symbol.second,
+          std::vector<std::pair<std::vector<ref<Expr>>, const Array *>>()));
+    } else if (symbol.first->name == "castan_havoc_in") {
+      havocs.back().second.emplace_back(
+          std::make_pair(std::vector<ref<Expr>>(), (const Array *)NULL));
       if (const klee::ObjectState *os =
               state.addressSpace.findObject(symbol.first)) {
         for (unsigned int i = 0; i < os->size; i++) {
-          hashes.back().second.back().first.push_back(
+          havocs.back().second.back().first.push_back(
               state.constraints.simplifyExpr(os->read8(i)));
         }
       } else {
-        assert(0 && "Couldn't retrieve hash input expression.");
+        assert(0 && "Couldn't retrieve havoc input expression.");
       }
-    } else if (symbol.first->name == "castan_hash_out") {
-      hashes.back().second.back().second = symbol.second;
+    } else if (symbol.first->name == "castan_havoc_out") {
+      havocs.back().second.back().second = symbol.second;
     }
   }
 
-  // hash -> key
-  std::map<uint64_t, std::vector<uint8_t>> rainbowTable;
-  std::vector<uint8_t> input;
+  klee_message("Found path with %ld packets.", havocs.size());
 
-  packet_id = 0;
-  for (auto packet : hashes) {
-    if (packet.second.size()) {
-      klee_message("Reconciciling packet %d with %ld hashes.", packet_id++,
-                   packet.second.size());
-      
-      // Solve hash outputs.
-      std::vector<const Array *> objects;
-      for (auto hash : packet.second) {
-        objects.push_back(hash.second);
+  int packet_id = 0;
+  int reconciled_packets = 0;
+  for (auto packet : havocs) {
+    klee_message("Reconciciling packet %d with %ld havocs.", packet_id,
+                 packet.second.size());
+    if (packet.second.size() == 0) {
+      reconciled_packets++;
+      continue;
+    }
+    // Solve havoc outputs.
+    std::vector<const Array *> objects;
+    for (auto havoc : packet.second) {
+      objects.push_back(havoc.second);
+    }
+    std::vector<std::vector<unsigned char>> valueBytes;
+    assert(((Executor *)m_interpreter)
+               ->solver->getInitialValues(state, objects, valueBytes));
+
+    std::vector<uint64_t> values;
+    for (unsigned havoc_id = 0; havoc_id < objects.size(); havoc_id++) {
+      uint64_t value = 0;
+      for (auto b : valueBytes[havoc_id]) {
+        value = (value << 8) | b;
       }
-        std::vector<std::vector<unsigned char>> values;
-        assert(((Executor *)m_interpreter)
-                   ->solver->getInitialValues(state, objects, values));
+      values.push_back(value);
 
-      // Brute-force reverse hashes.
-      llvm::Function *hash_function = lli->FindFunctionNamed("hash_function");
-      assert(hash_function->getReturnType()->isIntegerTy());
-      assert(hash_function->getFunctionType()->getNumParams() == 1);
-      assert(hash_function->getFunctionType()->getParamType(0)->isPointerTy());
-      assert(dyn_cast<PointerType>(hash_function->getFunctionType()->getParamType(0))->getElementType()->isSized());
-      assert(DataLayout(module).getTypeStoreSize(dyn_cast<PointerType>(hash_function->getFunctionType()->getParamType(0))->getElementType()) == packet.second[0].first.size());
+      const_cast<ExecutionState *>(&state)->addConstraint(EqExpr::create(
+          klee::ConstantExpr::create(value, valueBytes.size() * 8),
+          Expr::createTempRead(packet.second[havoc_id].second,
+                               packet.second[havoc_id].second->size * 8)));
+    }
 
-      for (unsigned i= 0; i < objects.size(); i++) {
-        uint64_t hash = 0;
-        for (auto b : values[i]) {
-          hash = (hash<<8) | b;
-        }
-        klee_message("  Trying to reverse hash %d = %ld.", i, hash);
+    // Check if havoc is consistent with path constraint.
+    ref<Expr> query = klee::ConstantExpr::create(1, Expr::Bool);
+    // Make sure havoc 0's table never resets.
+    castan::RainbowTable rt0(RainbowTableFile, values[0]);
+    // Reverse the havocs using a rainbow table.
+    bool fail = false;
+    for (unsigned havoc_id = 0; havoc_id < objects.size() && !fail;
+         havoc_id++) {
+      klee_message("  Reversing havoc #%d = %ld.", havoc_id, values[havoc_id]);
 
-        while (!rainbowTable.count(hash)) {
-          input.resize(packet.second[0].first.size());
-          uint64_t output = lli->runFunction(hash_function, {GenericValue(input.data())}).IntVal.getLimitedValue();
-          rainbowTable[output] = input;
-          klee_message("    Rainbow table has %ld hashes.", rainbowTable.size());
+      castan::RainbowTable rt(RainbowTableFile, values[havoc_id]);
 
-          for (auto &i : input) {
-            if (i < 0XFF) {
-              i++;
-              break;
-            } else {
-              i = 0;
-            }
+      while (true) {
+        std::vector<uint8_t> havocInput;
+        if (havoc_id == 0) {
+          havocInput = rt0.getValue();
+          if (havocInput.empty()) {
+            klee_message("    Ran out of collisions in rainbow table for havoc "
+                         "0. Giving up.");
+            fail = true;
+            break;
+          }
+        } else {
+          havocInput = rt.getValue();
+          if (havocInput.empty()) {
+            klee_message("    Ran out of collisions in rainbow table for havoc "
+                         "%d. Back-tracking.",
+                         havoc_id);
+            havoc_id = 0;
+            query = klee::ConstantExpr::create(1, Expr::Bool);
+            continue;
           }
         }
-        klee_message("    Found collision.");
-      }
-      
-      
-      exit(0);
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+        assert(havocInput.size() == packet.second[havoc_id].first.size() &&
+               "Rainbow table input data size mis-match.");
 
-//       // Check if hash values are consistent with path constraint.
-//       ref<Expr> query = klee::ConstantExpr::create(1, Expr::Bool);
-// 
-//       bool found = false;
-//       int instance_id = 1;
-//       do {
-// 
-//         std::stringstream ss;
-//         for (auto b : values[0]) {
-//           ss << " " << ((int)b);
-//         }
-//         klee_message("  Try %d with packet =%s", instance_id++,
-//                      ss.str().c_str());
-// 
-//         loop_count = 0;
-//         packet_value = values[0];
-//         havoc_values.clear();
-//         try {
-//           lli->runFunctionAsMain(lli->FindFunctionNamed("main"), {InputFile},
-//                                  {});
-//         } catch (int i) {
-//         }
-// 
-//         assert(havoc_values.size() == havoc.second.size());
-// 
-//         for (unsigned i = 0; i < havoc_values.size(); i++) {
-//           klee_message("  Havoc %d = %ld (%d bytes)", i, havoc_values[i],
-//                        havoc.second[i]->size);
-// 
-//           query = AndExpr::create(
-//               EqExpr::create(klee::ConstantExpr::create(
-//                                  havoc_values[i], havoc.second[i]->size * 8),
-//                              Expr::createTempRead(havoc.second[i],
-//                                                   havoc.second[i]->size * 8)),
-//               query);
-//         }
-// 
-//         ref<Expr> packetConstraint = klee::ConstantExpr::create(1, Expr::Bool);
-//         for (unsigned i = 0; i < values[0].size(); i++) {
-//           packetConstraint = AndExpr::create(
-//               EqExpr::create(
-//                   klee::ConstantExpr::create(values[0][i], 8),
-//                   ReadExpr::create(UpdateList(havoc.first, NULL),
-//                                    klee::ConstantExpr::create(i, 32))),
-//               packetConstraint);
-//         }
-//         query = AndExpr::create(packetConstraint, query);
-// 
-//         bool result = false;
-//         if (!(((Executor *)m_interpreter)
-//                   ->solver->mayBeTrue(state, query, result))) {
-//           klee_message("Solver fail!");
-//           result = false;
-//         }
-//         if (result) {
-//           klee_message("Havocs fit constraints.");
-//           const_cast<ExecutionState *>(&state)->addConstraint(query);
-//           found = true;
-//           break;
-//         }
-// 
-//         if (!found) {
-//           const_cast<ExecutionState *>(&state)->addConstraint(
-//               Expr::createIsZero(packetConstraint));
-//         }
-//       } while (!found);
+        ref<Expr> new_query = query;
+        for (unsigned b = 0; b < havocInput.size(); b++) {
+          new_query = AndExpr::create(
+              EqExpr::create(klee::ConstantExpr::create(havocInput[b], 8),
+                             packet.second[havoc_id].first[b]),
+              new_query);
+        }
+
+        bool result = false;
+        if (!(((Executor *)m_interpreter)
+                  ->solver->mayBeTrue(state, new_query, result))) {
+          result = false;
+        }
+        if (result) {
+          std::stringstream ss;
+          for (auto it : havocInput) {
+            ss << " " << (int)it;
+          }
+          klee_message("    Havoc fits constraints as f(%s) = %ld.",
+                       ss.str().substr(1).c_str(), values[havoc_id]);
+          query = new_query;
+          break;
+        }
+      }
     }
+
+    if (fail) {
+      klee_message("  Packet %d not reconciled.", packet_id);
+    } else {
+      klee_message("  Packet %d reconciled.", packet_id);
+      const_cast<ExecutionState *>(&state)->addConstraint(query);
+      reconciled_packets++;
+    }
+    packet_id++;
   }
+
+  klee_message("Reconciled %d of %ld packets.", reconciled_packets,
+               havocs.size());
 
   if (!NoOutput) {
     std::vector<std::pair<std::string, std::vector<unsigned char>>> out;

@@ -8,5 +8,6 @@ ip-asn-lookup-trie.o
 nat-hash-table
 nat-hash-table.bc
 nat-hash-table.o
+make-rainbow-table
 
 klee-*

@@ -22,7 +22,7 @@
 #define NAT_IP "192.168.0.1"
 #define TABLE_SIZE 16 //(1 << 16)
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   struct in_addr src_ip;
   struct in_addr dst_ip;
   uint8_t proto;
@@ -69,10 +69,10 @@ void print_hash_stats() {
   printf("  Min Bucket: %ld\n", min_bucket);
 }
 
-int hash_key_equals(hash_key_t *a, hash_key_t *b) {
-  return (a->src_ip.s_addr == b->src_ip.s_addr) &
-         (a->dst_ip.s_addr == b->dst_ip.s_addr) & (a->proto == b->proto) &
-         (a->src_port == b->src_port) & (a->dst_port == b->dst_port);
+int hash_key_equals(hash_key_t a, hash_key_t b) {
+  return (a.src_ip.s_addr == b.src_ip.s_addr) &
+         (a.dst_ip.s_addr == b.dst_ip.s_addr) & (a.proto == b.proto) &
+         (a.src_port == b.src_port) & (a.dst_port == b.dst_port);
 }
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
@@ -117,59 +117,51 @@ int hash_key_equals(hash_key_t *a, hash_key_t *b) {
     c -= hash_function_rot(b, 24);                                             \
   }
 
-uint32_t hash_function(hash_key_t *key) {
-#ifdef __clang__
-  hash_key_t *input_expr = malloc(sizeof(*key));
-  klee_make_symbolic(input_expr, sizeof(*input_expr), "castan_hash_in");
-
-  uint32_t output_havoc;
-  klee_make_symbolic(&output_havoc, sizeof(output_havoc), "castan_hash_out");
-  if (klee_is_symbolic(output_havoc)) {
-    *input_expr = *key;
-    return output_havoc;
-  }
-#endif
-
+uint32_t hash_function(hash_key_t key) {
   // Based on Bob Jenkins' lookup3 algorithm.
   uint32_t a, b, c;
 
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
-  a += key->src_ip.s_addr;
-  b += key->dst_ip.s_addr;
-  c += ((uint32_t)key->src_port) << 16 | key->dst_port;
+  a += key.src_ip.s_addr;
+  b += key.dst_ip.s_addr;
+  c += ((uint32_t)key.src_port) << 16 | key.dst_port;
   hash_function_mix(a, b, c);
 
-  a += key->proto;
+  a += key.proto;
 
   hash_function_final(a, b, c);
   return c;
 }
 
-void hash_set(hash_key_t *key, hash_value_t *value) {
+void hash_set(hash_key_t key, hash_value_t value) {
   hash_entry_t *entry;
-  uint32_t hash = hash_function(key) % TABLE_SIZE;
+  uint32_t hash;
+  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
+  hash = hash % TABLE_SIZE;
 
   for (entry = hash_table[hash]; entry; entry = entry->next) {
-    if (hash_key_equals(&entry->key, key)) {
-      entry->value = *value;
+    if (hash_key_equals(entry->key, key)) {
+      entry->value = value;
       return;
     }
   }
 
   entry = malloc(sizeof(hash_entry_t));
-  entry->key = *key;
-  entry->value = *value;
+  entry->key = key;
+  entry->value = value;
   entry->next = hash_table[hash];
   hash_table[hash] = entry;
 }
 
-int hash_get(hash_key_t *key, hash_value_t *value) {
+int hash_get(hash_key_t key, hash_value_t *value) {
   hash_entry_t *entry;
-  uint32_t hash = hash_function(key) % TABLE_SIZE;
+  uint32_t hash;
+  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
+  hash = hash % TABLE_SIZE;
 
   for (entry = hash_table[hash]; entry; entry = entry->next) {
-    if (hash_key_equals(&entry->key, key)) {
+    if (hash_key_equals(entry->key, key)) {
       if (value) {
         *value = entry->value;
       }
@@ -247,7 +239,7 @@ void process_packet(int linktype, const unsigned char *packet,
   };
 
   hash_value_t translation;
-  if (!hash_get(&key, &translation)) {
+  if (!hash_get(key, &translation)) {
     // New connection. Set up state.
     struct in_addr nat_ip;
     inet_pton(AF_INET, NAT_IP, &nat_ip);
@@ -266,20 +258,20 @@ void process_packet(int linktype, const unsigned char *packet,
           .src_port = tcp->th_dport,
           .dst_port = tcp->th_sport,
       };
-      for (; hash_get(&out_key, NULL); out_key.dst_port++) {
+      for (; hash_get(out_key, NULL); out_key.dst_port++) {
       }
 
       // Save entry for future outgoing traffic.
       translation = key;
       translation.src_ip = nat_ip;
       translation.src_port = out_key.dst_port;
-      hash_set(&key, &translation);
+      hash_set(key, translation);
 
       // Save entry for returning traffic.
       hash_key_t out_translation = out_key;
       out_translation.dst_ip = ip->ip_src;
       out_translation.dst_port = tcp->th_sport;
-      hash_set(&out_key, &out_translation);
+      hash_set(out_key, out_translation);
     }
   }
 

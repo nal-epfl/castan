@@ -3,25 +3,25 @@
 #ifdef __clang__
 
 void castan_loop();
-void castan_notify_havoc(int64_t havoc);
-#define castan_havoc(var, expr)                                                \
+
+#define castan_havoc(input, output, expr)                                      \
   do {                                                                         \
-    typeof(var) havoc;                                                         \
-    klee_make_symbolic(&havoc, sizeof(havoc), "castan_havoc");                 \
-    if (klee_is_symbolic(havoc)) {                                             \
-      var = havoc;                                                             \
-    } else {                                                                   \
-      var = expr;                                                              \
-      castan_notify_havoc(var);                                                \
-    }                                                                          \
+    typeof(input) *input_expr = malloc(sizeof(input));                         \
+    klee_make_symbolic(input_expr, sizeof(input), "castan_havoc_in");    \
+    *input_expr = input;                                                       \
+                                                                               \
+    typeof(output) havoc;                                                      \
+    klee_make_symbolic(&havoc, sizeof(havoc), "castan_havoc_out");             \
+    output = havoc;                                                            \
   } while (0)
 
 #else
 
-#define castan_loop
-#define castan_havoc(var, expr)                                                \
+void castan_loop() {}
+
+#define castan_havoc(input, output, expr)                                      \
   do {                                                                         \
-    var = expr;                                                                \
+    output = expr;                                                             \
   } while (0)
 
 #endif

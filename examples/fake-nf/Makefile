@@ -4,7 +4,7 @@ LDFLAGS := -lpcap
 
 SHELL=/bin/bash -o pipefail
 
-default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
+default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) make-rainbow-table
 
 .SUFFIXES:
 .DELETE_ON_ERROR:
@@ -19,6 +19,12 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 
 %.bc: %.c
 	clang $(CFLAGS) -emit-llvm -c -o $@ $<
+
+make-rainbow-table: make-rainbow-table.c
+	gcc -Wall -O3 $< -o $@
+
+havoc.rt: make-rainbow-table
+	./make-rainbow-table 10000 | sort -s -k 1,1 > havoc.rt
 
 run-times: $(TARGETS)
 	for p in $^; do \
