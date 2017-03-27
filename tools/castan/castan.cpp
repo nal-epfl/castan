@@ -481,7 +481,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
       values.push_back(value);
 
       const_cast<ExecutionState *>(&state)->addConstraint(EqExpr::create(
-          klee::ConstantExpr::create(value, valueBytes.size() * 8),
+          klee::ConstantExpr::create(value, valueBytes[havoc_id].size() * 8),
           Expr::createTempRead(packet.second[havoc_id].second,
                                packet.second[havoc_id].second->size * 8)));
     }
