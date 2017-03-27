@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <netinet/udp.h>
 
 #include <pcap.h>
 
@@ -212,30 +213,62 @@ void process_packet(int linktype, const unsigned char *packet,
     return;
   }
 
-  // Extract TCP/UDP header (same for ports).
-  if (ip->ip_p != 0x06 && ip->ip_p != 0x11) {
+  if (ip->ip_hl < 5) {
+    assert(0);
+    return;
+  }
+
+  uint16_t sport = 0, dport = 0;
+
+  switch (ip->ip_p) {
+  case 0x06: // TCP
+    if (caplen < ip->ip_hl * 4 + sizeof(struct tcphdr)) {
+      assert(0);
+      return;
+    }
+    if (ip->ip_len < ip->ip_hl * 4 + sizeof(struct tcphdr)) {
+      assert(0);
+      return;
+    }
+    struct tcphdr *tcp = (struct tcphdr *)(packet + ip->ip_hl * 4);
+    if (tcp->doff < 5) {
+      assert(0);
+      return;
+    }
+    sport = tcp->th_sport;
+    dport = tcp->th_dport;
+    break;
+  case 0x11: // UDP
+    if (caplen < ip->ip_hl * 4 + sizeof(struct udphdr)) {
+      assert(0);
+      return;
+    }
+    if (ip->ip_len < ip->ip_hl * 4 + sizeof(struct udphdr)) {
+      assert(0);
+      return;
+    }
+    struct udphdr *udp = (struct udphdr *)(packet + ip->ip_hl * 4);
+    if (ntohs(udp->len) < 8) {
+      assert(0);
+      return;
+    }
+    sport = udp->source;
+    dport = udp->dest;
+    break;
+  default:
     //     fprintf(stderr, "Packet with unsupported transport protocol: %d\n",
     //             ip->ip_p);
     // Unkown protocol. Null-route.
     ip->ip_dst.s_addr = 0;
     return;
   }
-  if (ip->ip_hl < 5) {
-    assert(0);
-    return;
-  }
-  if (caplen < ip->ip_hl * 4 + sizeof(struct tcphdr)) {
-    assert(0);
-    return;
-  }
-  struct tcphdr *tcp = (struct tcphdr *)(packet + ip->ip_hl * 4);
 
   hash_key_t key = {
       .src_ip = ip->ip_src,
       .dst_ip = ip->ip_dst,
       .proto = ip->ip_p,
-      .src_port = tcp->th_sport,
-      .dst_port = tcp->th_dport,
+      .src_port = sport,
+      .dst_port = dport,
   };
 
   hash_value_t translation;
@@ -255,8 +288,8 @@ void process_packet(int linktype, const unsigned char *packet,
           .src_ip = ip->ip_dst,
           .dst_ip = nat_ip,
           .proto = ip->ip_p,
-          .src_port = tcp->th_dport,
-          .dst_port = tcp->th_sport,
+          .src_port = dport,
+          .dst_port = sport,
       };
       for (; hash_get(out_key, NULL); out_key.dst_port++) {
       }
@@ -270,7 +303,7 @@ void process_packet(int linktype, const unsigned char *packet,
       // Save entry for returning traffic.
       hash_key_t out_translation = out_key;
       out_translation.dst_ip = ip->ip_src;
-      out_translation.dst_port = tcp->th_sport;
+      out_translation.dst_port = sport;
       hash_set(out_key, out_translation);
     }
   }
@@ -295,8 +328,19 @@ void process_packet(int linktype, const unsigned char *packet,
   ip->ip_src = translation.src_ip;
   ip->ip_dst = translation.dst_ip;
   ip->ip_p = translation.proto;
-  tcp->th_sport = translation.src_port;
-  tcp->th_dport = translation.dst_port;
+
+  switch (ip->ip_p) {
+  case 0x06: { // TCP
+    struct tcphdr *tcp = (struct tcphdr *)(packet + ip->ip_hl * 4);
+    tcp->th_sport = translation.src_port;
+    tcp->th_dport = translation.dst_port;
+  } break;
+  case 0x11: { // UDP
+    struct udphdr *udp = (struct udphdr *)(packet + ip->ip_hl * 4);
+    udp->source = translation.src_port;
+    udp->dest = translation.dst_port;
+  } break;
+  }
 
   return;
 }
@@ -329,12 +373,15 @@ int main(int argc, char *argv[]) {
                 htons(ETHERTYPE_IP));
     klee_assume(((struct ip *)(packet + sizeof(struct ether_header)))->ip_v ==
                 4);
-    klee_assume(((struct ip *)(packet + sizeof(struct ether_header)))->ip_v ==
-                4);
     klee_assume(((struct ip *)(packet + sizeof(struct ether_header)))->ip_p ==
-                0x06);
+                0x11);
     klee_assume(((struct ip *)(packet + sizeof(struct ether_header)))->ip_hl ==
                 5);
+    klee_assume(((struct ip *)(packet + sizeof(struct ether_header)))->ip_len ==
+                htons(sizeof(struct ip) + sizeof(struct tcphdr)));
+    klee_assume(((struct udphdr *)(packet + sizeof(struct ether_header) +
+                                   sizeof(struct ip)))
+                    ->len == htons(8));
     //     inet_pton(AF_INET, "127.0.0.1",
     //               &((struct ip *)(packet + sizeof(struct
     //               ether_header)))->ip_dst);

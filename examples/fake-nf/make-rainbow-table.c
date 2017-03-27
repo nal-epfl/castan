@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
       ((char *)&key)[b] = rand();
     }
 
-    key.proto = 6;
+    key.proto = 0x11;
 
     generate_entry(&key);
 
