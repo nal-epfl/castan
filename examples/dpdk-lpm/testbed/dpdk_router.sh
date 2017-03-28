@@ -1,5 +1,5 @@
 sudo apt-get update
-sudo apt-get install -y tcpdump git wget build-essential libpcap-dev linux-headers-3.13.0-86 linux-headers-3.13.0-86-generic libglib2.0-dev daemon
+sudo apt-get install -y tcpdump git wget build-essential libpcap-dev linux-headers-3.13.0-112-generic libglib2.0-dev daemon
 
 wget http://dpdk.org/browse/dpdk/snapshot/dpdk-16.04.tar.gz -O dpdk.tar.gz
 tar xf dpdk.tar.gz
