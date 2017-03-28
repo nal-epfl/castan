@@ -279,7 +279,7 @@ void init_lpm(const char fname[], struct rte_lpm** lpm_out) {
                fname, count);
     }
 
-    result = fscanf(pfx2as_file, "%" PRIu8, &depth);
+    result = fscanf(pfx2as_file, "%hh" PRIu8, &depth);
     if (result != 1) {
       rte_exit(EXIT_FAILURE,
                "Error in prefix detpth in pfx2as file %s:%lu\n",
