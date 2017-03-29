@@ -6,7 +6,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo ""
     echo "==========="
-    echo "NAT works!"
+    echo "NF works!"
     echo "==========="
 else
     echo ""
