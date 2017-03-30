@@ -26,9 +26,11 @@ LDFLAGS += -lstdc++
 include $(RTE_SDK)/mk/rte.extapp.mk
 
 dpdk-lpm.bc: $(SRCS-y)
-	clang -g -emit-llvm -march=native \
+	clang -g -emit-llvm -mno-sse \
+	    -I../../../include/castan -I../../../include \
 	    -Ibuild/include -I$(RTE_SDK_BIN)/include \
 	    -include $(RTE_SDK_BIN)/include/rte_config.h -I. \
+	    -include ../../../include/castan/castan-dpdk.h \
 	    -Wno-deprecated-register \
 	    -o $@ -c $<
 
