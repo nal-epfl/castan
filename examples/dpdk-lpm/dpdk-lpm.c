@@ -386,6 +386,29 @@ uint32_t dispatch_packet(struct nf_config* config,
   return dst_dev;
 }
 
+// Code to measure CPU cycles taken
+typedef long long int ticks_t;
+
+static inline void start(unsigned int *cycles_low, unsigned int *cycles_high) {
+  asm volatile ("LFENCE\n\t"
+                "RDTSC\n\t"
+                "mov %%edx, %0\n\t"
+                "mov %%eax, %1\n\t": "=r" (*cycles_high), "=r" (*cycles_low)::
+                "%rax", "%rbx", "%rcx", "%rdx");
+}
+
+static inline ticks_t stop(unsigned int *start_cycles_low, unsigned int *start_cycles_high) {
+  unsigned end_cycles_low, end_cycles_high;
+  asm volatile("RDTSCP\n\t"
+               "mov %%edx, %0\n\t"
+               "mov %%eax, %1\n\t"
+               "LFENCE\n\t": "=r" (end_cycles_high), "=r" (end_cycles_low):: "%rax",
+               "%rbx", "%rcx", "%rdx");
+  ticks_t start_cycles = ((ticks_t) *start_cycles_high << 32) | *start_cycles_low;
+  ticks_t end_cycles = ((ticks_t) end_cycles_high << 32) | end_cycles_low;
+  return end_cycles - start_cycles;
+}
+
 void run(struct nf_config* config, struct rte_lpm* lpm) {
 
 	uint8_t nb_devices = rte_eth_dev_count();
@@ -396,8 +419,18 @@ void run(struct nf_config* config, struct rte_lpm* lpm) {
       uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
 
       if (actual_rx_len != 0) {
-        uint32_t dst_device = dispatch_packet(config, device,
-                                              lpm, mbuf[0]);
+				unsigned int cycles_low = 0;
+				unsigned int cycles_high = 0;
+        ticks_t total_cycles;
+
+        uint32_t dst_device;
+        for (int i = 0; i < 10; ++i) {
+          start(&cycles_low, &cycles_high);
+          dst_device = dispatch_packet(config, device,
+                                                lpm, mbuf[0]);
+          total_cycles = stop(&cycles_low, &cycles_high);
+          NF_DEBUG("dispatch took %lld cycles", total_cycles);
+        }
 
         if (dst_device == device) {
           rte_pktmbuf_free(mbuf[0]);

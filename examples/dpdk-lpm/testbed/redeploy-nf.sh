@@ -115,7 +115,7 @@ bind_nics_to_igb_uio()
 
 cd /nf
 
-rm build -r && make
+rm -rf build && make
 
 set_numa_pages
 load_igb_uio_module
