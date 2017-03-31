@@ -1,7 +1,7 @@
 ifeq ($(NOT_FIRST_CALL),)
 default: all
 else
-default: all dpdk-lpm.bc
+default: all nf.bc
 endif
 clean: clean-bc
 
@@ -25,7 +25,10 @@ LDFLAGS += -lstdc++
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 
-dpdk-lpm.bc: $(SRCS-y)
+$(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_lpm.a
+	llvm-link -o $@ $^
+
+%.bc: %.c
 	clang -g -emit-llvm -mno-sse \
 	    -I../../../include/castan -I../../../include \
 	    -Ibuild/include -I$(RTE_SDK_BIN)/include \
