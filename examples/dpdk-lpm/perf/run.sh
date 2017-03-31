@@ -21,7 +21,7 @@ if [ -z $RESULTS_FILE ]; then
 fi
 
 if [ -f "$RESULTS_FILE" ]; then
-    echo "[run] results file exists! exiting" 1>&2
+    echo "[run] The result file $RESULTS_FILE exists! exiting" 1>&2
     exit 4
 fi
 

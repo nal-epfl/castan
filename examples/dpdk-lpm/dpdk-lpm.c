@@ -17,7 +17,11 @@
 #include <rte_ip.h>
 
 #define NF_INFO(text, ...) printf(text "\n", ##__VA_ARGS__); fflush(stdout)
-#define NF_DEBUG(text, ...) printf(text "\n", ##__VA_ARGS__); fflush(stdout)
+#ifdef NDEBUG
+#  define NF_DEBUG(...)
+#else
+#  define NF_DEBUG(text, ...) printf(text "\n", ##__VA_ARGS__); fflush(stdout)
+#endif
 
 // Queue sizes for receiving/transmitting packets (set to their values from l3fwd sample)
 static const uint16_t RX_QUEUE_SIZE = 128;
