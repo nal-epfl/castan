@@ -7,7 +7,7 @@ mv dpdk-* dpdk
 rm dpdk.tar.gz
 
 cd dpdk
-sed -ri 's,(PMD_PCAP=).*,\1y,' config/common_linuxapp
+sed -ri 's,(PMD_PCAP=).*,\1y,' config/common_base
 make config T=x86_64-native-linuxapp-gcc
 make install -j2 T=x86_64-native-linuxapp-gcc DESTDIR=.
 
