@@ -34,7 +34,7 @@ function master(args)
 	txDev = device.config{port = args.txDev, rxQueues = 3, txQueues = 3}
 	rxDev = device.config{port = args.rxDev, rxQueues = 3, txQueues = 3}
 	device.waitForLinks()
-	local file = io.open("mf-find-mg-1p.txt", "w")
+	local file = io.open("mf-find-1p.txt", "w")
 	file:write("#flows rate #pkt #pkt/s loss\n")
 	local maxRate = args.rate
 	if maxRate <= 0 then
