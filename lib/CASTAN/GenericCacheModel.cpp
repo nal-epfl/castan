@@ -238,6 +238,8 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
     //     state.dumpStack(llvm::outs());
 
     address = state.constraints.simplifyExpr(address);
+    //     klee::klee_message("    Expr:");
+    //     address->dump();
 
     bool found = false;
     if (WorstCaseSymIndices) {
