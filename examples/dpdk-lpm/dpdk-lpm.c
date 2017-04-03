@@ -16,8 +16,13 @@
 #include <rte_lpm.h>
 #include <rte_ip.h>
 
+#ifdef __clang__
+#define NF_INFO(text, ...) do { } while(0);
+#define NF_DEBUG(text, ...) do { } while(0);
+#else
 #define NF_INFO(text, ...) printf(text "\n", ##__VA_ARGS__); fflush(stdout)
 #define NF_DEBUG(text, ...) printf(text "\n", ##__VA_ARGS__); fflush(stdout)
+#endif
 
 // Queue sizes for receiving/transmitting packets (set to their values from l3fwd sample)
 static const uint16_t RX_QUEUE_SIZE = 128;
