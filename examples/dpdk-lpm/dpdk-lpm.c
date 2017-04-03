@@ -153,25 +153,6 @@ static void configure(struct nf_config* config, int argc, char* argv[]) {
   argc -= ret;
   argv += ret;
 
-#ifdef __AFL_HAVE_MANUAL_CONTROL
-  __AFL_INIT();
-#endif
-
-  // Attach two devices. This is done here to skip the costly rte_eal_init
-  // function when fuzzing.
-  uint8_t pi;
-  if(rte_eth_dev_attach("eth_pcap0,rx_pcap=fuzz.pcap,tx_pcap=/dev/null", &pi) == 0) {
-    NF_INFO("Attached new device %d", pi);
-  } else {
-    rte_exit(EXIT_FAILURE, "Can't attach eth_pcap0\n");
-  }
-
-  if(rte_eth_dev_attach("eth_pcap1,rx_pcap=/vagrant/pcaps/1packets.pcap,tx_pcap=/dev/null", &pi) == 0) {
-    NF_INFO("Attached new device %d", pi);
-  } else {
-    rte_exit(EXIT_FAILURE, "Can't attach eth_pcap1\n");
-  }
-
   config_init(config, argc, argv);
   config_print(config);
 }
@@ -330,7 +311,7 @@ void init_lpm(const char fname[], struct rte_lpm** lpm_out) {
   fclose(pfx2as_file);
 }
 
-void initialize(struct nf_config* config, struct rte_lpm** lpm_out) {
+void initialize(struct nf_config* config, struct rte_lpm** lpm_out, struct rte_mempool** mbuf_pool_out) {
   uint32_t nb_devices = rte_eth_dev_count();
   struct rte_mempool* mbuf_pool =
     rte_pktmbuf_pool_create("MEMPOOL", // name
@@ -342,6 +323,7 @@ void initialize(struct nf_config* config, struct rte_lpm** lpm_out) {
   if (mbuf_pool == NULL) {
     rte_exit(EXIT_FAILURE, "Cannot create mbuf pool\n");
   }
+  *mbuf_pool_out = mbuf_pool;
 
   // Initialize all devices
   for (uint32_t device = 0; device < nb_devices; ++device) {
@@ -428,14 +410,42 @@ static inline ticks_t stop(unsigned int *start_cycles_low, unsigned int *start_c
   return end_cycles - start_cycles;
 }
 
-void run(struct nf_config* config, struct rte_lpm* lpm) {
+uint16_t fuzzer_rx(struct rte_mempool *mbuf_pool, struct rte_mbuf **bufs) {
+  const uint32_t PACKET_LEN = 128;
+  uint8_t packet[PACKET_LEN];
+  size_t read = fread(packet, sizeof packet[0], PACKET_LEN, stdin);
+  if (read == 0) {
+    return 0;
+  }
 
-  // We've simplified this a bit: simply read packets from the first interface
-  // as long as they are available. Process each, without transmitting. Then
-  // quit.
+  struct rte_mbuf *mbuf = rte_pktmbuf_alloc(mbuf_pool);
+  if (mbuf == NULL) {
+      rte_exit(EXIT_FAILURE, "Can't allocate mbuf?\n");
+  }
+
+  uint16_t buf_size = (uint16_t)(rte_pktmbuf_data_room_size(mbuf_pool) -
+      RTE_PKTMBUF_HEADROOM);
+  uint16_t effective_size = buf_size < read ? buf_size : read;
+  rte_memcpy(rte_pktmbuf_mtod(mbuf, void *), packet, effective_size);
+  mbuf->data_len = effective_size;
+  mbuf->pkt_len = effective_size;
+  bufs[0] = mbuf;
+  return 1;
+}
+
+void run(struct nf_config* config, struct rte_lpm* lpm, struct rte_mempool* mbuf_pool) {
+
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+  __AFL_INIT();
+#endif
+
+  // We've simplified this a bit: Ignore the interfaces. Read packets from
+  // stdin, as long as they are available. Process each, without transmitting.
+  // Then exit.
   while (1) {
     struct rte_mbuf* mbuf[1];
-    uint16_t actual_rx_len = rte_eth_rx_burst(0, 0, mbuf, 1);
+    //uint16_t actual_rx_len = rte_eth_rx_burst(0, 0, mbuf, 1);
+    uint16_t actual_rx_len = fuzzer_rx(mbuf_pool, mbuf);
 
     if (actual_rx_len == 0) {
       // No more packet; exit
@@ -450,8 +460,10 @@ void run(struct nf_config* config, struct rte_lpm* lpm) {
 int main(int argc, char* argv[]) {
   struct nf_config config;
   struct rte_lpm* lpm;
+  struct rte_mempool* mbuf_pool;
+
   configure(&config, argc, argv);
-  initialize(&config, &lpm);
-  run(&config, lpm);
+  initialize(&config, &lpm, &mbuf_pool);
+  run(&config, lpm, mbuf_pool);
   // No tear down, as the previous function is not supposed to ever return.
 }
