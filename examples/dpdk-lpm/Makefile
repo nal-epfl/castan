@@ -25,7 +25,7 @@ LDFLAGS += -lstdc++
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 
-$(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_lpm.a
+$(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_lpm.a $(RTE_SDK)/build-llvm/librte_eal.a
 	llvm-link -o $@ $^
 
 %.bc: %.c

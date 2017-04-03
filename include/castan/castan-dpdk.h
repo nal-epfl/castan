@@ -12,7 +12,21 @@ struct rte_mempool_ops_table rte_mempool_ops_table = {
 
 __thread unsigned int __attribute__((weak)) per_lcore__lcore_id = 0;
 
-int rte_eal_init(int argc, char **argv) { return 0; }
+int rte_eal_tailqs_init(void);
+int rte_eal_init(int argc, char **argv) {
+  if (rte_eal_tailqs_init() < 0)
+    rte_panic("Cannot init tail queues for objects\n");
+
+  return 0;
+}
+
+int __isoc99_fscanf(FILE *stream, const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  int result = vfprintf(stream, format, args);
+  va_end(args);
+  return result;
+}
 
 struct rte_config *rte_eal_get_configuration() {
   static struct rte_mem_config mem_config = {
@@ -26,6 +40,21 @@ struct rte_config *rte_eal_get_configuration() {
 void rte_exit(int exit_code, const char *format, ...) {
   assert(0);
   exit(exit_code);
+}
+
+void *rte_zmalloc(const char *type, size_t size, unsigned align) {
+  if (align == 0) {
+    align = 1;
+  }
+
+  void *ptr = calloc(size + align, 1);
+  ptr += ((unsigned long)ptr) % align;
+  return ptr;
+}
+
+void *rte_zmalloc_socket(const char *type, size_t size, unsigned align,
+                         int socket) {
+  return rte_zmalloc(type, size, align);
 }
 
 unsigned rte_socket_id() { return 0; }
@@ -69,6 +98,8 @@ int rte_eth_dev_configure(uint8_t port_id, uint16_t nb_rx_queue,
 }
 
 int rte_eth_dev_socket_id(uint8_t device) { return 0; }
+
+enum rte_proc_type_t rte_eal_process_type() { return RTE_PROC_PRIMARY; }
 
 int rte_eth_tx_queue_setup(uint8_t port_id, uint16_t tx_queue_id,
                            uint16_t nb_tx_desc, unsigned int socket_id,
