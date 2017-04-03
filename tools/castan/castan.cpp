@@ -1450,7 +1450,7 @@ int main(int argc, char **argv, char **envp) {
   }
   // Get the desired main function.  klee_main initializes uClibc
   // locale and other data and then calls main.
-  Function *mainFn = mainModule->getFunction("__user_main");
+  Function *mainFn = mainModule->getFunction(EntryPoint);
   if (!mainFn) {
     klee_error("'%s' function not found in module.", EntryPoint.c_str());
   }
