@@ -3,7 +3,20 @@
 #include <castan/emmintrin.h>
 #include <rte_eal_memconfig.h>
 #include <rte_ethdev.h>
+#include <rte_ip.h>
+#include <rte_mbuf.h>
 #include <rte_mempool.h>
+#include <rte_tcp.h>
+#include <rte_udp.h>
+
+struct packet {
+  struct ether_hdr ether;
+  struct ipv4_hdr ipv4;
+  union {
+    struct tcp_hdr tcp;
+    struct udp_hdr udp;
+  };
+};
 
 struct rte_eth_dev rte_eth_devices[RTE_MAX_ETHPORTS];
 
@@ -125,7 +138,44 @@ castan_rte_eth_rx_burst(uint8_t port_id, uint16_t queue_id,
   if (port_id == 0) {
     castan_loop();
 
-    return 0;
+    *rx_pkts = calloc(sizeof(struct rte_mbuf), 1);
+
+    (*rx_pkts)->buf_addr = malloc(sizeof(struct packet));
+    klee_make_symbolic((*rx_pkts)->buf_addr, sizeof(struct packet),
+                       "castan_packet");
+
+    (*rx_pkts)->buf_len = sizeof(struct packet);
+    (*rx_pkts)->nb_segs = 1;
+    (*rx_pkts)->port = 0;
+    (*rx_pkts)->packet_type = RTE_PTYPE_L2_ETHER;
+    (*rx_pkts)->pkt_len = sizeof(struct packet);
+    (*rx_pkts)->data_len = sizeof(struct packet);
+
+    klee_assume(((struct packet *)(*rx_pkts)->buf_addr)->ether.ether_type ==
+                htons(ETHER_TYPE_IPv4));
+    klee_assume(((struct packet *)(*rx_pkts)->buf_addr)->ipv4.version_ihl ==
+                (4 << 4 | 5));
+    klee_assume(((struct packet *)(*rx_pkts)->buf_addr)->ipv4.total_length ==
+                htons(sizeof(struct ipv4_hdr) + sizeof(struct udp_hdr)));
+    klee_assume(((struct packet *)(*rx_pkts)->buf_addr)->ipv4.next_proto_id ==
+                IPPROTO_UDP);
+    klee_assume(((struct packet *)(*rx_pkts)->buf_addr)->udp.dgram_len ==
+                htons(8));
+
+    if (ntohs(((struct packet *)(*rx_pkts)->buf_addr)->ether.ether_type) ==
+        ETHER_TYPE_IPv4) {
+      (*rx_pkts)->packet_type |= RTE_PTYPE_L3_IPV4;
+    }
+    switch (((struct packet *)(*rx_pkts)->buf_addr)->ipv4.next_proto_id) {
+    case IPPROTO_UDP:
+      (*rx_pkts)->packet_type |= RTE_PTYPE_L4_UDP;
+      break;
+    case IPPROTO_TCP:
+      (*rx_pkts)->packet_type |= RTE_PTYPE_L4_TCP;
+      break;
+    }
+
+    return 1;
   } else {
     return 0;
   }
