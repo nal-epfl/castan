@@ -460,6 +460,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
     klee_message("Reconciciling packet %d with %ld havocs.", packet_id,
                  packet.second.size());
     if (packet.second.size() == 0) {
+      packet_id++;
       reconciled_packets++;
       continue;
     }
