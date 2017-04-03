@@ -6,6 +6,8 @@
 #include "klee/Internal/Support/ErrorHandling.h"
 #include <klee/Internal/Module/InstructionInfoTable.h>
 #include <klee/Internal/Module/KInstruction.h>
+#include <llvm/DebugInfo.h>
+#include <llvm/IR/Instruction.h>
 
 #define BLOCK_BITS 6
 
@@ -226,7 +228,15 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
   //                        state.pc->info->file.c_str(), state.pc->info->line);
 
   if (!isa<klee::ConstantExpr>(address)) {
-    //     klee::klee_message("  Symbolic pointer.");
+    if (llvm::MDNode *node = state.pc->inst->getMetadata("dbg")) {
+      llvm::DILocation loc(node);
+      klee::klee_message("  Symbolic pointer at %s:%d",
+                         loc.getFilename().str().c_str(), loc.getLineNumber());
+    } else {
+      klee::klee_message("  Symbolic pointer.");
+    }
+    //     state.dumpStack(llvm::outs());
+
     address = state.constraints.simplifyExpr(address);
 
     bool found = false;

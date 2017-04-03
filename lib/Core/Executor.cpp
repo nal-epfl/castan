@@ -1526,6 +1526,8 @@ static inline const llvm::fltSemantics * fpWidthToSemantics(unsigned width) {
 
 void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
 //   klee_message("Executing %s:%d for state %p", ki->info->file.c_str(), ki->info->line, (void *) &state);
+//   state.dumpStack(llvm::outs());
+
   if (state.cacheModel) {
     state.cacheModel->exec(state);
   }
