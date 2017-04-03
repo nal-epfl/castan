@@ -153,6 +153,25 @@ static void configure(struct nf_config* config, int argc, char* argv[]) {
   argc -= ret;
   argv += ret;
 
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+  __AFL_INIT();
+#endif
+
+  // Attach two devices. This is done here to skip the costly rte_eal_init
+  // function when fuzzing.
+  uint8_t pi;
+  if(rte_eth_dev_attach("eth_pcap0,rx_pcap=fuzz.pcap,tx_pcap=/dev/null", &pi) == 0) {
+    NF_INFO("Attached new device %d", pi);
+  } else {
+    rte_exit(EXIT_FAILURE, "Can't attach eth_pcap0\n");
+  }
+
+  if(rte_eth_dev_attach("eth_pcap1,rx_pcap=/vagrant/pcaps/1packets.pcap,tx_pcap=/dev/null", &pi) == 0) {
+    NF_INFO("Attached new device %d", pi);
+  } else {
+    rte_exit(EXIT_FAILURE, "Can't attach eth_pcap1\n");
+  }
+
   config_init(config, argc, argv);
   config_print(config);
 }
@@ -411,38 +430,20 @@ static inline ticks_t stop(unsigned int *start_cycles_low, unsigned int *start_c
 
 void run(struct nf_config* config, struct rte_lpm* lpm) {
 
-	uint8_t nb_devices = rte_eth_dev_count();
-
+  // We've simplified this a bit: simply read packets from the first interface
+  // as long as they are available. Process each, without transmitting. Then
+  // quit.
   while (1) {
-    for (uint32_t device = 0; device < nb_devices; ++device) {
-      struct rte_mbuf* mbuf[1];
-      uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
+    struct rte_mbuf* mbuf[1];
+    uint16_t actual_rx_len = rte_eth_rx_burst(0, 0, mbuf, 1);
 
-      if (actual_rx_len != 0) {
-				unsigned int cycles_low = 0;
-				unsigned int cycles_high = 0;
-        ticks_t total_cycles;
-
-        uint32_t dst_device;
-        for (int i = 0; i < 10; ++i) {
-          start(&cycles_low, &cycles_high);
-          dst_device = dispatch_packet(config, device,
-                                                lpm, mbuf[0]);
-          total_cycles = stop(&cycles_low, &cycles_high);
-          NF_DEBUG("dispatch took %lld cycles", total_cycles);
-        }
-
-        if (dst_device == device) {
-          rte_pktmbuf_free(mbuf[0]);
-        } else {
-          uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, mbuf, 1);
-
-          if (actual_tx_len < 1) {
-            rte_pktmbuf_free(mbuf[0]);
-          }
-        }
-      }
+    if (actual_rx_len == 0) {
+      // No more packet; exit
+      rte_exit(EXIT_SUCCESS, "Bye...\n");
     }
+
+    dispatch_packet(config, 0, lpm, mbuf[0]);
+    rte_pktmbuf_free(mbuf[0]);
   }
 }
 
