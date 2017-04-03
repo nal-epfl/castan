@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <castan/castan.h>
 #include <castan/emmintrin.h>
 #include <rte_eal_memconfig.h>
@@ -31,7 +32,20 @@ unsigned rte_socket_id() { return 0; }
 
 uint8_t rte_eth_dev_count() { return 2; }
 
-void rte_eth_macaddr_get(uint8_t port_id, struct ether_addr *mac_addr) {}
+void rte_eth_macaddr_get(uint8_t port_id, struct ether_addr *mac_addr) {
+  static struct ether_addr addrs[] = {
+      {
+          0x08, 0x00, 0x27, 0x00, 0x44, 0x71,
+      },
+      {
+          0x08, 0x00, 0x27, 0x00, 0x44, 0x72,
+      },
+  };
+
+  if (port_id < sizeof(addrs) / sizeof(addrs[0])) {
+    *mac_addr = addrs[port_id];
+  }
+}
 
 __thread int __attribute__((weak)) per_lcore__rte_errno = 0;
 

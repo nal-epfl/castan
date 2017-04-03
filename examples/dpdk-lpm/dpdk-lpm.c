@@ -83,6 +83,18 @@ void config_init(struct nf_config* config, int argc, char** argv) {
     rte_eth_macaddr_get(device, &(config->device_macs[device]));
   }
 
+#ifdef __clang__
+  static struct ether_addr endpoint_macs[] = {
+    {0x08, 0x00, 0x27, 0x53, 0x8b, 0x38},
+    {0x08, 0x00, 0x27, 0xc1, 0x13, 0x47},
+  };
+  config->endpoint_macs[0] = endpoint_macs[0];
+  config->endpoint_macs[1] = endpoint_macs[1];
+  strncpy(config->route_table_fname, "testbed/routing-table.pfx2as",
+          MAX_ROUTE_TABLE_FNAME_LEN);
+  return;
+#endif
+
   int opt;
   while ((opt = getopt_long(argc, argv, "d:r", long_options, NULL)) != EOF) {
     unsigned device;
