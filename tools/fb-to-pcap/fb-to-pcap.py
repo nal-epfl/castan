@@ -63,8 +63,8 @@ def convert_file(input_file, output_file):
             else:
                 continue
 
-            pkt.time = line[0]
-            pkt = pkt/Raw(RandString(size=int(line[1])))
+            pkt.time = int(line[0])
+            pkt.len = int(line[1])
 
             pktdump.write(pkt)
 
