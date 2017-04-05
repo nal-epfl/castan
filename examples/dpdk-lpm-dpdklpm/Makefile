@@ -14,7 +14,7 @@ APP = nf
 CC = g++
 
 # sources
-SRCS-y := dpdk-lpm.c
+SRCS-y := dpdk-lpm-dpdklpm.c
 
 # g++ flags
 CFLAGS += -O3
