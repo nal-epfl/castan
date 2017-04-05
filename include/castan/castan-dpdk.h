@@ -63,8 +63,7 @@ void __attribute__((weak)) *
   }
 
   void *ptr = calloc(size + align, 1);
-  ptr += ((unsigned long)ptr) % align;
-  return ptr;
+  return ((char *) ptr) + ((unsigned long)ptr) % align;
 }
 
 void __attribute__((weak)) * rte_zmalloc_socket(const char *type, size_t size,
@@ -98,7 +97,7 @@ struct rte_mempool __attribute__((weak)) *
     rte_pktmbuf_pool_create(const char *name, unsigned n, unsigned cache_size,
                             uint16_t priv_size, uint16_t data_room_size,
                             int socket_id) {
-  struct rte_mempool *mp = calloc(sizeof(struct rte_mempool), 1);
+  struct rte_mempool *mp = (struct rte_mempool *) calloc(sizeof(struct rte_mempool), 1);
 
   strncpy(mp->name, name, RTE_MEMPOOL_NAMESIZE);
   mp->cache_size = cache_size;
@@ -147,7 +146,7 @@ castan_rte_eth_rx_burst(uint8_t port_id, uint16_t queue_id,
   if (port_id == 0) {
     castan_loop();
 
-    *rx_pkts = calloc(sizeof(struct rte_mbuf), 1);
+    *rx_pkts = (struct rte_mbuf *) calloc(sizeof(struct rte_mbuf), 1);
 
     (*rx_pkts)->buf_addr = malloc(sizeof(struct packet));
     klee_make_symbolic((*rx_pkts)->buf_addr, sizeof(struct packet),
