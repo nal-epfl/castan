@@ -42,4 +42,4 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
 	    -o $@ -c $<
 # 
 clean-bc:
-	@rm -f dpdk-lpm-btrie.bc
+	@rm -f *.bc
