@@ -1,8 +1,8 @@
 #ifndef _EXPIRATOR_H_INCLUDED_
 #define _EXPIRATOR_H_INCLUDED_
 
-#include "containers/double-chain.h"
-#include "containers/double-map.h"
+#include "double-chain.h"
+#include "double-map.h"
 #include "coherence.h"
 
 /**

@@ -3,9 +3,9 @@
 #include <stdlib.h>
 
 #include "flowtable.h"
-#include "lib/containers/double-chain.h"
+#include "double-chain.h"
 #include "flowmanager.h"
-#include "lib/expirator.h"
+#include "expirator.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/rte_stubs.h" //<- for RTE_MAX_ETHPORTS

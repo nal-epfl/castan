@@ -18,10 +18,10 @@
 #  include "rte_errno.h"
 #endif//KLEE_VERIFICATION
 
-#include "lib/nf_forward.h"
-#include "lib/nf_log.h"
-#include "lib/nf_time.h"
-#include "lib/nf_util.h"
+#include "nf_forward.h"
+#include "nf_log.h"
+#include "nf_time.h"
+#include "nf_util.h"
 #include <string.h>
 
 

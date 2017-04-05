@@ -1,10 +1,10 @@
 #include <stdio.h>
 
-#include "lib/static-component-params.h"
+#include "static-component-params.h"
 
 #include "flow.h"
 
-#include "lib/nf_log.h"
+#include "nf_log.h"
 
 inline void log_ip(uint32_t addr) {
 #if !ENABLE_LOG

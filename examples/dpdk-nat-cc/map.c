@@ -2,7 +2,7 @@
 #include <string.h>
 
 #include "map.h"
-#include "lib/ignore.h"
+#include "ignore.h"
 
 //@ #include <list.gh>
 //@ #include <listex.gh>

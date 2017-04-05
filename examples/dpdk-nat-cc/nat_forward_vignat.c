@@ -16,13 +16,13 @@
 #  include <rte_mbuf.h>
 #endif
 
-#include "lib/flow.h"
+#include "flow.h"
 #include "flowmanager.h"
 
-#include "lib/nat_config.h"
-#include "lib/nf_forward.h"
-#include "lib/nf_log.h"
-#include "lib/nf_util.h"
+#include "nat_config.h"
+#include "nf_forward.h"
+#include "nf_log.h"
+#include "nf_util.h"
 
 struct nat_config config;
 

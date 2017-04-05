@@ -1,7 +1,7 @@
 #ifndef _FLOWMANAGER_H_INCLUDED_
 #define _FLOWMANAGER_H_INCLUDED_
 
-#include "lib/flow.h"
+#include "flow.h"
 
 int allocate_flowmanager(uint8_t nb_ports,
                          uint16_t starting_port, uint32_t ext_src_ip,

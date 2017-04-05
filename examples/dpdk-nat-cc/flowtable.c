@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "lib/containers/double-map.h"
+#include "double-map.h"
 #include "flowtable.h"
 
-#include "lib/nf_log.h"
+#include "nf_log.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/containers/double-map-stub-control.h"
