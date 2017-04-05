@@ -256,10 +256,13 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
         }
       }
       // Sort lines by how much damage a miss would cause.
-      // [-cycles] -> line.
-      std::map<long, uint32_t> lineCosts;
+      // Randomize among equal candidates.
+      srand(time(NULL));
+      // [<-cycles, rand>] -> line.
+      std::map<std::pair<long, int>, uint32_t> lineCosts;
       for (uint32_t line = 0; line < maxLines; line++) {
-        lineCosts[-getMissCost(line << BLOCK_BITS, isWrite, 0)] = line;
+        lineCosts[std::make_pair(-getMissCost(line << BLOCK_BITS, isWrite, 0),
+                                 rand())] = line;
       }
 
       //       klee::klee_message("%s symbolic pointer. Checking %d cache lines
