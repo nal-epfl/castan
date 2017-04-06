@@ -8,17 +8,9 @@ local stats  = require "stats"
 local timer  = require "timer"
 local log    = require "log"
 
--- set addresses here
-local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE	= "192.168.6.5" -- actual address will be SRC_IP_BASE + random(0, flows)
-local DST_IP		= "192.168.4.10"
-local SRC_PORT		= 1
-local DST_PORT		= 319
-local START_PROBE_PORT	= 64000
-local N_PROBE_FLOWS	= 1000
-
 function configure(parser)
-	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
+	parser:description("Measures latency of every packet "..
+                           "in the provided pcap file.")
 	parser:argument("txDev", "Device to transmit from."):convert(tonumber)
 	parser:argument("rxDev", "Device to receive from."):convert(tonumber)
   parser:argument("file", "File to replay."):args(1)
@@ -70,7 +62,7 @@ function timerSlave(txQueue, rxQueue, duration, fname)
 	local bufs = mempool:bufArray()
 	local finished = timer:new(duration)
 	local hist = hist:new()
-  local pcapFile = pcap:newReader(file)
+  local pcapFile = pcap:newReader(fname)
   local rxBufs = mempool:bufArray(1)
 	while finished:running() and mg.running() do
     local buf = pcapFile:readSingle(bufs)

@@ -10,8 +10,8 @@ local log    = require "log"
 local pcap   = require "pcap"
 
 function configure(parser)
-	parser:description("Generates UDP traffic based on a pcap file.
-    Searches for the maximum rate that still passes through with <1% loss.")
+	parser:description("Generates UDP traffic based on a pcap file."..
+    "Searches for the maximum rate that still passes through with <1% loss.")
 	parser:argument("txDev", "Device to transmit from."):convert(tonumber)
 	parser:argument("rxDev", "Device to receive from."):convert(tonumber)
   parser:argument("file", "File to replay."):args(1)
@@ -88,7 +88,7 @@ function loadSlave(queue, rxDev, duration, fname)
 	local fileRxCtr = stats:newDevRxCounter("rxpkts", rxDev, "CSV", "rxpkts.csv")
 	local txCtr = stats:newDevTxCounter(" tx", queue, "nil")
 	local rxCtr = stats:newDevRxCounter(" rx", rxDev, "nil")
-  local pcapFile = pcap:newReader(file)
+  local pcapFile = pcap:newReader(fname)
 	while finished:running() and mg.running() do
     local n = pcapFile:read(bufs)
     if (n == 0) then
