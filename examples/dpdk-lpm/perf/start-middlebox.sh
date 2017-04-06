@@ -18,5 +18,8 @@ if [ -f "$LOG_FILE" ]; then
     rm "$LOG_FILE"
 fi
 
-(bash ./bench/run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as") &
+(bash ./run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as" \
+  0<&- &>"$LOG_FILE" ) &
+
 sleep 10
+

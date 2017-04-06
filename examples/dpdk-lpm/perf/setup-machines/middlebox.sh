@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "[init] Initializing middlebox..."
+echo "[init] Setting up middlebox..."
 
 sudo apt-get -qq update
 
@@ -9,4 +9,4 @@ sudo apt-get install -yqq \
     linux-headers-3.13.0-93 \
     libglib2.0-dev daemon iperf3 netperf tmux
 
-. ./init-machines/install-dpdk.sh
+. ./setup-machines/install-dpdk.sh

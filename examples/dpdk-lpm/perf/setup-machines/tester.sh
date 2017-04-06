@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "[init] Initializing tester..."
+echo "[init] Setting up tester..."
 
 sudo apt-get -qq update
 
@@ -11,6 +11,6 @@ sudo apt-get install -yqq \
     make binutils gcc \
     bc cmake
 
-. ~/scripts/init-machines/install-dpdk.sh
+. ~/scripts/setup-machines/install-dpdk.sh
 
-. ~/scripts/init-machines/install-moongen.sh
+. ~/scripts/setup-machines/install-moongen.sh

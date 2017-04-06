@@ -10,7 +10,7 @@ CC = g++
 SRCS-y := dpdk-lpm.c
 
 # g++ flags
-CFLAGS += -O3
+CFLAGS += -O3 -DNDEBUG
 CFLAGS += -I..
 CFLAGS += -std=gnu++11
 

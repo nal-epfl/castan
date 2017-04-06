@@ -8,8 +8,8 @@
 #           middlebox starts loosing 1% of packets.
 #     "latency": Measure the forwarding latency.
 
-$MIDDLEBOX = $1
-$SCENARIO = $2
+MIDDLEBOX=$1
+SCENARIO=$2
 
 if [ -z $MIDDLEBOX ]; then
     echo "[bench] No app specified" 1>&2
@@ -36,7 +36,7 @@ fi
 
 . ./start-middlebox.sh $MIDDLEBOX
 
-. ./run.sh $MIDDLEBOX $SCENARIO $RESULT_FILE
+. ./run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE
 
 . ./stop-middlebox.sh
 

@@ -21,7 +21,7 @@ if [ -z $RESULTS_FILE ]; then
 fi
 
 if [ -f "$RESULTS_FILE" ]; then
-    echo "[run] results file exists! exiting" 1>&2
+    echo "[run] The result file $RESULTS_FILE exists! exiting" 1>&2
     exit 4
 fi
 
@@ -32,7 +32,7 @@ case $SCENARIO in
         echo "[bench] Benchmarking throughput..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 3000 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mg-find-mg-1p.txt "./$RESULTS_FILE"
-        ssh $TESTER_HOST "sudo rm mg-find-mg-1p.txt"
+        ssh $TESTER_HOST "sudo rm mf-find-1p.txt"
         ;;
     "latency")
         LUA_SCRIPT="l3-latency-light.lua"

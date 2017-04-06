@@ -10,8 +10,8 @@ local log    = require "log"
 
 -- set addresses here
 local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE	= "192.168.6.5" -- actual address will be SRC_IP_BASE + random(0, flows)
-local DST_IP		= "192.168.4.10"
+local SRC_IP_BASE	= "192.168.34.5" -- actual address will be SRC_IP_BASE + random(0, flows)
+local DST_IP		= "192.168.41.10"
 local SRC_PORT		= 234
 local DST_PORT		= 319
 
@@ -34,7 +34,7 @@ function master(args)
 	txDev = device.config{port = args.txDev, rxQueues = 3, txQueues = 3}
 	rxDev = device.config{port = args.rxDev, rxQueues = 3, txQueues = 3}
 	device.waitForLinks()
-	local file = io.open("mf-find-mg-1p.txt", "w")
+	local file = io.open("mf-find-1p.txt", "w")
 	file:write("#flows rate #pkt #pkt/s loss\n")
 	local maxRate = args.rate
 	if maxRate <= 0 then
