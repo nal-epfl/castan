@@ -215,6 +215,18 @@ main(int argc, char* argv[])
   argc -= ret;
   argv += ret;
 
+#ifdef __clang__
+  argc = 13;
+  argv = (char *[]) { "nf",
+    "--devs-mask", "0x3",
+    "--wan", "1",
+    "--lan-dev", "0",
+    "--expire", "10",
+    "--starting-port", "0",
+    "--max-flows", "65536",
+  };
+#endif
+
   nf_config_init(argc, argv);
   nf_print_config();
 

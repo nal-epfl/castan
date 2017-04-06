@@ -25,7 +25,7 @@ SRCS-y := nat_forward_vignat.c nf_main.c nat_config.c \
 # gcc flags
 CFLAGS += -O3
 #CFLAGS += -O0 -g -rdynamic -DENABLE_LOG -Wfatal-errors
-CFLAGS += -I..
+CFLAGS += -I.. -I../../../include
 CFLAGS += -std=gnu99
 
 # disable warnings triggered by DPDK
