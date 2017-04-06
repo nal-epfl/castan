@@ -11,7 +11,7 @@ local pcap   = require "pcap"
 
 function configure(parser)
 	parser:description("Generates UDP traffic based on a pcap file."..
-    "Searches for the maximum rate that still passes through with <1% loss.")
+     "Searches for the maximum rate that still passes through with <1% loss.")
 	parser:argument("txDev", "Device to transmit from."):convert(tonumber)
 	parser:argument("rxDev", "Device to receive from."):convert(tonumber)
   parser:argument("file", "File to replay."):args(1)
@@ -30,7 +30,7 @@ function master(args)
 	txDev = device.config{port = args.txDev, rxQueues = 3, txQueues = 3}
 	rxDev = device.config{port = args.rxDev, rxQueues = 3, txQueues = 3}
 	device.waitForLinks()
-	local file = io.open("pcap-find-1p.txt", "w")
+	local file = io.open("pcap-find-1p-results.txt", "w")
 	file:write("rate #pkt #pkt/s loss\n")
 	local maxRate = args.rate
 	if maxRate <= 0 then
@@ -94,7 +94,7 @@ function loadSlave(queue, rxDev, duration, fname)
     if (n == 0) then
       pcapFile:reset()
     end
-		bufs:offloadUdpChecksums()
+	--	bufs:offloadUdpChecksums()
     queue:sendN(bufs, n)
 		txCtr:update()
 		fileTxCtr:update()
@@ -105,5 +105,6 @@ function loadSlave(queue, rxDev, duration, fname)
 	fileTxCtr:finalize()
 	rxCtr:finalize()
 	fileRxCtr:finalize()
+	pcapFile:close()
 	return txCtr.total, rxCtr.total
 end
