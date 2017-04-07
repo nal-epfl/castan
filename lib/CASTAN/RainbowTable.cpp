@@ -44,12 +44,15 @@ RainbowTable::RainbowTable(std::string filename, uint64_t value)
 }
 
 std::vector<uint8_t> RainbowTable::getValue() {
-  if (!file.good()) {
-    return std::vector<uint8_t>();
-  }
-
   std::string line;
-  std::getline(file, line);
+  do {
+    if (!file.good()) {
+      return std::vector<uint8_t>();
+    }
+
+    std::getline(file, line);
+  } while (line.empty());
+
   assert(line.length() + 1 == lineLength &&
          "Rainbow table has inconsistent records.");
 
