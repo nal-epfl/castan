@@ -27,6 +27,8 @@ __thread unsigned int __attribute__((weak)) per_lcore__lcore_id = 0;
 
 int rte_eal_tailqs_init(void);
 int __attribute__((weak)) rte_eal_init(int argc, char **argv) {
+  klee_alias_function("rte_memzone_reserve", "castan_rte_memzone_reserve");
+
   if (rte_eal_tailqs_init() < 0)
     rte_panic("Cannot init tail queues for objects\n");
 
@@ -72,6 +74,19 @@ void __attribute__((weak)) * rte_zmalloc_socket(const char *type, size_t size,
 }
 
 unsigned __attribute__((weak)) rte_socket_id() { return 0; }
+
+int rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) { return 0; }
+
+struct rte_memzone *castan_rte_memzone_reserve(const char *name, size_t len,
+                                        int socket_id, unsigned flags) {
+  struct rte_memzone *mz = calloc(sizeof(struct rte_memzone), 1);
+  strncpy(mz->name, name, RTE_MEMZONE_NAMESIZE);
+  mz->len = len;
+  mz->flags = flags;
+  mz->addr = malloc(len);
+  mz->addr_64 = (uint64_t) mz->addr;
+  return mz;
+}
 
 uint8_t __attribute__((weak)) rte_eth_dev_count() { return 2; }
 
