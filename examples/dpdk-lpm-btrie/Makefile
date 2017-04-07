@@ -1,7 +1,11 @@
 ifeq ($(NOT_FIRST_CALL),)
 default: all
 else
+ifeq ($(shell which clang),)
+default: all
+else
 default: all nf.bc
+endif
 endif
 clean: clean-bc
 
@@ -14,7 +18,7 @@ APP = nf
 CC = g++
 
 # sources
-SRCS-y := dpdk-lpm.c
+SRCS-y := dpdk-lpm-btrie.c
 
 # g++ flags
 CFLAGS += -O3
@@ -25,8 +29,8 @@ LDFLAGS += -lstdc++
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 
-$(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_lpm.a $(RTE_SDK)/build-llvm/librte_eal.a
-	llvm-link -o $@ $^
+$(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
+	llvm-link -o $@ $^; \
 
 %.bc: %.c
 	clang -g -emit-llvm -mno-sse \
@@ -36,6 +40,6 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_lpm.a $(RTE_SDK)/build-
 	    -include ../../../include/castan/castan-dpdk.h \
 	    -Wno-deprecated-register \
 	    -o $@ -c $<
-
+# 
 clean-bc:
-	@rm -f dpdk-lpm.bc
+	@rm -f *.bc
