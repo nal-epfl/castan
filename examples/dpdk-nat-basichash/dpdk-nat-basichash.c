@@ -254,7 +254,6 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
   return 0;
 }
 
-#define NAT_IP "192.168.0.1"
 #define TABLE_SIZE 16 //(1 << 16)
 
 typedef struct __attribute__((packed)) {
