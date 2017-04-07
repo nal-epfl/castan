@@ -41,11 +41,19 @@ class IPTable():
                 self._rack_table[pod_string][rack_string] = self._cur_rack[pod_string]
                 self._cur_rack[pod_string] += 1
             rack = self._rack_table[pod_string][rack_string]
-                
+
+            if rack >= 255 or pod >= 255:
+                print "unexpectedly many pods(%d)/racks(%d) for rs: %s, ps: %s" % (pod, rack, rack_string, pod_string)
+                if "overflow" in pod_string:
+                    print "overflow also full"
+                    return self.lookup(ip_string, rack_string, pod_string + "1")
+
+
+                return selflookup(ip_string, rack_string, "overflow")
+
             self._ip_table[ip_string] = "10.%d.%d.%d" % (pod, rack, cur_ip)
             self._cur_ip[rp] = cur_ip + 1
 
-        print self._rack_table
         return self._ip_table[ip_string]
 
 
