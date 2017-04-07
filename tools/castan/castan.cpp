@@ -217,7 +217,8 @@ cl::opt<bool>
 
 cl::opt<std::string>
     RainbowTableFile("rainbow-table",
-                     cl::desc("Rainbow table file to use to reverse havocs."));
+                     cl::desc("Rainbow table file to use to reverse havocs."),
+                     cl::init("/dev/null"));
 }
 
 extern cl::opt<double> MaxTime;
@@ -476,8 +477,8 @@ void KleeHandler::processTestCase(const ExecutionState &state,
     std::vector<uint64_t> values;
     for (unsigned havoc_id = 0; havoc_id < objects.size(); havoc_id++) {
       uint64_t value = 0;
-      for (auto b : valueBytes[havoc_id]) {
-        value = (value << 8) | b;
+      for (int b = valueBytes[havoc_id].size() - 1; b >= 0; b--) {
+        value = (value << 8) | valueBytes[havoc_id][b];
       }
       values.push_back(value);
 
