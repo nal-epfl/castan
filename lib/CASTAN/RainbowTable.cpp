@@ -28,7 +28,7 @@ RainbowTable::RainbowTable(std::string filename, uint64_t value)
     file.seekg(midRecord);
 
     uint64_t lineValue;
-    file >> lineValue;
+    file >> std::hex >> lineValue;
 
     if (lineValue < value) {
       if (minRecord == midRecord) {
