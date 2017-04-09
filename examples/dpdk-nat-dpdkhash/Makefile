@@ -47,7 +47,7 @@ make-rainbow-table: make-rainbow-table.c
 	gcc -Wall -O3 -I$(RTE_SDK_BIN)/include $< -o $@
 
 havoc.rt: make-rainbow-table
-	./make-rainbow-table 100000 | sort -s -k 1,1 > havoc.rt
+	./make-rainbow-table 1000000 | sort -s -k 1,1 > havoc.rt
 
 clean-bc:
 	@rm -f *.bc
