@@ -95,16 +95,17 @@
 
 */
 
-#ifdef NOT_RUBY
+#if 1
+// #ifdef NOT_RUBY
 //#include "regint.h"
-#include "config.h"
+// #include "config.h"
 #include "st.h"
 #else
 #include "internal.h"
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_STDLIB_H
+#if 1//def HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
 #include <string.h>
@@ -125,6 +126,8 @@
 #else
 #define st_assert(cond) ((void)(0 && (cond)))
 #endif
+
+#define MEMCPY(a, b, c, d) memcpy(a, b, d * sizeof(c))
 
 /* The type of hashes.  */
 typedef st_index_t st_hash_t;
@@ -333,7 +336,7 @@ get_power2(st_index_t size)
         size >>= 1;
     if (n <= MAX_POWER2)
         return n < MINIMAL_POWER2 ? MINIMAL_POWER2 : n;
-#ifndef NOT_RUBY
+#if 0//ndef NOT_RUBY
     /* Ran out of the table entries */
     rb_raise(rb_eRuntimeError, "st_table too big");
 #endif
@@ -1462,7 +1465,7 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	key = curr_entry_ptr->key;
 	rebuilds_num = tab->rebuilds_num;
 	hash = curr_entry_ptr->hash;
-	retval = static_cast<st_retval>( (*func)(key, curr_entry_ptr->record, arg, 0) );
+	retval = (enum st_retval)( (*func)(key, curr_entry_ptr->record, arg, 0) );
 	if (rebuilds_num != tab->rebuilds_num) {
 	    entries = tab->entries;
 	    packed_p = tab->bins == NULL;
@@ -1476,7 +1479,7 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	    }
 	    if (error_p && check_p) {
 	        /* call func with error notice */
-	        retval =static_cast<st_retval>( (*func)(0, 0, arg, 1));
+	        retval =(enum st_retval)( (*func)(0, 0, arg, 1));
 #ifdef ST_DEBUG
 		st_check(tab);
 #endif
@@ -1526,14 +1529,14 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 int
 st_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
 {
-  return st_general_foreach(tab, func, arg, FALSE);
+  return st_general_foreach(tab, func, arg, 0);
 }
 
 /* See comments for function st_delete_safe.  */
 int
 st_foreach_check(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
                  st_data_t never ATTRIBUTE_UNUSED) {
-  return st_general_foreach(tab, func, arg, TRUE);
+  return st_general_foreach(tab, func, arg, 1);
 }
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.

@@ -15,7 +15,17 @@
 //#endif
 //#endif
 
-#include "ruby/defines.h"
+#include "string.h"
+#include "stdint.h"
+#include "defines.h"
+
+#define RUBY_SYMBOL_EXPORT_BEGIN
+#define RUBY_SYMBOL_EXPORT_END
+#ifdef __x86_64__
+#define SIZEOF_VOIDP 8
+#else
+#define SIZEOF_VOIDP 4
+#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
