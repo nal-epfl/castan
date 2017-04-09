@@ -25,9 +25,15 @@ rte_mempool_ops_table = {.sl = RTE_SPINLOCK_INITIALIZER, .num_ops = 0};
 
 __thread unsigned int __attribute__((weak)) per_lcore__lcore_id = 0;
 
+void castan_rte_prefetch(const volatile void *p) {}
+
 int rte_eal_tailqs_init(void);
 int __attribute__((weak)) rte_eal_init(int argc, char **argv) {
   klee_alias_function("rte_memzone_reserve", "castan_rte_memzone_reserve");
+  klee_alias_function("rte_prefetch0", "castan_rte_prefetch");
+  klee_alias_function("rte_prefetch1", "castan_rte_prefetch");
+  klee_alias_function("rte_prefetch2", "castan_rte_prefetch");
+  klee_alias_function("rte_prefetch_non_temporal", "castan_rte_prefetch");
 
   if (rte_eal_tailqs_init() < 0)
     rte_panic("Cannot init tail queues for objects\n");
@@ -78,13 +84,13 @@ unsigned __attribute__((weak)) rte_socket_id() { return 0; }
 int rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) { return 0; }
 
 struct rte_memzone *castan_rte_memzone_reserve(const char *name, size_t len,
-                                        int socket_id, unsigned flags) {
+                                               int socket_id, unsigned flags) {
   struct rte_memzone *mz = calloc(sizeof(struct rte_memzone), 1);
   strncpy(mz->name, name, RTE_MEMZONE_NAMESIZE);
   mz->len = len;
   mz->flags = flags;
   mz->addr = malloc(len);
-  mz->addr_64 = (uint64_t) mz->addr;
+  mz->addr_64 = (uint64_t)mz->addr;
   return mz;
 }
 
