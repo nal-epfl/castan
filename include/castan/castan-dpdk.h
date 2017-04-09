@@ -29,7 +29,7 @@ rte_mempool_ops_table = {.sl = RTE_SPINLOCK_INITIALIZER, .num_ops = 0};
 
 __thread unsigned int __attribute__((weak)) per_lcore__lcore_id = 0;
 
-void castan_rte_prefetch(const volatile void *p) {}
+void __attribute__((weak)) castan_rte_prefetch(const volatile void *p) {}
 
 int rte_eal_tailqs_init(void);
 int __attribute__((weak)) rte_eal_init(int argc, char **argv) {
@@ -85,10 +85,14 @@ void __attribute__((weak)) * rte_zmalloc_socket(const char *type, size_t size,
 
 unsigned __attribute__((weak)) rte_socket_id() { return 0; }
 
-int rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) { return 0; }
+int __attribute__((weak))
+rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) {
+  return 0;
+}
 
-struct rte_memzone *castan_rte_memzone_reserve(const char *name, size_t len,
-                                               int socket_id, unsigned flags) {
+struct rte_memzone __attribute__((weak)) *
+    castan_rte_memzone_reserve(const char *name, size_t len, int socket_id,
+                               unsigned flags) {
   struct rte_memzone *mz =
       (struct rte_memzone *)calloc(sizeof(struct rte_memzone), 1);
   strncpy(mz->name, name, RTE_MEMZONE_NAMESIZE);
