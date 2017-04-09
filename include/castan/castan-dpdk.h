@@ -9,6 +9,10 @@
 #include <rte_tcp.h>
 #include <rte_udp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct packet {
   struct ether_hdr ether;
   struct ipv4_hdr ipv4;
@@ -85,7 +89,8 @@ int rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) { return 0; }
 
 struct rte_memzone *castan_rte_memzone_reserve(const char *name, size_t len,
                                                int socket_id, unsigned flags) {
-  struct rte_memzone *mz = calloc(sizeof(struct rte_memzone), 1);
+  struct rte_memzone *mz =
+      (struct rte_memzone *)calloc(sizeof(struct rte_memzone), 1);
   strncpy(mz->name, name, RTE_MEMZONE_NAMESIZE);
   mz->len = len;
   mz->flags = flags;
@@ -260,3 +265,7 @@ castan_rte_ipv4_udptcp_cksum(const struct ipv4_hdr *ipv4_hdr,
 
   return cksum;
 }
+
+#ifdef __cplusplus
+}
+#endif
