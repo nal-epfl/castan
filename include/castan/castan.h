@@ -1,4 +1,5 @@
 #include <klee/klee.h>
+#include <string.h>
 
 #ifdef __clang__
 
@@ -14,9 +15,9 @@ void castan_loop();
 
 #define castan_havoc(input, output, expr)                                      \
   do {                                                                         \
-    typeof(input) *input_expr = malloc(sizeof(input));                         \
-    klee_make_symbolic(input_expr, sizeof(input), "castan_havoc_in");          \
-    *input_expr = input;                                                       \
+    typeof(input) *input_expr = (typeof(input) *)malloc(sizeof(input));        \
+    klee_make_symbolic((void *)input_expr, sizeof(input), "castan_havoc_in");  \
+    memcpy((void *)input_expr, (void *)&input, sizeof(input));                 \
                                                                                \
     typeof(output) havoc;                                                      \
     klee_make_symbolic(&havoc, sizeof(havoc), "castan_havoc_out");             \
