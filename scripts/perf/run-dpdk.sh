@@ -17,6 +17,13 @@ APP=$1
 shift
 ARGS=$@
 
+NOW=$(date +"%d.%m.%Y_%H_%M")
+CLEAN_APP_NAME=`echo "$APP" | tr '/' '_'`
+LOG_FILE="~/logs/bench-$CLEAN_APP_NAME-$NOW.log"
+
+mkdir -p ~/logs
+rm -f "$LOG_FILE"
+
 pushd ~/castan/examples/$APP >> /dev/null
 
 echo "[bench] Building $APP ..."
@@ -28,7 +35,6 @@ echo "[bench] Running $APP ..."
 sudo ./build/nf -- \
   --eth-dest 0,$TESTER_MAC_INTERNAL \
   --eth-dest 1,$TESTER_MAC_EXTERNAL \
-  $ARGS
+  $ARGS > $LOG_FILE &
 
 popd >> /dev/null
-

@@ -14,16 +14,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 MIDDLEBOX=$1
 
-NOW=$(date +"%d.%m.%Y_%H_%M")
-CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
-LOG_FILE="logs/bench-$CLEAN_APP_NAME-$NOW.log"
-
-mkdir -p logs
-if [ -f "$LOG_FILE" ]; then
-    rm "$LOG_FILE"
-fi
-
-(bash $DIR/run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as" \
-  0<&- &>"$LOG_FILE" ) &
+$DIR/run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as"
 
 sleep 10
