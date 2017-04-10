@@ -11,7 +11,7 @@ sudo ifconfig $MB_DEVICE_INTERNAL down
 sudo ifconfig $MB_DEVICE_EXTERNAL down
 
 echo "[clean] Unbinding middlebox interfaces from DPDK..."
-sudo $RTE_SDK/tools/dpdk-devbind.py -b $KERN_NIC_DRIVER $MB_PCI_INTERNAL $MB_PCI_EXTERNAL || true
+sudo $RTE_SDK/tools/dpdk-devbind.py -b $KERN_NIC_DRIVER $MB_PCI_INTERNAL $MB_PCI_EXTERNAL
 
 echo "[clean] Killing the NF on middlebox..."
 sudo pkill -9 nf | true
