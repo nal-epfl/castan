@@ -19,7 +19,7 @@ ARGS=$@
 
 NOW=$(date +"%d.%m.%Y_%H_%M")
 CLEAN_APP_NAME=`echo "$APP" | tr '/' '_'`
-LOG_FILE=~"/logs/bench-$CLEAN_APP_NAME-$NOW.log"
+LOG_FILE=~/"logs/bench-$CLEAN_APP_NAME-$NOW.log"
 
 mkdir -p ~/logs
 
