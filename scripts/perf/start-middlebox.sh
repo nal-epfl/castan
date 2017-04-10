@@ -14,6 +14,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 MIDDLEBOX=$1
 
-$DIR/run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as"
+$DIR/run-dpdk.sh $MIDDLEBOX "--pfx2as $DIR/routing-table.pfx2as"
 
 sleep 10
