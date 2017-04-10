@@ -15,7 +15,7 @@ APP=$1
 shift
 ARGS=$@
 
-pushd $APP >> /dev/null
+pushd ~/castan/examples/$APP >> /dev/null
 
 echo "[bench] Building $APP ..."
 sudo rm build -rf

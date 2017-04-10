@@ -9,4 +9,6 @@ sudo apt-get install -yqq \
     linux-headers-3.13.0-93 \
     libglib2.0-dev daemon iperf3 netperf tmux
 
-. ./setup-machines/install-dpdk.sh
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/install-dpdk.sh

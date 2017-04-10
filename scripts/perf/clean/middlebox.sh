@@ -1,5 +1,8 @@
 #!/bin/bash
-. ./config.sh
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/../config.sh
 
 echo "[clean] Unbinding middlebox interfaces from Linux..."
 sudo ifconfig $MB_DEVICE_INTERNAL down

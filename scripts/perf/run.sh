@@ -39,14 +39,14 @@ case $SCENARIO in
         LUA_SCRIPT="pcap-find-1p.lua"
         echo "[bench] Benchmarking throughput..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 3000 -u 5 -t 20 1 0 $PCAP_FILE"
-        scp $TESTER_HOST:pcap-find-1p-results.txt "./$RESULTS_FILE"
+        scp $TESTER_HOST:pcap-find-1p-results.txt "$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm pcap-find-1p-results.txt"
         ;;
     "latency")
         LUA_SCRIPT="pcap-latency-light.lua"
         echo "[bench] Benchmarking throughput..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -u 5 -t 20 1 0 $PCAP_FILE"
-        scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
+        scp $TESTER_HOST:mf-lat.txt "$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
         ;;
     *)
