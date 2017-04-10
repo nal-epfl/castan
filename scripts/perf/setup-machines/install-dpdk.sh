@@ -1,6 +1,8 @@
 #!/bin/bash
 # See http://dpdk.org/doc/quick-start
 
+set -e
+
 # DPDK release to install
 DPDK_RELEASE=16.07
 

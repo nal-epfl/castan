@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 . ~/scripts/config.sh
 
 echo "[clean] Unbinding tester interfaces from Linux..."

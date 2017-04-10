@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 . ~/scripts/config.sh
 
 echo "[init] Initializing DPDK on tester..."

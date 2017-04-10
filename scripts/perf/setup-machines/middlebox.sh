@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 echo "[init] Setting up middlebox..."
 
 sudo apt-get -qq update
