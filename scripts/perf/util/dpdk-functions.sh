@@ -8,19 +8,15 @@ create_mnt_huge()
 	  echo "Creating /mnt/huge and mounting as hugetlbfs"
 	  sudo mkdir -p /mnt/huge
 
-	  grep -s '/mnt/huge' /proc/mounts > /dev/null
-	  if [ $? -ne 0 ] ; then
-		    sudo mount -t hugetlbfs nodev /mnt/huge
-	  fi
+	  grep -s '/mnt/huge' /proc/mounts > /dev/null \
+        || sudo mount -t hugetlbfs nodev /mnt/huge
 }
 
 remove_mnt_huge()
 {
 	  echo "Unmounting /mnt/huge and removing directory"
-	  grep -s '/mnt/huge' /proc/mounts > /dev/null
-	  if [ $? -eq 0 ] ; then
-		    sudo umount /mnt/huge
-	  fi
+	  grep -s '/mnt/huge' /proc/mounts > /dev/null \
+        && sudo umount /mnt/huge
 
 	  if [ -d /mnt/huge ] ; then
 		    sudo rm -R /mnt/huge
@@ -60,10 +56,8 @@ set_numa_pages()
 remove_igb_uio_module()
 {
 	  echo "Unloading any existing DPDK UIO module"
-	  /sbin/lsmod | grep -s igb_uio > /dev/null
-	  if [ $? -eq 0 ] ; then
-		    sudo /sbin/rmmod igb_uio
-	  fi
+	  /sbin/lsmod | grep -s igb_uio > /dev/null \
+        && sudo /sbin/rmmod igb_uio
 }
 
 load_igb_uio_module()
@@ -76,8 +70,8 @@ load_igb_uio_module()
 
 	  remove_igb_uio_module
 
-	  /sbin/lsmod | grep -s uio > /dev/null
-	  if [ $? -ne 0 ] ; then
+	  
+	  if ! /sbin/lsmod | grep -s uio > /dev/null; then
 		    modinfo uio > /dev/null
 		    if [ $? -eq 0 ]; then
 			      echo "Loading uio module"
@@ -89,8 +83,7 @@ load_igb_uio_module()
 	  # be loaded.
 
 	  echo "Loading DPDK UIO module"
-	  sudo /sbin/insmod $RTE_SDK/$RTE_TARGET/kmod/igb_uio.ko
-	  if [ $? -ne 0 ] ; then
+	  if ! sudo /sbin/insmod $RTE_SDK/$RTE_TARGET/kmod/igb_uio.ko; then
 		    echo "## ERROR: Could not load kmod/igb_uio.ko."
 		    quit
 	  fi
