@@ -10,7 +10,7 @@ CC = g++
 SRCS-y := nat_forward_nat.c nat_map_cppstl.c ../nf_main.c ../lib/nat_config.c ../lib/nf_time.c ../lib/nf_util.c
 
 # g++ flags
-CFLAGS += -O3
+CFLAGS += -O3 -DNDEBUG
 CFLAGS += -I..
 CFLAGS += -std=gnu++11
 
