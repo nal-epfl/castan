@@ -25,13 +25,10 @@ remove_mnt_huge()
 
 clear_huge_pages()
 {
-	  echo > .echo_tmp
-	  for d in /sys/devices/system/node/node? ; do
-		    echo "echo 0 > $d/hugepages/hugepages-2048kB/nr_hugepages" >> .echo_tmp
-	  done
 	  echo "Removing currently reserved hugepages"
-	  sudo sh .echo_tmp
-	  rm -f .echo_tmp
+	  for d in /sys/devices/system/node/node? ; do
+      echo 0 > sudo tee $d/hugepages/hugepages-2048kB/nr_hugepages > /dev/null
+	  done
 
 	  remove_mnt_huge
 }
@@ -40,15 +37,12 @@ set_numa_pages()
 {
 	  clear_huge_pages
 
-	  echo > .echo_tmp
+	  echo "Reserving hugepages"
 	  for d in /sys/devices/system/node/node? ; do
 		    node=$(basename $d)
                     Pages=1600
-		    echo "echo $Pages > $d/hugepages/hugepages-2048kB/nr_hugepages" >> .echo_tmp
+		    echo $Pages > sudo tee $d/hugepages/hugepages-2048kB/nr_hugepages > /dev/null
 	  done
-	  echo "Reserving hugepages"
-	  sudo sh .echo_tmp
-	  rm -f .echo_tmp
 
 	  create_mnt_huge
 }
