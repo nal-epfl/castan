@@ -7,4 +7,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 ssh $TESTER_HOST "bash ~/scripts/init-machines/tester.sh"
 
-. $DIR/init-machines/middlebox.sh
+$DIR/init-machines/middlebox.sh

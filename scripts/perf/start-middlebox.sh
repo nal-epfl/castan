@@ -25,4 +25,3 @@ fi
   0<&- &>"$LOG_FILE" ) &
 
 sleep 10
-

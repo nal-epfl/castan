@@ -38,17 +38,11 @@ if [ -f "$RESULTS_FILE" ]; then
     rm "$RESULTS_FILE"
 fi
 
-. $DIR/setup-machines.sh
-
-. $DIR/clean.sh
-
-. $DIR/init-machines.sh
-
-. $DIR/start-middlebox.sh $MIDDLEBOX
-
-. $DIR/run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE $PCAP_FILE
-
-. $DIR/stop-middlebox.sh
-
-. $DIR/clean.sh
+$DIR/setup-machines.sh
+$DIR/clean.sh
+$DIR/init-machines.sh
+$DIR/start-middlebox.sh $MIDDLEBOX
+$DIR/run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE $PCAP_FILE
+$DIR/stop-middlebox.sh
+$DIR/clean.sh
 

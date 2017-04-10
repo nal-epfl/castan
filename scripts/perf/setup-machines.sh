@@ -9,4 +9,4 @@ rsync -q -t -r --exclude '*.log' --exclude '*.results' $DIR/ $TESTER_HOST:script
 
 echo "[init] Setting up all machines..."
 ssh $TESTER_HOST 'bash ~/scripts/setup-machines/tester.sh'
-. $DIR/setup-machines/middlebox.sh
+$DIR/setup-machines/middlebox.sh

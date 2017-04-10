@@ -6,4 +6,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "[clean] Cleaning machines..."
 ssh $TESTER_HOST "bash ~/scripts/clean/tester.sh"
-. $DIR/clean/middlebox.sh
+$DIR/clean/middlebox.sh
