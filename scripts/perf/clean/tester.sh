@@ -12,6 +12,6 @@ echo "[clean] Unbinding tester interfaces from DPDK..."
 sudo $RTE_SDK/tools/dpdk-devbind.py -b $KERN_NIC_DRIVER $TESTER_PCI_INTERNAL $TESTER_PCI_EXTERNAL
 
 echo "[clean] Killing moongen on tester..."
-sudo pkill -9 MoonGen
-sudo pkill -9 moongen
-sudo pkill -9 moon-gen
+sudo pkill -9 MoonGen || true
+sudo pkill -9 moongen || true
+sudo pkill -9 moon-gen || true
