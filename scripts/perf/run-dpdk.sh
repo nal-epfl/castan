@@ -22,7 +22,6 @@ CLEAN_APP_NAME=`echo "$APP" | tr '/' '_'`
 LOG_FILE="~/logs/bench-$CLEAN_APP_NAME-$NOW.log"
 
 mkdir -p ~/logs
-rm -f "$LOG_FILE"
 
 pushd ~/castan/examples/$APP >> /dev/null
 
