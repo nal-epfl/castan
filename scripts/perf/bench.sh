@@ -1,5 +1,8 @@
 #!/bin/bash
-. ./config.sh
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/config.sh
 
 # Parameters:
 # $1: The full path to the dpdk-enabled middlebox source file
@@ -28,17 +31,17 @@ if [ -f "$RESULTS_FILE" ]; then
     rm "$RESULTS_FILE"
 fi
 
-. ./setup-machines.sh
+. $DIR/setup-machines.sh
 
-. ./clean.sh
+. $DIR/clean.sh
 
-. ./init-machines.sh
+. $DIR/init-machines.sh
 
-. ./start-middlebox.sh $MIDDLEBOX
+. $DIR/start-middlebox.sh $MIDDLEBOX
 
-. ./run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE
+. $DIR/run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE
 
-. ./stop-middlebox.sh
+. $DIR/stop-middlebox.sh
 
-. ./clean.sh
+. $DIR/clean.sh
 

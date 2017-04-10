@@ -1,5 +1,8 @@
 #!/bin/bash
-. ./config.sh
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/config.sh
 
 # Master script to initialize VigNAT-related programs benchmarks.
 # Can work with different implementations, including non-NATs,
@@ -18,7 +21,7 @@ if [ -f "$LOG_FILE" ]; then
     rm "$LOG_FILE"
 fi
 
-(bash ./run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as" \
+(bash $DIR/run-dpdk.sh $MIDDLEBOX "--pfx2as $MIDDLEBOX/perf/routing-table.pfx2as" \
   0<&- &>"$LOG_FILE" ) &
 
 sleep 10

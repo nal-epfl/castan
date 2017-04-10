@@ -1,9 +1,12 @@
 #!/bin/bash
-. ./config.sh
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/config.sh
 
 echo "[init] Cloning scripts..."
 rsync -q -t -r --exclude '*.log' --exclude '*.results' ./ $TESTER_HOST:scripts
 
 echo "[init] Setting up all machines..."
 ssh $TESTER_HOST 'bash ~/scripts/setup-machines/tester.sh'
-. ./setup-machines/middlebox.sh
+. $DIR/setup-machines/middlebox.sh

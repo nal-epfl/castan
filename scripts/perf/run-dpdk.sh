@@ -1,5 +1,8 @@
 #!/bin/bash
-. ./config.sh
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/config.sh
 
 # Runs a DPDK app for the specified scenario
 
