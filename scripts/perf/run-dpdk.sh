@@ -28,7 +28,7 @@ pushd ~/castan/examples/$APP >> /dev/null
 echo "[bench] Building $APP ..."
 sudo rm build -rf
 make clean
-CFLAGS+=-DNDEBUG make
+make
 
 echo "[bench] Running $APP ..."
 sudo ./build/nf -- \
