@@ -1,8 +1,10 @@
 #!/bin/bash
 # Initializes the machines on the test network.
 
-. ./config.sh
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+. $DIR/config.sh
 
 ssh $TESTER_HOST "bash ~/scripts/init-machines/tester.sh"
 
-. ./init-machines/middlebox.sh
+. $DIR/init-machines/middlebox.sh
