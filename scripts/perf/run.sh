@@ -45,7 +45,7 @@ case $SCENARIO in
         ;;
     "latency")
         LUA_SCRIPT="pcap-latency-light.lua"
-        echo "[bench] Benchmarking throughput..."
+        echo "[bench] Benchmarking latency..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -u 5 -t 20 1 0 pcap/$PCAP_FILE"
         ssh $TESTER_HOST "sudo mv mf-lat.txt results/$RESULTS_FILE"
         ;;
