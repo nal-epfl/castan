@@ -25,17 +25,19 @@ function master(args)
 	local file = io.open("mf-lat.txt", "w")
 	file:write("#flows rate meanLat stdevLat\n")
   -- Heatup phase
+  --[[
   printf("heatup  - %d secs", args.upheat);
   local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.upheat, args.file)
   mg.waitForTasks()
   printf("heatup finished. testing is commented out");
   mg.waitForTasks()
+  ]]--
   -- Testing phase
-  --local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.timeout, args.file)
-  --local latency, stdev = timerTask:wait()
-  --printf("total: %f latency (+-%f)", latency, stdev);
-  --mg.waitForTasks()
-  --file:write(latency .. " " .. stdev .. "\n")
+  local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.timeout, args.file)
+  local latency, stdev = timerTask:wait()
+  printf("total: %f latency (+-%f)", latency, stdev);
+  mg.waitForTasks()
+  file:write(latency .. " " .. stdev .. "\n")
 end
 
 function myMeasureLatency(txQueue, rxQueue, buf, rxBufs) 

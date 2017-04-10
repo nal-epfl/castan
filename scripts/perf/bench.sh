@@ -28,7 +28,7 @@ fi
 
 if [ -z $PCAP_FILE ]; then
     echo "[bench] No pcap file specified, using default: $DEFAULT_PCAP"
-    PCAP_FILE=$DIR/$DEFAULT_PCAP
+    PCAP_FILE=$DEFAULT_PCAP
 fi
 
 CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`

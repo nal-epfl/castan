@@ -34,12 +34,6 @@ if [ -z $PCAP_FILE ]; then
     exit 5
 fi
 
-if [ ! -e $PCAP_FILE ]; then
-    echo "[run] the pcap file $PCAP_FILE not found" 1>&2
-    exit 6
-fi
-
-
 case $SCENARIO in
     "thru-1p")
         LUA_SCRIPT="pcap-find-1p.lua"
@@ -51,7 +45,7 @@ case $SCENARIO in
     "latency")
         LUA_SCRIPT="pcap-latency-light.lua"
         echo "[bench] Benchmarking throughput..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0 $PCAP_FILE"
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -u 5 -t 20 1 0 $PCAP_FILE"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
         ;;
