@@ -7,6 +7,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 MIDDLEBOX=$1
 SCENARIO=$2
 RESULTS_FILE=$3
+PCAP_FILE=$4
 
 if [ -z $MIDDLEBOX ]; then
     echo "[bench] No app specified" 1>&2
@@ -28,24 +29,34 @@ if [ -f "$RESULTS_FILE" ]; then
     exit 4
 fi
 
+if [ -z $PCAP_FILE ]; then
+    echo "[run] No pcap file specified" 1>&2
+    exit 5
+fi
+
+if [ ! -e $PCAP_FILE ]; then
+    echo "[run] the pcap file $PCAP_FILE not found" 1>&2
+    exit 6
+fi
+
 
 case $SCENARIO in
     "thru-1p")
-        LUA_SCRIPT="l3-load-find-1p.lua"
+        LUA_SCRIPT="pcap-find-1p.lua"
         echo "[bench] Benchmarking throughput..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 3000 -u 5 -t 20 1 0"
-        scp $TESTER_HOST:mg-find-mg-1p.txt "./$RESULTS_FILE"
-        ssh $TESTER_HOST "sudo rm mf-find-1p.txt"
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 3000 -u 5 -t 20 1 0 $PCAP_FILE"
+        scp $TESTER_HOST:pcap-find-1p-results.txt "./$RESULTS_FILE"
+        ssh $TESTER_HOST "sudo rm pcap-find-1p-results.txt"
         ;;
     "latency")
-        LUA_SCRIPT="l3-latency-light.lua"
+        LUA_SCRIPT="pcap-latency-light.lua"
         echo "[bench] Benchmarking throughput..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0"
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0 $PCAP_FILE"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
         ;;
     *)
-        echo "[bench] Unknown scenario: $MIDDLEBOX" 1>&2
+        echo "[bench] Unknown scenario: $SCENARIO" 1>&2
         exit 10
         ;;
 esac

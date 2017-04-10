@@ -44,5 +44,8 @@ TESTER_IP_EXTERNAL=192.168.41.10
 
 # Other
 
+DEFAULT_PCAP=test.pcap
+
 export RTE_SDK=$HOME/dpdk
 export RTE_TARGET=x86_64-native-linuxapp-gcc
+
