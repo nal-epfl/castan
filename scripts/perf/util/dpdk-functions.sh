@@ -50,8 +50,7 @@ set_numa_pages()
 remove_igb_uio_module()
 {
 	  echo "Unloading any existing DPDK UIO module"
-	  /sbin/lsmod | grep -s igb_uio > /dev/null \
-        && sudo /sbin/rmmod igb_uio || true
+	  sudo /sbin/rmmod igb_uio || true
 }
 
 load_igb_uio_module()
