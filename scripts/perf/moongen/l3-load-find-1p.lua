@@ -74,7 +74,7 @@ function master(args)
 				file:write(nflws .. " " .. rate .. " " .. packetsSent .. " " ..
 					   packetsSent/args.timeout .. " " .. loss .. "\n")
 			end
-			if (loss < 0.001) then
+			if (loss < 0.01) then
 				lowerbound = rate
 				rate = rate + (upperbound - rate)/2
 			else
