@@ -1,0 +1,30 @@
+diff --git a/nf/nop/nat_forward_nop.c b/nf/nop/nat_forward_nop.c
+index b8dc6b7..5577efa 100644
+--- a/nf/nop/nat_forward_nop.c
++++ b/nf/nop/nat_forward_nop.c
+@@ -12,6 +12,12 @@
+ #include "../lib/nf_forward.h"
+ #include "../lib/nf_util.h"
+ 
++struct ptpv2_msg {
++  uint8_t msg_id;
++  uint8_t version;
++  uint8_t unused[34];
++};
++
+ struct nat_config config;
+ 
+ void nf_core_init(void)
+@@ -41,6 +47,12 @@ int nf_core_process(uint8_t device,
+ 	ether_header->s_addr = config.device_macs[dst_device];
+ 	ether_header->d_addr = config.endpoint_macs[dst_device];
+ 
++	struct ptpv2_msg *ptp = (struct ptpv2_msg*) (rte_pktmbuf_mtod(mbuf, char*) +
++							sizeof(struct ether_hdr));
++	ether_header->ether_type = 0xf788;
++	ptp->msg_id = 0;
++        ptp->version = 0x02;
++
+ 	return dst_device;
+ }
+ 

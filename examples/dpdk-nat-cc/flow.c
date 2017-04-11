@@ -7,6 +7,8 @@
 #include "flow.h"
 #include "ignore.h"
 
+#include "castan/castan.h"
+
 #ifdef KLEE_VERIFICATION
 #  define AND(x,y) ((x)&(y))
 #  define TO_INT(x) (x)
@@ -80,6 +82,7 @@ int int_key_hash(void* key)
 
   hash = wrap(hash);
 
+  castan_havoc(ik, hash, hash);
   return (int) hash;
 }
 
@@ -108,6 +111,7 @@ int ext_key_hash(void* key)
 
   hash = wrap(hash);
 
+  castan_havoc(ek, hash, hash);
   return (int) hash;
 }
 

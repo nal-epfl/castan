@@ -9,6 +9,10 @@
 #include <rte_tcp.h>
 #include <rte_udp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct packet {
   struct ether_hdr ether;
   struct ipv4_hdr ipv4;
@@ -25,8 +29,16 @@ rte_mempool_ops_table = {.sl = RTE_SPINLOCK_INITIALIZER, .num_ops = 0};
 
 __thread unsigned int __attribute__((weak)) per_lcore__lcore_id = 0;
 
+void __attribute__((weak)) castan_rte_prefetch(const volatile void *p) {}
+
 int rte_eal_tailqs_init(void);
 int __attribute__((weak)) rte_eal_init(int argc, char **argv) {
+  klee_alias_function("rte_memzone_reserve", "castan_rte_memzone_reserve");
+  klee_alias_function("rte_prefetch0", "castan_rte_prefetch");
+  klee_alias_function("rte_prefetch1", "castan_rte_prefetch");
+  klee_alias_function("rte_prefetch2", "castan_rte_prefetch");
+  klee_alias_function("rte_prefetch_non_temporal", "castan_rte_prefetch");
+
   if (rte_eal_tailqs_init() < 0)
     rte_panic("Cannot init tail queues for objects\n");
 
@@ -63,7 +75,7 @@ void __attribute__((weak)) *
   }
 
   void *ptr = calloc(size + align, 1);
-  return ((char *) ptr) + ((unsigned long)ptr) % align;
+  return ((char *)ptr) + ((unsigned long)ptr) % align;
 }
 
 void __attribute__((weak)) * rte_zmalloc_socket(const char *type, size_t size,
@@ -72,6 +84,24 @@ void __attribute__((weak)) * rte_zmalloc_socket(const char *type, size_t size,
 }
 
 unsigned __attribute__((weak)) rte_socket_id() { return 0; }
+
+int __attribute__((weak))
+rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) {
+  return 0;
+}
+
+struct rte_memzone __attribute__((weak)) *
+    castan_rte_memzone_reserve(const char *name, size_t len, int socket_id,
+                               unsigned flags) {
+  struct rte_memzone *mz =
+      (struct rte_memzone *)calloc(sizeof(struct rte_memzone), 1);
+  strncpy(mz->name, name, RTE_MEMZONE_NAMESIZE);
+  mz->len = len;
+  mz->flags = flags;
+  mz->addr = malloc(len);
+  mz->addr_64 = (uint64_t)mz->addr;
+  return mz;
+}
 
 uint8_t __attribute__((weak)) rte_eth_dev_count() { return 2; }
 
@@ -97,7 +127,8 @@ struct rte_mempool __attribute__((weak)) *
     rte_pktmbuf_pool_create(const char *name, unsigned n, unsigned cache_size,
                             uint16_t priv_size, uint16_t data_room_size,
                             int socket_id) {
-  struct rte_mempool *mp = (struct rte_mempool *) calloc(sizeof(struct rte_mempool), 1);
+  struct rte_mempool *mp =
+      (struct rte_mempool *)calloc(sizeof(struct rte_mempool), 1);
 
   strncpy(mp->name, name, RTE_MEMPOOL_NAMESIZE);
   mp->cache_size = cache_size;
@@ -146,7 +177,7 @@ castan_rte_eth_rx_burst(uint8_t port_id, uint16_t queue_id,
   if (port_id == 0) {
     castan_loop();
 
-    *rx_pkts = (struct rte_mbuf *) calloc(sizeof(struct rte_mbuf), 1);
+    *rx_pkts = (struct rte_mbuf *)calloc(sizeof(struct rte_mbuf), 1);
 
     (*rx_pkts)->buf_addr = malloc(sizeof(struct packet));
     klee_make_symbolic((*rx_pkts)->buf_addr, sizeof(struct packet),
@@ -188,3 +219,57 @@ castan_rte_eth_rx_burst(uint8_t port_id, uint16_t queue_id,
     return 0;
   }
 }
+
+#define rte_eth_tx_burst castan_rte_eth_tx_burst
+uint16_t __attribute__((weak))
+castan_rte_eth_tx_burst(uint8_t port_id, uint16_t queue_id,
+                        struct rte_mbuf **tx_pkts, uint16_t nb_pkts) {
+  return nb_pkts;
+}
+
+uint16_t __attribute__((weak))
+castan_rte_ipv4_phdr_cksum(const struct ipv4_hdr *ipv4_hdr, uint64_t ol_flags) {
+  struct ipv4_psd_header {
+    uint32_t src_addr; /* IP address of source host. */
+    uint32_t dst_addr; /* IP address of destination host. */
+    uint8_t zero;      /* zero. */
+    uint8_t proto;     /* L4 protocol type. */
+    uint16_t len;      /* L4 length. */
+  } psd_hdr;
+
+  psd_hdr.src_addr = ipv4_hdr->src_addr;
+  psd_hdr.dst_addr = ipv4_hdr->dst_addr;
+  psd_hdr.zero = 0;
+  psd_hdr.proto = ipv4_hdr->next_proto_id;
+  if (ol_flags & PKT_TX_TCP_SEG) {
+    psd_hdr.len = 0;
+  } else {
+    psd_hdr.len = htons(
+        (uint16_t)(ntohs(ipv4_hdr->total_length) - sizeof(struct ipv4_hdr)));
+  }
+  return rte_raw_cksum(&psd_hdr, sizeof(psd_hdr));
+}
+
+#define rte_ipv4_udptcp_cksum castan_rte_ipv4_udptcp_cksum
+uint16_t __attribute__((weak))
+castan_rte_ipv4_udptcp_cksum(const struct ipv4_hdr *ipv4_hdr,
+                             const void *l4_hdr) {
+  uint32_t cksum;
+  uint32_t l4_len;
+
+  l4_len = ntohs(ipv4_hdr->total_length) - sizeof(struct ipv4_hdr);
+
+  cksum = rte_raw_cksum(l4_hdr, l4_len);
+  cksum += castan_rte_ipv4_phdr_cksum(ipv4_hdr, 0);
+
+  cksum = ((cksum & 0xffff0000) >> 16) + (cksum & 0xffff);
+  cksum = (~cksum) & 0xffff;
+  if (cksum == 0)
+    cksum = 0xffff;
+
+  return cksum;
+}
+
+#ifdef __cplusplus
+}
+#endif
