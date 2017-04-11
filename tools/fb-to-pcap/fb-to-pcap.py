@@ -15,8 +15,85 @@ class IPTable():
     _cur_rack = {}
     _cur_pod = 1
     _cur_ip = {}
+    _prefix_table = {}
+    _cur_prefix_ip = {}
 
-    def lookup(self, ip_string, rack_string, pod_string):
+    max_prefix = 0
+    max_ip = 0
+
+
+    def lookup_prefix_pod(self, ip_string, prefix_string, pod_string):
+        if ip_string not in self._ip_table:
+            # use pod for A class, prefix for B & C, and enumerate for D
+            rp = "%s_%s" % (prefix_string, pod_string)
+
+            cur_ip = self._cur_ip.get(rp, 1)
+
+
+            if pod_string not in self._pod_table:
+                self._pod_table[pod_string] = self._cur_pod
+                self._cur_pod += 1
+
+            pod = self._pod_table[pod_string]
+
+
+            if pod_string not in self._prefix_table:
+                self._prefix_table[pod_string] = {}
+
+            if prefix_string not in self._prefix_table[pod_string]:
+                if pod_string not in self._cur_prefix:
+                    self._cur_prefix[pod_string] = 1
+
+                self._prefix_table[pod_string][prefix_string] = self._cur_prefix[pod_string]
+                self._cur_prefix[pod_string] += 1
+            prefix = self._prefix_table[pod_string][prefix_string]
+
+            if prefix >= 255 or pod >= 255:
+                print "unexpectedly many pods(%d)/prefixs(%d) for rs: %s, ps: %s" % (pod, prefix, prefix_string, pod_string)
+                if "overflow" in pod_string:
+                    print "overflow also full"
+                    return self.lookup_prefix_pod(ip_string, prefix_string, pod_string + "1")
+
+
+                return self.lookup_prefix_pod(ip_string, prefix_string, "overflow")
+
+            self._ip_table[ip_string] = "10.%d.%d.%d" % (pod, prefix, cur_ip)
+            self._cur_ip[rp] = cur_ip + 1
+
+        return self._ip_table[ip_string]
+
+    def lookup_prefix(self, ip_string, prefix_string):
+        if ip_string in self._ip_table:
+            return self._ip_table[ip_string]
+            
+
+
+        if prefix_string not in self._prefix_table:
+            self._prefix_table[prefix_string] = len(self._prefix_table)
+            self._cur_prefix_ip[prefix_string] = 1
+
+        cur_prefix = self._prefix_table[prefix_string]
+        cur_ip = self._cur_prefix_ip[prefix_string]
+
+        ip = 10 << 24
+        ip +=  (cur_prefix << 16)
+        ip += cur_ip
+
+
+        if cur_prefix > self.max_prefix:
+            self.max_prefix = cur_prefix
+
+        if cur_ip > self.max_ip:
+            self.max_ip = cur_ip
+
+        
+        self._ip_table[ip_string] = socket.inet_ntoa(struct.pack('!L', ip))
+        self._cur_prefix_ip[prefix_string] = cur_ip + 1
+
+        return self._ip_table[ip_string]
+
+
+    def lookup_rack_pod(self, ip_string, rack_string, pod_string):
         if ip_string not in self._ip_table:
             # use pod for A class, rack for B & C, and enumerate for D
             rp = "%s_%s" % (rack_string, pod_string)
@@ -46,10 +123,10 @@ class IPTable():
                 print "unexpectedly many pods(%d)/racks(%d) for rs: %s, ps: %s" % (pod, rack, rack_string, pod_string)
                 if "overflow" in pod_string:
                     print "overflow also full"
-                    return self.lookup(ip_string, rack_string, pod_string + "1")
+                    return self.lookup_rack_pod(ip_string, rack_string, pod_string + "1")
 
 
-                return selflookup(ip_string, rack_string, "overflow")
+                return self.lookup_rack_pod(ip_string, rack_string, "overflow")
 
             self._ip_table[ip_string] = "10.%d.%d.%d" % (pod, rack, cur_ip)
             self._cur_ip[rp] = cur_ip + 1
@@ -97,8 +174,10 @@ def convert_file(input_file, output_file):
             # 7: SrcHostPrefix, 8: DestHostPrefix, 9: SrcRack, 10: DestRack, 11: SrcPod, 
             # 12: DestPod, 13: InterCluster, 14: InterDC
 
-            src_ip = ip_table.lookup(line[2], line[9], line[11])
-            dst_ip = ip_table.lookup(line[3], line[10], line[12])
+            #src_ip = ip_table.lookup_rack_pod(line[2], line[9], line[11])
+            #dst_ip = ip_table.lookup_rack_pod(line[3], line[10], line[12])
+            src_ip = ip_table.lookup_prefix(line[2], line[7])
+            dst_ip = ip_table.lookup_prefix(line[3], line[8])
 
             pkt = IP(src=src_ip, dst=dst_ip)
 
