@@ -413,7 +413,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
 
   uint8_t nb_devices = rte_eth_dev_count();
 
-#ifndef LATENCY
+#ifdef LATENCY
   struct timespec timestamp = {
       .tv_sec = 0, .tv_nsec = 0,
   };
@@ -421,7 +421,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
 
   while (1) {
     for (uint32_t device = 0; device < nb_devices; ++device) {
-#ifndef LATENCY
+#ifdef LATENCY
       struct timespec new_timestamp;
       assert(clock_gettime(CLOCK_MONOTONIC, &new_timestamp) == 0);
       if (timestamp.tv_sec && timestamp.tv_nsec) {
