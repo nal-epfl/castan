@@ -417,7 +417,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
     for (uint32_t device = 0; device < nb_devices; ++device) {
 #ifdef LATENCY
       struct timespec timestamp;
-      assert(clock_gettime(CLOCK_MONOTONIC, &timestamp) == 0);
+      assert(clock_gettime(CLOCK_MONOTONIC_RAW, &timestamp) == 0);
 #endif
 
       struct rte_mbuf *mbuf[1];
@@ -448,7 +448,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
 
 #ifdef LATENCY
       struct timespec new_timestamp;
-      assert(clock_gettime(CLOCK_MONOTONIC, &new_timestamp) == 0);
+      assert(clock_gettime(CLOCK_MONOTONIC_RAW, &new_timestamp) == 0);
       NF_INFO("Latency: %ld ns.",
               (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
                   (new_timestamp.tv_nsec - timestamp.tv_nsec));
