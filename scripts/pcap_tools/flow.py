@@ -14,7 +14,6 @@ class Flow(object):
                     dport = pkt[TCP].dport
                     protocol = 'TCP'
 		elif UDP in pkt:
-                    print dir(pkt)
                     sport = pkt[UDP].sport
                     dport = pkt[UDP].dport
 		    protocol = 'UDP'
@@ -92,7 +91,6 @@ class Flow(object):
 
 		# deal with all packets or only new connections ?
                 self.data_transferred += int(pkt.sprintf("%IP.len%"))
-                print self.data_transferred
                 #self.packets += pkt
 
 
