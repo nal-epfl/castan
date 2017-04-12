@@ -429,8 +429,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
                 (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
                     (new_timestamp.tv_nsec - timestamp.tv_nsec));
       }
-      assert(clock_gettime(CLOCK_MONOTONIC, &new_timestamp) == 0);
-      timestamp = new_timestamp;
+      assert(clock_gettime(CLOCK_MONOTONIC, &timestamp) == 0);
 #endif
 
       struct rte_mbuf *mbuf[1];
