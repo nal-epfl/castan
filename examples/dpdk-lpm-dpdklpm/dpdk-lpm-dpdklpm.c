@@ -424,8 +424,24 @@ void run(struct nf_config* config, struct rte_lpm* lpm) {
 
 	uint8_t nb_devices = rte_eth_dev_count();
 
+#ifndef NDEBUG
+  struct timespec timestamp = {
+    .tv_sec = 0,
+    .tv_nsec = 0,
+  };
+#endif
+
   while (1) {
     for (uint32_t device = 0; device < nb_devices; ++device) {
+#ifndef NDEBUG
+      struct timespec new_timestamp;
+      assert(clock_gettime(CLOCK_MONOTONIC, &new_timestamp) == 0);
+      if (timestamp.tv_sec && timestamp.tv_nsec) {
+        NF_INFO("Latency: %ld ns.", (new_timestamp.tv_sec - timestamp.tv_sec) * 1e9 + (new_timestamp.tv_nsec - timestamp.tv_nsec));
+      }
+      timestamp = new_timestamp;
+#endif
+
       struct rte_mbuf* mbuf[1];
       uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
 
