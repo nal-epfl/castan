@@ -91,26 +91,26 @@ function timerSlave(txQueue, rxQueue, duration, fname)
   --rxQueue:enableTimestampsAllPackets() -- not supported by current ixgbe driver, and maybe even by the 82599 card
   -- Important note: the NF must convert every packet into a PTP one, to enable the RX timestamps
   rxQueue:enableTimestamps()
-  local mempool = memory.createMemPool--()
-  (function(buf)
+  local mempool = memory.createMemPool()
+  --[[(function(buf)
         local pkt = buf:getPtpPacket()
         pkt.eth:fill{ethType=0x88f7}
 	pkt.ptp:setVersion()
   end) --(function(buf) buf:getPtpPacket():fill() end) ]]
-  local txBufs = mempool:bufArray(1)
+  --local txBufs = mempool:bufArray(1)
   local rxBufs = mempool:bufArray(128)
 
 
   while finished:running() and mg.running() do
-    --[[local buf = pcapFile:readSingle(mempool)
+    local buf = pcapFile:readSingle(mempool)
     if buf == nil then
       pcapFile:reset()
-    else]]
-      txBufs:alloc(64);
-      local buf = txBufs[1]
+    else
+      --txBufs:alloc(64);
+      --local buf = txBufs[1]
       local lat = myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
       hist:update(lat)
-    --end
+    end
   end
   hist:print()
   if hist.numSamples == 0 then
