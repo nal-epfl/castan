@@ -23,21 +23,25 @@ static struct {
 //     {64 << BLOCK_BITS, 1, 1, 32},
 //     {0, 0, 0, 128},
 
-//     // Fake cache with a single entry.
+//     // Fake cache with a single level.
 //     {1 << BLOCK_BITS, 1, 1, 32},
 //     {0, 0, 0, 128},
 
 // Intel(R) Core(TM) i7-2600S
-#define CPU_CPI 1
-#define CPU_HZ 2800000000
-    {256 * 1024, 8, 1, 4},
-    {1024 * 1024, 8, 1, 10},
-    {8192 * 1024, 16, 1, 40},
-    {0, 0, 0, 168},
+// #define CPU_CPI 1
+// #define CPU_HZ 2800000000
+//     {32 * 1024, 8, 1, 4},
+//     {256 * 1024, 8, 1, 10},
+//     {8192 * 1024, 16, 1, 40},
+//     {0, 0, 0, 168},
 
-    //     // Intel(R) Core(TM) i7-2600S - Just L3
-    //     {8192 * 1024, 16, 1, 40},
-    //     {0, 0, 0, 168},
+// Intel(R) Xeon(R) CPU E5-2667 v2
+#define CPU_CPI 1
+#define CPU_HZ 3300000000
+    {32 * 1024, 8, 1, 4},
+    {256 * 1024, 8, 1, 12},
+    {25600 * 1024, 20, 1, 30},
+    {0, 0, 0, 205},
 };
 
 namespace {
