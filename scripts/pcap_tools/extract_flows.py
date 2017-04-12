@@ -12,7 +12,6 @@ for p in reader:
     i += 1
 
 i = 0
-print "flow n_pkts n_bytes"
 for k,f in flows.iteritems():
     print i, f.packet_count, f.data_transferred
     i += 1
