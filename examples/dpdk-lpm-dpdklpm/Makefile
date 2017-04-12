@@ -24,7 +24,7 @@ SRCS-y := dpdk-lpm-dpdklpm.c
 CFLAGS += -O3
 CFLAGS += -I..
 CFLAGS += -std=gnu++11
-CFLAGS += -DNDEBUG
+# CFLAGS += -DNDEBUG
 # CFLAGS += -DPTP
 
 LDFLAGS += -lstdc++
