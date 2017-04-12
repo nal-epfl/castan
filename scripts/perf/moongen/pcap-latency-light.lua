@@ -107,9 +107,11 @@ function timerSlave(txQueue, rxQueue, duration, fname)
       --local buf = txBufs[1]
       local lat = myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
       hist:update(lat)
+      file::write(lat .. "\n")
     end
   end
   hist:print()
+  file:close()
   if hist.numSamples == 0 then
     log:error("Received no packets.")
   end
