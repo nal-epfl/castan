@@ -424,7 +424,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
 #ifdef LATENCY
       struct timespec new_timestamp;
       assert(clock_gettime(CLOCK_MONOTONIC, &new_timestamp) == 0);
-      if (timestamp.tv_sec && timestamp.tv_nsec) {
+      if (timestamp.tv_sec || timestamp.tv_nsec) {
         NF_INFO("Latency: %ld ns.",
                 (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
                     (new_timestamp.tv_nsec - timestamp.tv_nsec));
