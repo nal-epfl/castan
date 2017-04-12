@@ -365,6 +365,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
 
 bool GenericCacheModel::loop(klee::ExecutionState &state) {
   if (enabled) {
+    klee::klee_message("Processing iteration %ld.", loopStats.size());
     //     klee::klee_message("Cache after iteration %ld:", loopStats.size());
     //     for (auto level : cache) {
     //       klee::klee_message("  L%d (%d lines):", level.first + 1,
