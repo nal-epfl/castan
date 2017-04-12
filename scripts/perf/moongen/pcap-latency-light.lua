@@ -3,11 +3,11 @@ local memory = require "memory"
 local device = require "device"
 local ts     = require "timestamping"
 local filter = require "filter"
+local hist   = require "histogram"
 local stats  = require "stats"
 local timer  = require "timer"
 local log    = require "log"
 local pcap   = require "pcap"
-local file
 
 function configure(parser)
 	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
@@ -22,7 +22,6 @@ function master(args)
 	txDev = device.config{port = args.txDev, rxQueues = 1, txQueues = 1}
 	rxDev = device.config{port = args.rxDev, rxQueues = 1, txQueues = 1}
 	device.waitForLinks()
-	file = io.open("mf-lat.txt", "w")
   -- Heatup phase
   --[[
   printf("heatup  - %d secs", args.upheat);
@@ -33,9 +32,8 @@ function master(args)
   ]]--
   -- Testing phase
   local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.timeout, args.file)
-  local hist = timerTask:wait()
+  timerTask:wait()
   mg.waitForTasks()
-  hist:save(file)
 end
 
 function myMeasureLatency(txQueue, rxQueue, buf, rxBufs) 
@@ -82,6 +80,8 @@ end
 
 function timerSlave(txQueue, rxQueue, duration, fname)
 
+	local file = io.open("mf-lat.txt", "w")
+  local hist = hist:new()
   local pcapFile = pcap:newReader(fname)
   local finished = timer:new(duration)
   txQueue:enableTimestamps()
@@ -106,12 +106,14 @@ function timerSlave(txQueue, rxQueue, duration, fname)
       --txBufs:alloc(64);
       --local buf = txBufs[1]
       local lat = myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
-      file:write(lat .. "\n")
+      hist:update(lat)
     end
   end
+  hist:print()
   if hist.numSamples == 0 then
     log:error("Received no packets.")
   end
   print()
+  return hist
 end
 
