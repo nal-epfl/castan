@@ -35,7 +35,7 @@ function master(args)
   local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.timeout, args.file)
   local hist = timerTask:wait()
   mg.waitForTasks()
-  file:write(hist:samples())
+  hist:save(file)
 end
 
 function myMeasureLatency(txQueue, rxQueue, buf, rxBufs) 
