@@ -1,9 +1,10 @@
 #!/usr/bin/python
+import sys
 import numpy
 from scapy.all import PcapReader,IP,UDP,TCP
 from flow import Flow
 
-reader = PcapReader("caida/equinix-chicago.dirA.20160121-125911.UTC.anon.pcap")
+reader = PcapReader(sys.argv[1])
 flows = {}
 i = 0
 for p in reader:
