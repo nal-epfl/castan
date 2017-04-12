@@ -107,7 +107,7 @@ function timerSlave(txQueue, rxQueue, duration, fname)
       --local buf = txBufs[1]
       local lat = myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
       hist:update(lat)
-      file::write(lat .. "\n")
+      file:write(lat .. "\n")
     end
   end
   hist:print()
