@@ -23,7 +23,6 @@ function master(args)
 	rxDev = device.config{port = args.rxDev, rxQueues = 1, txQueues = 1}
 	device.waitForLinks()
 	local file = io.open("mf-lat.txt", "w")
-	file:write("#flows rate meanLat stdevLat\n")
   -- Heatup phase
   --[[
   printf("heatup  - %d secs", args.upheat);
@@ -34,10 +33,9 @@ function master(args)
   ]]--
   -- Testing phase
   local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.timeout, args.file)
-  local latency, stdev = timerTask:wait()
-  printf("total: %f latency (+-%f)", latency, stdev);
+  local hist = timerTask:wait()
   mg.waitForTasks()
-  file:write(latency .. " " .. stdev .. "\n")
+  file:write(hist:samples())
 end
 
 function myMeasureLatency(txQueue, rxQueue, buf, rxBufs) 
@@ -117,6 +115,6 @@ function timerSlave(txQueue, rxQueue, duration, fname)
     log:error("Received no packets.")
   end
   print()
-  return hist:median(), hist:standardDeviation()
+  return hist
 end
 
