@@ -43,5 +43,11 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
 	    -Wno-deprecated-register \
 	    -o $@ -c $<
 
+make-rainbow-table: make-rainbow-table.c
+	gcc -Wall -O3 $< -o $@
+
+havoc.rt: make-rainbow-table
+	./make-rainbow-table 10000000 | sort -s -k 1,1 > havoc.rt
+
 clean-bc:
 	@rm -f *.bc
