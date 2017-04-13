@@ -1400,6 +1400,15 @@ int main(int argc, char **argv, char **envp) {
   }
 #endif
 
+  for (auto &fn : *mainModule) {
+    if (fn.getName() == "__isoc99_fscanf") {
+      fn.setName("fscanf");
+    }
+    if (fn.getName() == "_IO_getc") {
+      fn.setName("getc");
+    }
+  }
+
   if (WithPOSIXRuntime) {
     int r = initEnv(mainModule);
     if (r != 0)

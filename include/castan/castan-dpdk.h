@@ -45,15 +45,6 @@ int __attribute__((weak)) rte_eal_init(int argc, char **argv) {
   return 0;
 }
 
-int __attribute__((weak))
-__isoc99_fscanf(FILE *stream, const char *format, ...) {
-  va_list args;
-  va_start(args, format);
-  int result = vfprintf(stream, format, args);
-  va_end(args);
-  return result;
-}
-
 struct rte_config __attribute__((weak)) * rte_eal_get_configuration() {
   static struct rte_mem_config mem_config = {
       .mlock.cnt = 0, .qlock.cnt = 0, .mplock.cnt = 0,
