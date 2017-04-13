@@ -10,6 +10,7 @@
 #include "klee/Internal/Support/ErrorHandling.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Format.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -18,11 +19,15 @@
 #include <string.h>
 
 #include <set>
+#include <chrono>
 
 using namespace klee;
 
 FILE *klee::klee_warning_file = NULL;
 FILE *klee::klee_message_file = NULL;
+
+std::chrono::time_point<std::chrono::system_clock> startTime
+    = std::chrono::system_clock::now();
 
 static const char *warningPrefix = "WARNING";
 static const char *warningOncePrefix = "WARNING ONCE";
@@ -76,7 +81,10 @@ static void klee_vfmessage(FILE *fp, const char *pfx, const char *msg,
                        /*bg=*/false);
   }
 
-  fdos << "KLEE: ";
+  fdos << llvm::format("[%0.3f] ", std::chrono::duration<double>(
+      std::chrono::system_clock::now() - startTime))
+       << "KLEE: ";
+
   if (pfx)
     fdos << pfx << ": ";
 
