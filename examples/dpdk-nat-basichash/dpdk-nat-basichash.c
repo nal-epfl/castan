@@ -254,7 +254,7 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
   return 0;
 }
 
-#define TABLE_SIZE 16 //(1 << 16)
+#define TABLE_SIZE (1 << 16)
 
 typedef struct __attribute__((packed)) {
   uint32_t src_ip;
