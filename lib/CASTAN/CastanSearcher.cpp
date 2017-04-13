@@ -357,20 +357,20 @@ klee::ExecutionState &CastanSearcher::selectState() {
                        ss.str().substr(2).c_str());
     states.rbegin()->second->dumpStack(llvm::errs());
 
-    klee::klee_message("States:");
-    for (auto sit : states) {
-      std::stringstream ss;
-      for (auto pit : sit.first) {
-        ss << ", " << pit;
-      }
-
-      klee::klee_message(
-          "  State %p with %d "
-          "iterations and priority [%s] at %s:%d",
-          (void *)sit.second, sit.second->cacheModel->getNumIterations(),
-          ss.str().substr(2).c_str(), sit.second->pc->info->file.c_str(),
-          sit.second->pc->info->line);
-    }
+    //     klee::klee_message("States:");
+    //     for (auto sit : states) {
+    //       std::stringstream ss;
+    //       for (auto pit : sit.first) {
+    //         ss << ", " << pit;
+    //       }
+    //
+    //       klee::klee_message(
+    //           "  State %p with %d "
+    //           "iterations and priority [%s] at %s:%d",
+    //           (void *)sit.second, sit.second->cacheModel->getNumIterations(),
+    //           ss.str().substr(2).c_str(), sit.second->pc->info->file.c_str(),
+    //           sit.second->pc->info->line);
+    //     }
 
     lastReportTime = std::chrono::system_clock::now();
   }
