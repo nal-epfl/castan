@@ -305,12 +305,12 @@ namespace klee {
 namespace castan {
   class CastanSearcher : public klee::Searcher {
   private:
-    std::set<std::pair<long, klee::ExecutionState*> > states;
+    std::set<std::pair<std::vector<long>, klee::ExecutionState*> > states;
 
     std::map<const llvm::Instruction *, std::pair<bool, long>> costs;
     std::map<const llvm::Instruction *, long> successorCosts;
 
-    long getPriority(klee::ExecutionState *state);
+    std::vector<long> getPriority(klee::ExecutionState *state);
 
   public:
     explicit CastanSearcher(const llvm::Module *module);
