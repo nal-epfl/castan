@@ -1,11 +1,13 @@
 #include "../Core/Searcher.h"
 
 #include "castan/Internal/CacheModel.h"
+#include "klee/Internal/Module/InstructionInfoTable.h"
 #include "klee/Internal/Module/KInstruction.h"
 #include "klee/Internal/Support/ErrorHandling.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
+#include <chrono>
 #include <sys/stat.h>
 
 namespace castan {
@@ -308,9 +310,9 @@ CastanSearcher::CastanSearcher(const llvm::Module *module) {
   //   exit(0);
 }
 
-long CastanSearcher::getPriority(klee::ExecutionState *state) {
+std::vector<long> CastanSearcher::getPriority(klee::ExecutionState *state) {
   if (state->cacheModel->getNumIterations() == 0) {
-    return LONG_MAX;
+    return {LONG_MAX, 0, 0};
   }
 
   assert(costs.count(state->pc->inst));
@@ -318,7 +320,8 @@ long CastanSearcher::getPriority(klee::ExecutionState *state) {
 
   result += costs[state->pc->inst].second;
   if (costs[state->pc->inst].first) {
-    return result / state->cacheModel->getNumIterations();
+    return {result / state->cacheModel->getNumIterations(),
+            state->cacheModel->getTotalCycles()};
   }
 
   for (klee::ExecutionState::stack_ty::const_reverse_iterator
@@ -327,13 +330,51 @@ long CastanSearcher::getPriority(klee::ExecutionState *state) {
        it != ie && it->caller; it++) {
     result += successorCosts[it->caller->inst];
     if (costs[it->caller->inst].first) {
-      return result / state->cacheModel->getNumIterations();
+      return {result / state->cacheModel->getNumIterations(),
+              state->cacheModel->getTotalCycles()};
     }
   }
-  return result / state->cacheModel->getNumIterations();
+  return {result / state->cacheModel->getNumIterations(),
+          state->cacheModel->getTotalCycles()};
 }
 
 klee::ExecutionState &CastanSearcher::selectState() {
+  static std::chrono::time_point<std::chrono::system_clock> lastReportTime =
+      std::chrono::system_clock::now();
+
+  if (std::chrono::duration_cast<std::chrono::milliseconds>(
+          (std::chrono::system_clock::now() - lastReportTime))
+          .count() >= 1000) {
+    std::stringstream ss;
+    for (auto pit : states.rbegin()->first) {
+      ss << ", " << pit;
+    }
+
+    klee::klee_message("Processing %ld states. Current state with %d "
+                       "iterations and priority [%s]:",
+                       states.size(),
+                       states.rbegin()->second->cacheModel->getNumIterations(),
+                       ss.str().substr(2).c_str());
+    states.rbegin()->second->dumpStack(llvm::errs());
+
+    klee::klee_message("States:");
+    for (auto sit : states) {
+      std::stringstream ss;
+      for (auto pit : sit.first) {
+        ss << ", " << pit;
+      }
+
+      klee::klee_message(
+          "  State %p with %d "
+          "iterations and priority [%s] at %s:%d",
+          (void *)sit.second, sit.second->cacheModel->getNumIterations(),
+          ss.str().substr(2).c_str(), sit.second->pc->info->file.c_str(),
+          sit.second->pc->info->line);
+    }
+
+    lastReportTime = std::chrono::system_clock::now();
+  }
+
   return *states.rbegin()->second;
 }
 

@@ -2803,18 +2803,6 @@ void Executor::run(ExecutionState &initialState) {
   while (!states.empty() && !haltExecution) {
     ExecutionState &state = searcher->selectState();
 
-    static std::chrono::time_point<std::chrono::system_clock> lastReportTime
-        = std::chrono::system_clock::now();
- 
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(
-          (std::chrono::system_clock::now() - lastReportTime)).count()>=1000) {
-
-      klee_message("Processing %ld states. Current state:", states.size());
-      state.dumpStack(llvm::errs());
-
-      lastReportTime = std::chrono::system_clock::now();
-    }
-
     KInstruction *ki = state.pc;
     stepInstruction(state);
 
