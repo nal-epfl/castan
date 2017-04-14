@@ -517,10 +517,10 @@ void run(struct nf_config *config, hash_table_t hash_table) {
 
       if (actual_rx_len != 0) {
 #ifdef LATENCY
-      struct timespec timestamp;
-      if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
-        rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
-      }
+        struct timespec timestamp;
+        if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
+          rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
+        }
 #endif
 
         uint32_t dst_device =
@@ -537,13 +537,13 @@ void run(struct nf_config *config, hash_table_t hash_table) {
         }
 
 #ifdef LATENCY
-      struct timespec new_timestamp;
-      if (clock_gettime(CLOCK_MONOTONIC, &new_timestamp)) {
-        rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
-      }
-      NF_INFO("Latency: %ld ns.",
-              (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
-                  (new_timestamp.tv_nsec - timestamp.tv_nsec));
+        struct timespec new_timestamp;
+        if (clock_gettime(CLOCK_MONOTONIC, &new_timestamp)) {
+          rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
+        }
+        NF_INFO("Latency: %ld ns.",
+                (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
+                    (new_timestamp.tv_nsec - timestamp.tv_nsec));
 #endif
       }
     }

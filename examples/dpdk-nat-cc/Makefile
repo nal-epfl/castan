@@ -28,6 +28,9 @@ CFLAGS += -O3
 CFLAGS += -I.. -I../../../include
 CFLAGS += -std=gnu99
 
+CFLAGS += -DNDEBUG
+# CFLAGS += -DLATENCY
+
 # disable warnings triggered by DPDK
 CFLAGS += -Wno-implicit-function-declaration
 CFLAGS += -Wno-nested-externs

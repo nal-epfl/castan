@@ -27,6 +27,9 @@ CFLAGS += -std=gnu++11
 CFLAGS += -I../../../include
 CFLAGS += -I/castan/include
 
+CFLAGS += -DNDEBUG
+# CFLAGS += -DLATENCY
+
 LDFLAGS += -lstdc++
 
 include $(RTE_SDK)/mk/rte.extapp.mk
