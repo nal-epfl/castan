@@ -34,7 +34,8 @@ if [ -z $PCAP_FILE ]; then
 fi
 
 CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
-RESULTS_FILE="bench-$CLEAN_APP_NAME-$SCENARIO.results"
+CLEAN_PCAP_NAME=`echo "$PCAP_FILE" | tr '/' '_'`
+RESULTS_FILE="bench-$CLEAN_APP_NAME-$SCENARIO-$CLEAN_PCAP_NAME.results"
 
 if [ -f "$RESULTS_FILE" ]; then
     rm "$RESULTS_FILE"
