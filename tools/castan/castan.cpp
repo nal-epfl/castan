@@ -458,13 +458,13 @@ void KleeHandler::processTestCase(const ExecutionState &state,
   int packet_id = 0;
   int reconciled_packets = 0;
   for (auto packet : havocs) {
-    klee_message("Reconciciling packet %d with %ld havocs.", packet_id,
-                 packet.second.size());
     if (packet.second.size() == 0) {
       packet_id++;
       reconciled_packets++;
       continue;
     }
+    klee_message("Reconciciling packet %d with %ld havocs.", packet_id,
+                 packet.second.size());
     // Solve havoc outputs.
     std::vector<const Array *> objects;
     for (auto havoc : packet.second) {
