@@ -19,19 +19,30 @@
 #include <sys/types.h>
 
 #ifdef __clang__
+
 #define NF_INFO(text, ...)                                                     \
   do {                                                                         \
-  } while (0);
+  } while (0)
 #define NF_DEBUG(text, ...)                                                    \
   do {                                                                         \
-  } while (0);
+  } while (0)
+
 #else
+
 #define NF_INFO(text, ...)                                                     \
   printf(text "\n", ##__VA_ARGS__);                                            \
   fflush(stdout)
+
+#ifdef NDEBUG
+#define NF_DEBUG(...)                                                          \
+  do {                                                                         \
+  } while (0)
+#else
 #define NF_DEBUG(text, ...)                                                    \
   printf(text "\n", ##__VA_ARGS__);                                            \
   fflush(stdout)
+#endif
+
 #endif
 
 // Queue sizes for receiving/transmitting packets (set to their values from
