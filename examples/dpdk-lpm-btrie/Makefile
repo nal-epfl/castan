@@ -24,6 +24,7 @@ SRCS-y := dpdk-lpm-btrie.c
 CFLAGS += -O3
 CFLAGS += -I..
 CFLAGS += -std=gnu++11
+# CFLAGS += -DLATENCY
 
 LDFLAGS += -lstdc++
 

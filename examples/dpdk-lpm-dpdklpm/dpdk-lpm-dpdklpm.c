@@ -414,6 +414,10 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
 
   while (1) {
     for (uint32_t device = 0; device < nb_devices; ++device) {
+      struct rte_mbuf *mbuf[1];
+      uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
+
+      if (actual_rx_len != 0) {
 #ifdef LATENCY
       struct timespec timestamp;
       if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
@@ -421,10 +425,6 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
       }
 #endif
 
-      struct rte_mbuf *mbuf[1];
-      uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
-
-      if (actual_rx_len != 0) {
         uint32_t dst_device = dispatch_packet(config, device, lpm, mbuf[0]);
 
         if (dst_device == device) {
@@ -445,7 +445,6 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
             rte_pktmbuf_free(mbuf[0]);
           }
         }
-      }
 
 #ifdef LATENCY
       struct timespec new_timestamp;
@@ -456,6 +455,7 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
               (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
                   (new_timestamp.tv_nsec - timestamp.tv_nsec));
 #endif
+      }
     }
   }
 }

@@ -477,6 +477,13 @@ void run(struct nf_config* config, lpm_t* lpm) {
       uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
 
       if (actual_rx_len != 0) {
+#ifdef LATENCY
+      struct timespec timestamp;
+      if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
+        rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
+      }
+#endif
+
         uint32_t dst_device = dispatch_packet(config, device,
                                               lpm, mbuf[0]);
 
@@ -489,6 +496,16 @@ void run(struct nf_config* config, lpm_t* lpm) {
             rte_pktmbuf_free(mbuf[0]);
           }
         }
+
+#ifdef LATENCY
+      struct timespec new_timestamp;
+      if (clock_gettime(CLOCK_MONOTONIC, &new_timestamp)) {
+        rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
+      }
+      NF_INFO("Latency: %ld ns.",
+              (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
+                  (new_timestamp.tv_nsec - timestamp.tv_nsec));
+#endif
       }
     }
   }

@@ -25,6 +25,7 @@ CFLAGS += -O3
 CFLAGS += -I..
 CFLAGS += -std=gnu++11
 CFLAGS += -I../../../include
+# CFLAGS += -DLATENCY
 
 LDFLAGS += -lstdc++
 
