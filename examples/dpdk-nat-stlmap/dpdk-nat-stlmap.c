@@ -262,22 +262,26 @@ typedef struct __attribute__((packed)) hash_key_t {
   uint16_t dst_port;
 
   bool operator<(const hash_key_t &other) const {
-    return this->src_ip != other.src_ip
-               ? this->src_ip < other.src_ip
-               : this->dst_ip != other.dst_ip
-                     ? this->dst_ip < other.dst_ip
-                     : this->proto != other.proto
-                           ? this->proto < other.proto
-                           : this->src_port != other.src_port
-                                 ? this->src_port < other.src_port
-                                 : this->dst_port < other.dst_port;
+    if (this->src_ip != other.src_ip) {
+      return this->src_ip < other.src_ip;
+    } else if (this->dst_ip != other.dst_ip) {
+      return this->dst_ip < other.dst_ip;
+    } else if (this->proto != other.proto) {
+      return this->proto < other.proto;
+    } else if (this->src_port != other.src_port) {
+      return this->src_port < other.src_port;
+    } else {
+      return this->dst_port < other.dst_port;
+    }
   }
 } hash_key_t;
 
 typedef hash_key_t hash_value_t;
 typedef std::map<hash_key_t, hash_value_t> *hash_table_t;
 
-void hash_init(hash_table_t *hash_table) { *hash_table = new std::map<hash_key_t, hash_value_t>(); }
+void hash_init(hash_table_t *hash_table) {
+  *hash_table = new std::map<hash_key_t, hash_value_t>();
+}
 
 void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
   (*hash_table)[key] = value;
