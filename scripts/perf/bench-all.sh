@@ -32,7 +32,7 @@ for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
         CLEAN_PCAP_NAME=`echo "$PCAP_FILE" | tr '/' '_'`
         RESULTS_FILE="bench-$CLEAN_APP_NAME-$SCENARIO-$CLEAN_PCAP_NAME.results"
         $DIR/run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE $PCAP_FILE
-    done 10<pcaplist/$MIDDLEBOX.txt
+    done 10<$DIR/pcaplist/$MIDDLEBOX.txt
     $DIR/stop-middlebox.sh
 done
 
