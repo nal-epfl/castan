@@ -202,6 +202,10 @@ namespace {
 			       "as opposed to once per function (default=off)"));
 
   cl::opt<bool>
+  OutputEarly("output-early", cl::init(false),
+              cl::desc("Enable outputting states that terminated early (default=off)."));
+
+  cl::opt<bool>
   OnlyOutputStatesCoveringNew("only-output-states-covering-new",
                               cl::init(false),
 			      cl::desc("Only output test cases covering new code (default=off)."));
@@ -2898,8 +2902,8 @@ void Executor::terminateState(ExecutionState &state) {
 
 void Executor::terminateStateEarly(ExecutionState &state, 
                                    const Twine &message) {
-  if (!OnlyOutputStatesCoveringNew || state.coveredNew ||
-      (AlwaysOutputSeeds && seedMap.count(&state)))
+  if (OutputEarly && (!OnlyOutputStatesCoveringNew || state.coveredNew ||
+      (AlwaysOutputSeeds && seedMap.count(&state))))
     interpreterHandler->processTestCase(state, (message + "\n").str().c_str(),
                                         "early");
   terminateState(state);
