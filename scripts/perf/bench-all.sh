@@ -25,15 +25,15 @@ mkdir -p $NOW
 
 for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
     echo "[bench-all] testing $MIDDLEBOX"
-    $DIR/start-middlebox.sh $MIDDLEBOX
     while read -u 10 PCAP_FILE; do
+        $DIR/start-middlebox.sh $MIDDLEBOX
         echo "[bench-all] running pcap file: $PCAP_FILE"
         CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
         CLEAN_PCAP_NAME=`echo "$PCAP_FILE" | tr '/' '_'`
         RESULTS_FILE="bench-$CLEAN_APP_NAME-$SCENARIO-$CLEAN_PCAP_NAME.results"
         $DIR/run.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE $PCAP_FILE
+        $DIR/stop-middlebox.sh
     done 10<$DIR/pcaplist/$MIDDLEBOX.txt
-    $DIR/stop-middlebox.sh
 done
 
 $DIR/clean.sh
