@@ -300,7 +300,9 @@ void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
 
 int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
   if (hash_table->count(key)) {
-    *value = (*hash_table)[key];
+    if (value) {
+      *value = (*hash_table)[key];
+    }
     return 1;
   }
 
