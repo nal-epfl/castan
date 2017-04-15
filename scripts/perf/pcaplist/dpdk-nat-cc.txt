@@ -1,4 +1,3 @@
-random/dpdk-nat-stlmap-unirand.pcap
 random/imc10-2pt8-zipf.pcap
 facebook/cluster_A_1.pcap
 facebook/cluster_B_1.pcap
