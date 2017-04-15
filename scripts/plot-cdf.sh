@@ -17,7 +17,7 @@ while (("$#")); do
   if [ "$CSV" -nt "$CDF" ]; then
     echo "Processing $CSV."
 
-    sort -n --parallel=$(grep -c 'processor' /proc/cpuinfo) $CSV \
+    sort -n --parallel=$(nproc) $CSV \
         | uniq -c > $HISTOGRAM
 
     TOTAL=$(awk '{sum += $1} END {print sum;}' $HISTOGRAM)
