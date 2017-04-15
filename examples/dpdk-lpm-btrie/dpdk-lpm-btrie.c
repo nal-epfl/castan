@@ -42,6 +42,17 @@
 
 #endif
 
+#ifdef NODROP
+#  define DROP_PACKET(mbuf, device) {                               \
+  uint16_t actual_tx_len = rte_eth_tx_burst(1-device, 0, mbuf, 1);  \
+  if (actual_tx_len < 1) {                                          \
+    rte_pktmbuf_free(mbuf[0]);                                      \
+  }                                                                 \
+}
+#else //NODROP
+#  define DROP_PACKET(mbuf, device) rte_pktmbuf_free(mbuf[0])
+#endif//NODROP
+
 // Queue sizes for receiving/transmitting packets (set to their values from l3fwd sample)
 static const uint16_t RX_QUEUE_SIZE = 128;
 static const uint16_t TX_QUEUE_SIZE = 512;
@@ -507,7 +518,7 @@ void run(struct nf_config* config, lpm_t* lpm) {
                                               lpm, mbuf[0]);
 
         if (dst_device == device) {
-          rte_pktmbuf_free(mbuf[0]);
+          DROP_PACKET(mbuf, device);
         } else {
           uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, mbuf, 1);
 
