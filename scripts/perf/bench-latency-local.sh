@@ -21,9 +21,8 @@ make
 mkdir -p ~/results
 
 sudo ./build/nf --vdev "eth_pcap0,rx_pcap=$PCAP,tx_pcap=/dev/null" --vdev 'eth_pcap1,rx_pcap=/home/lpedrosa/pcap/empty.pcap,tx_pcap=/dev/null' -- --eth-dest 0,90:e2:ba:55:12:25 --eth-dest 1,90:e2:ba:55:12:24 $@ 2>&1 > ~/results/$NF-$CLEAN_PCAP.log &
-PID=$!
 
-sleep 2
+sleep 5
 
-kill -2 $PID
+sudo killall -2 nf
 wait
