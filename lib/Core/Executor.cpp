@@ -2902,6 +2902,9 @@ void Executor::terminateState(ExecutionState &state) {
 
 void Executor::terminateStateEarly(ExecutionState &state, 
                                    const Twine &message) {
+  klee_warning("State terminated early for '%s' at:", message.str().c_str());
+  state.dumpStack(llvm::errs());
+
   if (OutputEarly && (!OnlyOutputStatesCoveringNew || state.coveredNew ||
       (AlwaysOutputSeeds && seedMap.count(&state))))
     interpreterHandler->processTestCase(state, (message + "\n").str().c_str(),
