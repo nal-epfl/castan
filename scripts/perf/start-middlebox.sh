@@ -14,6 +14,9 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 MIDDLEBOX=$1
 
-$DIR/run-dpdk.sh $MIDDLEBOX "--pfx2as $DIR/routing-table.pfx2as"
+$DIR/run-dpdk.sh $MIDDLEBOX \
+"--pfx2as $DIR/routing-table.pfx2as"
+# "--nat-ip 192.168.0.1"
+# "--extip 192.168.0.1 --expire 120 --max-flows 65536 --wan 1"
 
 sleep 10
