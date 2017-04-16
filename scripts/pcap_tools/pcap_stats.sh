@@ -8,7 +8,7 @@ tcpdump -nvr $1 | awk '
   }
 
   /length [0-9]*)/ {
-    sum_length += $15;
+    sum_length += gensub(/.*length ([0-9]*)\)/, "\\1", "g", $0);
   }
 
   END {
