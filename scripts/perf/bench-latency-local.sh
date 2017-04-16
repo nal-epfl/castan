@@ -24,3 +24,4 @@ PID=$!
 wait 2
 
 kill -2 $PID
+wait
