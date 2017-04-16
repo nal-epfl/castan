@@ -71,3 +71,7 @@ for PCAP in ~/pcap/facebook/cluster_A_1.pcap \
       && $DIR/bench-latency-local.sh dpdk-nat-cc $PCAP \
              --extip 192.168.0.1 --expire 120 --max-flows 65536 --wan 1
 done
+
+parallel \
+    "awk '/^Latency:/ {print \$2}' {} > \$(echo {} | sed -e 's/.log/.csv/')" \
+    ::: ~/results/*.log
