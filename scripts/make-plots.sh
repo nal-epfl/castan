@@ -26,6 +26,55 @@ function make_cdf {
       random/$NF-zipfrand-lat.csv "Zipf Random"
 }
 
+function make_scatter {
+  OUTPUT=$1
+  RANGE=$2
+  shift 2
+
+  echo "Making $OUTPUT."
+
+  SCATTER_CSV=$(mktemp)
+  while (("$#")); do
+    NF=$1
+    shift
+
+    CASTAN_CACHE="castan/$NF-castan.cache"
+    ACTUAL_CSV="castan/$NF-castan-locallat.csv"
+
+    echo "  Processing $CASTAN_CACHE and $ACTUAL_CSV."
+
+    CASTAN_CSV=$(mktemp)
+    awk '
+      /Estimated Execution Time:/ {
+        print gensub(/\(([0-9.]*)ns/, "\\1", "g", $6);
+      }' $CASTAN_CACHE > $CASTAN_CSV
+
+    if [ "$(wc -l $CASTAN_CSV)" -ne "$($ACTUAL_CSV)" ]; then
+      echo "ERROR: Data mismatch."
+      exit 1
+    fi
+
+    paste -d , $CASTAN_CSV $ACTUAL_CSV >> $SCATTER_CSV
+  done
+
+  gnuplot <<EOF
+    set xlabel 'CASTAN Prediction [ns]'
+    set ylabel 'Actual Latency [ns]'
+    set grid
+    set key off
+    unset colorbox
+    set xr [0:$RANGE]
+    set yr [0:$RANGE]
+
+    set term epscairo size 3.5,3
+    set output '$OUTPUT'
+    set datafile separator ","
+    plot '$SCATTER_CSV' pt 7 ps .3
+EOF
+
+  rm $CASTAN_CSV $SCATTER_CSV
+}
+
 function get_castan_mpps {
   INPUT=$1
   awk '
@@ -59,6 +108,11 @@ function get_castan_gbps {
 make_cdf dpdk-lpm-dpdklpm 1000
 make_cdf dpdk-lpm-btrie 4000
 make_cdf dpdk-nat-stlmap 2000
+
+make_scatter all-scatter.eps 3500 dpdk-lpm-dpdklpm dpdk-lpm-btrie dpdk-nat-stlmap
+make_scatter dpdk-lpm-dpdklpm-scatter.eps 1000 dpdk-lpm-dpdklpm
+make_scatter dpdk-lpm-btrie-scatter.eps 3000 dpdk-lpm-btrie
+make_scatter dpdk-nat-stlmap-scatter.eps 1000 dpdk-nat-stlmap
 
 echo "Making dpdk-thru1p-p.eps and dpdk-thru1p-b.eps"
 
