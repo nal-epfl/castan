@@ -1,4 +1,4 @@
-TARGETS := local nonlocal
+TARGETS := local nonlocal variable-array
 CFLAGS := -I../../include -Wall -g
 LDFLAGS :=
 

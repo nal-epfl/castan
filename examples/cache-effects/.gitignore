@@ -5,3 +5,6 @@ local.bc
 nonlocal
 nonlocal.o
 nonlocal.bc
+variable-array
+variable-array.o
+variable-array.bc

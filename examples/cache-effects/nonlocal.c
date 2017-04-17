@@ -6,9 +6,6 @@ int main() {
   int matrix[MATRIX_ROWS][MATRIX_COLS];
 
   start();
-#ifdef __clang__
-  memory_model_start();
-#endif
 
   int i = 0;
   for (unsigned int c = 0; c < sizeof(matrix[0]) / sizeof(matrix[0][0]); c++) {
@@ -24,9 +21,6 @@ int main() {
     }
   }
 
-#ifdef __clang__
-  memory_model_stop();
-#endif
   stop();
 
   return 0;
