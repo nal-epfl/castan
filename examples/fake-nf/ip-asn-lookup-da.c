@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
     num_packets++;
   }
 #endif
-  stop(num_packets);
+  stop(num_packets, "");
 
   return 0;
 }

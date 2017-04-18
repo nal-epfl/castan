@@ -409,7 +409,7 @@ int main(int argc, char *argv[]) {
 
   print_hash_stats();
 #endif
-  stop(num_packets);
+  stop(num_packets, "");
 
   return 0;
 }

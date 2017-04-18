@@ -1,4 +1,4 @@
-TARGETS := ip-asn-lookup-trie ip-asn-lookup-da nat-hash-table
+TARGETS := ip-asn-lookup-trie ip-asn-lookup-da nat-hash-table simple-loopcount
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS := -lpcap
 
@@ -18,7 +18,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) make-rainbow-table
 	gcc $(LDFLAGS) -o $@ $<
 
 %.bc: %.c
-	clang $(CFLAGS) -emit-llvm -c -o $@ $<
+	clang $(CFLAGS) -Wno-unused-variable -emit-llvm -c -o $@ $<
 
 make-rainbow-table: make-rainbow-table.c
 	gcc -Wall -O3 $< -o $@
