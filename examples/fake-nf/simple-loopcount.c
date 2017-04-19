@@ -6,8 +6,6 @@
 #include <castan/castan.h>
 
 int main(int argc, char *argv[]) {
-  uint32_t count = 10;
-
   while (1) {
     castan_loop();
     uint32_t packet = 0;
@@ -20,7 +18,6 @@ int main(int argc, char *argv[]) {
       exit(0);
     }
 #endif
-    packet = (count++) / 10;
 
     start();
     while (packet) {
