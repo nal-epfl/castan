@@ -1,6 +1,7 @@
 #include "../Core/Searcher.h"
 
 #include "castan/Internal/CacheModel.h"
+#include "castan/Internal/GenericCacheModel.h"
 #include "klee/Internal/Module/InstructionInfoTable.h"
 #include "klee/Internal/Module/KInstruction.h"
 #include "klee/Internal/Support/ErrorHandling.h"
@@ -104,7 +105,7 @@ CastanSearcher::CastanSearcher(const llvm::Module *module) {
       assert(paths[&ci->getCalledFunction()->front().front()].count(inst) == 0);
 
       std::map<const llvm::Instruction *, int> path;
-      std::pair<bool, long> cost;
+      std::pair<bool, double> cost;
       // Check if called function is on direct path.
       if (costs[&ci->getCalledFunction()->front().front()].first) {
         cost.first = true;
@@ -137,8 +138,9 @@ CastanSearcher::CastanSearcher(const llvm::Module *module) {
         changed = true;
       }
     } else {
-      long cost =
-          (isa<llvm::LoadInst>(inst) || isa<llvm::StoreInst>(inst)) ? 4 : 1;
+      long cost = (isa<llvm::LoadInst>(inst) || isa<llvm::StoreInst>(inst))
+                      ? NS_PER_MEMORY_INSTRUCTION
+                      : NS_PER_INSTRUCTION;
       // Look at successors within function.
       for (auto s : successors[inst]) {
         if (paths[s][inst] <= 1) {
@@ -310,18 +312,18 @@ CastanSearcher::CastanSearcher(const llvm::Module *module) {
   //   exit(0);
 }
 
-std::vector<long> CastanSearcher::getPriority(klee::ExecutionState *state) {
+std::vector<double> CastanSearcher::getPriority(klee::ExecutionState *state) {
   if (state->cacheModel->getNumIterations() == 0) {
-    return {LONG_MAX, 0, 0};
+    return {+INFINITY, 0, 0};
   }
 
   assert(costs.count(state->pc->inst));
-  long result = state->cacheModel->getTotalCycles();
+  double result = state->cacheModel->getTotalTime();
 
   result += costs[state->pc->inst].second;
   if (costs[state->pc->inst].first) {
     return {result / state->cacheModel->getNumIterations(),
-            state->cacheModel->getTotalCycles()};
+            state->cacheModel->getTotalTime()};
   }
 
   for (klee::ExecutionState::stack_ty::const_reverse_iterator
@@ -331,11 +333,11 @@ std::vector<long> CastanSearcher::getPriority(klee::ExecutionState *state) {
     result += successorCosts[it->caller->inst];
     if (costs[it->caller->inst].first) {
       return {result / state->cacheModel->getNumIterations(),
-              state->cacheModel->getTotalCycles()};
+              state->cacheModel->getTotalTime()};
     }
   }
   return {result / state->cacheModel->getNumIterations(),
-          state->cacheModel->getTotalCycles()};
+          state->cacheModel->getTotalTime()};
 }
 
 klee::ExecutionState &CastanSearcher::selectState() {

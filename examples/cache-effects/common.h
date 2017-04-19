@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 199309L
 
 #include <assert.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
 

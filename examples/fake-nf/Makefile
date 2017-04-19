@@ -1,4 +1,4 @@
-TARGETS := ip-asn-lookup-trie ip-asn-lookup-da nat-hash-table simple-loop-count
+TARGETS := ip-asn-lookup-trie ip-asn-lookup-da nat-hash-table simple-loop-count simple-memory-access
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
 LDFLAGS := -lpcap
 

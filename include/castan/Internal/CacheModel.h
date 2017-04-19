@@ -18,7 +18,7 @@ public:
   virtual void exec(klee::ExecutionState &state) = 0;
   virtual bool loop(klee::ExecutionState &state) = 0;
 
-  virtual long getTotalCycles() = 0;
+  virtual double getTotalTime() = 0;
   virtual int getNumIterations() = 0;
 
   virtual std::string dumpStats() = 0;

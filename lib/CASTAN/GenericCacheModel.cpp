@@ -9,39 +9,25 @@
 #include <llvm/DebugInfo.h>
 #include <llvm/IR/Instruction.h>
 
-#define BLOCK_BITS 6
-
 static struct {
   unsigned int size;          // bytes
   unsigned int associativity; // ways
   char writeBack;             // 0 = write-through; 1 = write-back.
-  unsigned int latency;       // cycles (if hit).
+  double latency;             // cycles (if hit).
 } cacheConfig[] = {
-//     // Fake cache.
-//     {4 << BLOCK_BITS, 2, 1, 1},
-//     {16 << BLOCK_BITS, 1, 1, 8},
-//     {64 << BLOCK_BITS, 1, 1, 32},
-//     {0, 0, 0, 128},
-
-//     // Fake cache with a single level.
-//     {1 << BLOCK_BITS, 1, 1, 32},
-//     {0, 0, 0, 128},
-
-// Intel(R) Core(TM) i7-2600S
-// #define CPU_CPI 1
-// #define CPU_HZ 2800000000
-//     {32 * 1024, 8, 1, 4},
-//     {256 * 1024, 8, 1, 10},
-//     {8192 * 1024, 16, 1, 40},
-//     {0, 0, 0, 168},
-
-// Intel(R) Xeon(R) CPU E5-2667 v2
-#define CPU_CPI 1
-#define CPU_HZ 3300000000
-    {32 * 1024, 8, 1, 4},
-    {256 * 1024, 8, 1, 12},
-    {25600 * 1024, 20, 1, 30},
-    {0, 0, 0, 205},
+#if CACHE_NUM_LAYERS >= 1
+    {CACHE_L1_SIZE, CACHE_L1_ASSOCIATIVITY, CACHE_L1_WRITEBACK,
+     CACHE_L1_LATENCY},
+#endif
+#if CACHE_NUM_LAYERS >= 2
+    {CACHE_L2_SIZE, CACHE_L2_ASSOCIATIVITY, CACHE_L2_WRITEBACK,
+     CACHE_L2_LATENCY},
+#endif
+#if CACHE_NUM_LAYERS >= 3
+    {CACHE_L3_SIZE, CACHE_L3_ASSOCIATIVITY, CACHE_L3_WRITEBACK,
+     CACHE_L3_LATENCY},
+#endif
+    {0, 0, 0, CACHE_DRAM_LATENCY},
 };
 
 namespace {
@@ -407,15 +393,15 @@ void GenericCacheModel::exec(klee::ExecutionState &state) {
   }
 }
 
-long GenericCacheModel::getTotalCycles() {
-  long cycles = 0;
+double GenericCacheModel::getTotalTime() {
+  double ns = 0;
   for (auto it : loopStats) {
-    cycles += it.instructionCount * CPU_CPI;
+    ns += it.instructionCount * NS_PER_INSTRUCTION;
     for (auto h : it.hitCount) {
-      cycles += h.second * cacheConfig[h.first].latency;
+      ns += h.second * cacheConfig[h.first].latency;
     }
   }
-  return cycles;
+  return ns;
 }
 
 std::string GenericCacheModel::dumpStats() {
@@ -426,23 +412,19 @@ std::string GenericCacheModel::dumpStats() {
     stats << "  Instructions: " << loopStats[i].instructionCount << "\n";
     stats << "  Reads: " << loopStats[i].readCount << "\n";
     stats << "  Writes: " << loopStats[i].writeCount << "\n";
-    unsigned long cycles = loopStats[i].instructionCount * CPU_CPI;
+    double ns = loopStats[i].instructionCount * NS_PER_INSTRUCTION;
     for (auto h : loopStats[i].hitCount) {
       if (cacheConfig[h.first].size) {
         stats << "  L" << (h.first + 1) << " Hits: " << h.second << "\n";
       } else {
         stats << "  DRAM Accesses: " << h.second << "\n";
       }
-      cycles += h.second * cacheConfig[h.first].latency;
+      ns += h.second * cacheConfig[h.first].latency;
     }
-    stats << "  Estimated Execution Time: " << cycles << " cycles ("
-          << (cycles * 1E9 / CPU_HZ) << "ns @ " << (CPU_HZ / 1E9) << "GHz)\n";
-    if (cycles) {
-      stats << "  Estimated Throughput (Single Core): "
-            << (CPU_HZ / cycles / 1E6) << "Mpps, "
-            << (64 * CPU_HZ / cycles / 1E9) << "Gbps (64B packets), "
-            << (1500 * CPU_HZ / cycles / 1E9) << "Gbps (1500B packets), "
-            << (9000 * CPU_HZ / cycles / 1E9) << "Gbps (9000B packets)\n";
+    stats << "  Estimated Execution Time: " << ns << " ns\n";
+    if (ns) {
+      stats << "  Estimated Throughput (Single Core): " << (1e3 / ns)
+            << "Mpps\n";
     }
   }
 

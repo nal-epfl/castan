@@ -11,6 +11,9 @@ nat-hash-table.o
 simple-loop-count
 simple-loop-count.bc
 simple-loop-count.o
+simple-memory-access
+simple-memory-access.bc
+simple-memory-access.o
 make-rainbow-table
 havoc.rt
 
