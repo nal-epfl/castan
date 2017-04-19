@@ -8,9 +8,9 @@ ip-asn-lookup-trie.o
 nat-hash-table
 nat-hash-table.bc
 nat-hash-table.o
-simple-loopcount
-simple-loopcount.bc
-simple-loopcount.o
+simple-loop-count
+simple-loop-count.bc
+simple-loop-count.o
 make-rainbow-table
 havoc.rt
 
