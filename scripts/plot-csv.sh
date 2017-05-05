@@ -8,11 +8,10 @@ shift 1
 PLOT_LINES="plot"
 while (("$#")); do
   CSV="$1"
-  TITLE="$2"
 
-  PLOT_LINES+=" '$CSV' using 1:2 title '$TITLE' with line lw 5,"
+  PLOT_LINES+=" '$CSV' using 1:2 title '$(echo $CSV | sed s/\.csv//)' with line lw 5,"
 
-  shift 2
+  shift 1
 done
 
 echo "Plotting CSV into $OUTPUT."
