@@ -9,6 +9,8 @@ variable-array
 variable-array.o
 variable-array.bc
 process-contention-sets
+process-contention-sets.o
 process-contention-sets.bc
 probe-slices
 probe-slices.o
+probe-slices.bc
