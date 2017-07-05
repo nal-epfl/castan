@@ -7,7 +7,7 @@ LDFLAGS :=
 default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) probe-slices
 
 %.o: %.c
-	gcc $(CFLAGS) -c -o $@ $<
+	gcc -std=c11 $(CFLAGS) -c -o $@ $<
 
 %.o: %.cpp
 	g++ -std=c++11 $(CFLAGS) -c -o $@ $<
@@ -16,7 +16,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) probe-slices
 	g++ $(LDFLAGS) -o $@ $^
 
 %.bc: %.c %
-	clang $(CFLAGS) -emit-llvm -c -o $@ $<
+	clang -std=c11 $(CFLAGS) -emit-llvm -c -o $@ $<
 
 %.bc: %.cpp %
 	clang++ -std=c++11 $(CFLAGS) -emit-llvm -c -o $@ $<
