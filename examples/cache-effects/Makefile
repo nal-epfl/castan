@@ -1,17 +1,25 @@
-TARGETS := local nonlocal variable-array
+TARGETS := local nonlocal variable-array process-contention-sets
 CFLAGS := -I../../include -Wall -g
 LDFLAGS :=
+
+.SUFFIXES:
 
 default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<
 
+%.o: %.cpp
+	g++ -std=c++11 $(CFLAGS) -c -o $@ $<
+
 %: %.o
-	gcc $(LDFLAGS) -o $@ $<
+	g++ $(LDFLAGS) -o $@ $^
 
 %.bc: %.c %
 	clang $(CFLAGS) -emit-llvm -c -o $@ $<
+
+%.bc: %.cpp %
+	clang++ -std=c++11 $(CFLAGS) -emit-llvm -c -o $@ $<
 
 run-times: $(TARGETS)
 	for p in $^; do \

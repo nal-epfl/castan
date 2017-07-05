@@ -8,3 +8,5 @@ nonlocal.bc
 variable-array
 variable-array.o
 variable-array.bc
+process-contention-sets
+process-contention-sets.bc
