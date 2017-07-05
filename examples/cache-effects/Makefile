@@ -1,10 +1,10 @@
-TARGETS := local nonlocal variable-array process-contention-sets
+TARGETS := local nonlocal variable-array process-contention-sets probe-slices
 CFLAGS := -I../../include -Wall -g
 LDFLAGS :=
 
 .SUFFIXES:
 
-default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) probe-slices
+default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 
 %.o: %.c
 	gcc -std=c11 $(CFLAGS) -c -o $@ $<
