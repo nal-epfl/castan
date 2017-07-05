@@ -4,7 +4,7 @@ LDFLAGS :=
 
 .SUFFIXES:
 
-default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
+default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) probe-slices
 
 %.o: %.c
 	gcc $(CFLAGS) -c -o $@ $<

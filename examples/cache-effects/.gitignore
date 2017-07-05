@@ -10,3 +10,5 @@ variable-array.o
 variable-array.bc
 process-contention-sets
 process-contention-sets.bc
+probe-slices
+probe-slices.o
