@@ -1,12 +1,12 @@
 #define _POSIX_C_SOURCE 199309L
 
+#include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <time.h>
-#include <limits.h>
 
-#define PAGE_SIZE (1<<30)
+#define PAGE_SIZE (1 << 30)
 #define ARRAY_SIZE (8ul * PAGE_SIZE)
 // #define ASSOCIATIVITY 20
 // #define DELAY_THRESHOLD 80
@@ -41,13 +41,13 @@ long get_size(long entry) {
     return 0;
   }
 
-  if (*((long*) &array[entry]) == entry) {
+  if (*((long *)&array[entry]) == entry) {
     return 1;
   }
 
   long pos = entry, size = 0;
   do {
-    pos = *((long*) &array[pos]);
+    pos = *((long *)&array[pos]);
     size++;
   } while (pos != entry);
 
@@ -56,15 +56,15 @@ long get_size(long entry) {
 
 void insert(long *pos, long item) {
   assert(item >= 0);
-  assert(*((long*) &array[item]) == item);
+  assert(*((long *)&array[item]) == item);
 
   if (*pos < 0) {
     *pos = item;
   }
 
   if (*pos != item) {
-    *((long*) &array[item]) = *((long*) &array[*pos]);
-    *((long*) &array[*pos]) = item;
+    *((long *)&array[item]) = *((long *)&array[*pos]);
+    *((long *)&array[*pos]) = item;
   }
 }
 
@@ -72,7 +72,7 @@ long drop_next(long *entry, long pos) {
   assert(*entry >= 0);
   assert(pos >= 0);
 
-  long drop = *((long*) &array[pos]);
+  long drop = *((long *)&array[pos]);
 
   if (drop == *entry) {
     if (pos == *entry) {
@@ -82,8 +82,8 @@ long drop_next(long *entry, long pos) {
     }
   }
 
-  *((long*) &array[pos]) = *((long*) &array[drop]);
-  *((long*) &array[drop]) = drop;
+  *((long *)&array[pos]) = *((long *)&array[drop]);
+  *((long *)&array[drop]) = drop;
 
   return drop;
 }
@@ -91,24 +91,24 @@ long drop_next(long *entry, long pos) {
 void swap(long pos1, long pos2) {
   assert(pos1 >= 0 && pos2 >= 0);
 
-  long pos1s = *((long*) &array[pos1]);
-  long pos1ss = *((long*) &array[pos1s]);
-  long pos2s = *((long*) &array[pos2]);
-  long pos2ss = *((long*) &array[pos2s]);
+  long pos1s = *((long *)&array[pos1]);
+  long pos1ss = *((long *)&array[pos1s]);
+  long pos2s = *((long *)&array[pos2]);
+  long pos2ss = *((long *)&array[pos2s]);
 
   if (pos1 == pos2s) {
-    *((long*) &array[pos1]) = pos1ss;
-    *((long*) &array[pos1s]) = pos2s;
+    *((long *)&array[pos1]) = pos1ss;
+    *((long *)&array[pos1s]) = pos2s;
   } else {
-    *((long*) &array[pos1]) = pos2s;
-    *((long*) &array[pos1s]) = pos2ss;
+    *((long *)&array[pos1]) = pos2s;
+    *((long *)&array[pos1s]) = pos2ss;
   }
   if (pos2 == pos1s) {
-    *((long*) &array[pos2]) = pos2ss;
-    *((long*) &array[pos2s]) = pos1s;
+    *((long *)&array[pos2]) = pos2ss;
+    *((long *)&array[pos2s]) = pos1s;
   } else {
-    *((long*) &array[pos2]) = pos1s;
-    *((long*) &array[pos2s]) = pos1ss;
+    *((long *)&array[pos2]) = pos1s;
+    *((long *)&array[pos2s]) = pos1ss;
   }
 }
 
@@ -120,17 +120,18 @@ void shuffle(long entry) {
   long size = pre_size, pos = entry;
   if (size > 2) {
     do {
-      long swap_count = rand() / (RAND_MAX / size + 1), swap_pos = *((long*) &array[pos]);
+      long swap_count = rand() / (RAND_MAX / size + 1),
+           swap_pos = *((long *)&array[pos]);
       if (swap_count > 0) {
         while (swap_count-- > 0) {
-          swap_pos = *((long*) &array[swap_pos]);
+          swap_pos = *((long *)&array[swap_pos]);
         }
 
         swap(pos, swap_pos);
       }
 
       size--;
-      pos = *((long*) &array[pos]);
+      pos = *((long *)&array[pos]);
     } while (size > 0);
   }
 
@@ -146,14 +147,14 @@ int probe(long entry) {
 
   // Prime.
   do {
-    idx = *((long*) &array[idx]);
+    idx = *((long *)&array[idx]);
   } while (idx != entry);
 
   // Probe.
   start();
   for (int i = 0; i < LOOP_REPETITIONS; i++) {
     do {
-      idx = *((long*) &array[idx]);
+      idx = *((long *)&array[idx]);
     } while (idx != entry);
   }
   int delay = stop();
@@ -177,8 +178,8 @@ int main(int argc, char *argv[]) {
   FILE *file = fopen(argv[1], "w");
   assert(file && "Unable to open set file.");
 
-  printf("Exploring array of %ld bytes, %ld lines.\n",
-         ARRAY_SIZE, ARRAY_SIZE>>OFFSET_BITS);
+  printf("Exploring array of %ld bytes, %ld lines.\n", ARRAY_SIZE,
+         ARRAY_SIZE >> OFFSET_BITS);
 
   assert((array = aligned_alloc(PAGE_SIZE, ARRAY_SIZE)));
 
@@ -186,10 +187,10 @@ int main(int argc, char *argv[]) {
 
   // Init line sets.
   long running_set = -1, remaining_set = 0;
-  *((long *)  &array[remaining_set]) = remaining_set;
-  for (long i = 1; (i<<OFFSET_BITS) < ARRAY_SIZE; i++) {
-    *((long *)  &array[i<<OFFSET_BITS]) = i<<OFFSET_BITS;
-    insert(&remaining_set, i<<OFFSET_BITS);
+  *((long *)&array[remaining_set]) = remaining_set;
+  for (long i = 1; (i << OFFSET_BITS) < ARRAY_SIZE; i++) {
+    *((long *)&array[i << OFFSET_BITS]) = i << OFFSET_BITS;
+    insert(&remaining_set, i << OFFSET_BITS);
   }
   shuffle(remaining_set);
 
@@ -210,10 +211,11 @@ int main(int argc, char *argv[]) {
 
       prev_delay = delay;
       delay = min_probe(running_set);
-//       printf("Contention set of %d blocks had delay of %d (delta = %d).\n",
-//              get_size(running_set), delay, delay - prev_delay);
+      //       printf("Contention set of %d blocks had delay of %d (delta =
+      //       %d).\n",
+      //              get_size(running_set), delay, delay - prev_delay);
     } while (delay - prev_delay <= DELAY_DELTA_THRESHOLD);
-//     printf("%d lines remaining.\n", get_size(remaining_set));
+    //     printf("%d lines remaining.\n", get_size(remaining_set));
 
     printf("Shrinking contention set.\n");
     long pos = running_set;
@@ -224,15 +226,17 @@ int main(int argc, char *argv[]) {
       int done;
       do {
         int pre_delay = min_probe(pos);
-//         printf("Contention set of %d blocks had delay of %d.\n",
-//               get_size(running_set), pre_delay);
+        //         printf("Contention set of %d blocks had delay of %d.\n",
+        //               get_size(running_set), pre_delay);
 
-        done = *((long*) &array[pos]) == running_set;
+        done = *((long *)&array[pos]) == running_set;
         long dropped = drop_next(&running_set, pos);
         int post_delay = min_probe(running_set);
 
-//         printf("Contention set of %d blocks had delay of %d (delta = %d).\n",
-//                get_size(running_set), post_delay, post_delay - pre_delay);
+        //         printf("Contention set of %d blocks had delay of %d (delta =
+        //         %d).\n",
+        //                get_size(running_set), post_delay, post_delay -
+        //                pre_delay);
 
         if ((post_delay - pre_delay) < -DELAY_DELTA_THRESHOLD) {
           insert(&pos, dropped);
@@ -241,35 +245,38 @@ int main(int argc, char *argv[]) {
           found = 1;
         }
 
-        pos = *((long*)&array[pos]);
+        pos = *((long *)&array[pos]);
       } while (!done);
     } while (found);
-    printf("Contention set %d has %ld ways.\n", contention_set_id, get_size(running_set) - 1);
+    printf("Contention set %d has %ld ways.\n", contention_set_id,
+           get_size(running_set) - 1);
     fprintf(file, "%ld\n", get_size(running_set) - 1);
 
-//     printf("%d lines remaining.\n", get_size(remaining_set));
+    //     printf("%d lines remaining.\n", get_size(remaining_set));
     printf("Finding further lines.\n");
     // Drop a line from the running set but keep it as the contention set.
     long contention_set = drop_next(&running_set, running_set), tested_set = -1;
     while (get_size(remaining_set)) {
       int pre_delay = min_probe(running_set);
-//       printf("Contention set of %d blocks had delay of %d.\n",
-//             get_size(running_set), pre_delay);
+      //       printf("Contention set of %d blocks had delay of %d.\n",
+      //             get_size(running_set), pre_delay);
 
       long candidate = drop_next(&remaining_set, remaining_set);
       insert(&running_set, candidate);
 
       int post_delay = min_probe(running_set);
 
-//       printf("Contention set of %d blocks had delay of %d (delta = %d).\n",
-//              get_size(running_set), post_delay, post_delay - pre_delay);
+      //       printf("Contention set of %d blocks had delay of %d (delta =
+      //       %d).\n",
+      //              get_size(running_set), post_delay, post_delay -
+      //              pre_delay);
 
       if (post_delay - pre_delay > DELAY_DELTA_THRESHOLD) {
         insert(&contention_set, drop_next(&running_set, running_set));
       } else {
         insert(&tested_set, drop_next(&running_set, running_set));
       }
-//       printf("%d lines remaining.\n", get_size(remaining_set));
+      //       printf("%d lines remaining.\n", get_size(remaining_set));
     }
     remaining_set = tested_set;
 
@@ -278,8 +285,8 @@ int main(int argc, char *argv[]) {
       insert(&contention_set, drop_next(&running_set, running_set));
     }
 
-    printf("Contention set %d has %ld elements.\n",
-           contention_set_id++, get_size(contention_set));
+    printf("Contention set %d has %ld elements.\n", contention_set_id++,
+           get_size(contention_set));
     while (get_size(contention_set)) {
       fprintf(file, "%ld\n", drop_next(&contention_set, contention_set));
     }
