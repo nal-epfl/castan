@@ -173,6 +173,10 @@ int min_probe(long entry) {
 }
 
 int main(int argc, char *argv[]) {
+  assert(argc == 1 && "Usage: probe-slices <set-file>");
+  FILE *file = fopen(argv[1], "w");
+  assert(file && "Unable to open set file.");
+
   printf("Exploring array of %ld bytes, %ld lines.\n",
          ARRAY_SIZE, ARRAY_SIZE>>OFFSET_BITS);
 
@@ -241,6 +245,7 @@ int main(int argc, char *argv[]) {
       } while (!done);
     } while (found);
     printf("Contention set %d has %ld ways.\n", contention_set_id, get_size(running_set) - 1);
+    fprintf(file, "%ld\n", get_size(running_set) - 1);
 
 //     printf("%d lines remaining.\n", get_size(remaining_set));
     printf("Finding further lines.\n");
@@ -273,17 +278,15 @@ int main(int argc, char *argv[]) {
       insert(&contention_set, drop_next(&running_set, running_set));
     }
 
-    char filename[100];
-    snprintf(filename, sizeof(filename), "%d.set", contention_set_id);
-    printf("Contention set %d has %ld elements. Saving addresses to: %s\n",
-           contention_set_id++, get_size(contention_set), filename);
-    FILE *file = fopen(filename, "w");
+    printf("Contention set %d has %ld elements.\n",
+           contention_set_id++, get_size(contention_set));
     while (get_size(contention_set)) {
       fprintf(file, "%ld\n", drop_next(&contention_set, contention_set));
     }
-    fclose(file);
+    fprintf(file, "\n");
   } while (remaining_set >= 0);
   printf("Found %d contention sets.\n", contention_set_id++);
+  fclose(file);
 
   return 0;
 }
