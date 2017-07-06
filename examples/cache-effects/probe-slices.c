@@ -174,7 +174,7 @@ int min_probe(long entry) {
 }
 
 int main(int argc, char *argv[]) {
-  assert(argc == 1 && "Usage: probe-slices <set-file>");
+  assert(argc == 2 && "Usage: probe-slices <set-file>");
   FILE *file = fopen(argv[1], "w");
   assert(file && "Unable to open set file.");
 
