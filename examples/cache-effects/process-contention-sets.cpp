@@ -19,30 +19,34 @@ int main(int argc, char **argv) {
 
   // Load contention sets from files.
   std::map<long, int> contentionSets;
-  std::map<int, int> setAssociativity;
+  std::map<int, unsigned int> setAssociativity;
   int id = 0;
   while (inFile.good()) {
     std::string line;
     std::getline(inFile, line);
-    assert(!line.empty());
+    if (line.empty()) {
+      continue;
+    }
+
     setAssociativity[id] = std::stoi(line);
 
     long count = 0;
     while (inFile.good() && (std::getline(inFile, line), !line.empty())) {
-      contentionSets[std::stoi(line)] = id;
+      contentionSets[std::stol(line)] = id;
       count++;
     }
     std::cout << "Loaded " << setAssociativity[id] << "-way set of " << count
-              << "addresses" << std::endl;
+              << " addresses" << std::endl;
     id++;
   }
 
   // Find sets of addresses that are always in the same contention set
   // when in the same address prefix.
   // [<[addresses], associativity>]
-  std::set<std::pair<std::set<long>, int>> sets;
+  std::set<std::pair<std::set<long>, unsigned int>> sets;
   for (long addr = 0; addr < 1 << MAX_ADDR_BITS; addr += 1 << OFFSET_BITS) {
-    std::cout << "Testing: " << std::hex << addr << std::endl;
+    std::cout << "Testing: " << std::hex << addr << " / "
+              << (1 << MAX_ADDR_BITS) << std::endl;
     // If no prior sets exist, create new one with just this address.
     if (sets.empty()) {
       sets.insert(std::make_pair(std::set<long>({addr}), 1));
@@ -53,7 +57,7 @@ int main(int argc, char **argv) {
       // Check for each prefix if all addresses in set
       // correspond to the same contention set.
       bool found = 0;
-      int maxAssociativity = 0;
+      unsigned int maxAssociativity = 0;
       for (long prefix = 0;
            contentionSets.count((prefix << MAX_ADDR_BITS) | addr); prefix++) {
         int set = contentionSets[(prefix << MAX_ADDR_BITS) | addr];
@@ -79,8 +83,9 @@ int main(int argc, char **argv) {
         if (maxAssociativity > candidate.second) {
           candidate.second = maxAssociativity;
         }
-        std::cout << "Found new " << candidate.second << "-way set of size "
-                  << std::dec << candidate.first.size() << std::endl;
+        //         std::cout << "Found new " << std::dec << candidate.second
+        //                   << "-way set of size " << candidate.first.size() <<
+        //                   std::endl;
         sets.insert(candidate);
       }
     }
@@ -88,11 +93,14 @@ int main(int argc, char **argv) {
 
   // Dump sets.
   for (auto sit : sets) {
-    outFile << sit.second << std::endl;
-    for (long ait : sit.first) {
-      outFile << ait << std::endl;
+    // Only include sets that are larger than their associativity.
+    if (sit.first.size() >= sit.second) {
+      outFile << sit.second << std::endl;
+      for (long ait : sit.first) {
+        outFile << ait << std::endl;
+      }
+      outFile << std::endl;
     }
-    outFile << std::endl;
   }
 
   return 0;
