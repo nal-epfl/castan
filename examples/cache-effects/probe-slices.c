@@ -36,6 +36,8 @@ static inline long stop() {
   }
 }
 
+int is_empty(long entry) { return entry < 0; }
+
 long get_size(long entry) {
   if (entry < 0) {
     return 0;
@@ -222,6 +224,8 @@ int main(int argc, char *argv[]) {
     int found;
     do {
       found = 0;
+
+      assert(!is_empty(running_set));
 
       int done;
       do {
