@@ -1,64 +1,86 @@
 #include <assert.h>
-#include <iostream>
+#include <bitset>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <set>
 #include <vector>
-#include <bitset>
 
 #define OFFSET_BITS 17
 #define MAX_ADDR_BITS 30
 
 int main(int argc, char **argv) {
-  assert(argc > 1);
+  assert(argc == 3 &&
+         "Usage: process-contention-sets <input-set-file> <output-set-file>");
+  std::ifstream inFile(argv[1]);
+  assert(inFile.good());
+  std::ofstream outFile(argv[2]);
+  assert(outFile.good());
 
   // Load contention sets from files.
   std::map<long, int> contentionSets;
-  for (int arg = 1; arg < argc; arg++) {
-    std::cout << "Loading " << argv[arg] << " as set " << (arg - 1) << "." << std::endl;
+  std::map<int, int> setAssociativity;
+  int id = 0;
+  while (inFile.good()) {
+    std::string line;
+    std::getline(inFile, line);
+    assert(!line.empty());
+    setAssociativity[id] = std::stoi(line);
 
-    std::ifstream inFile(argv[arg]);
-    assert(inFile.good());
-
-    long address;
-    while (inFile >> address) {
-      contentionSets[address] = arg - 1;
+    long count = 0;
+    while (inFile.good() && (std::getline(inFile, line), !line.empty())) {
+      contentionSets[std::stoi(line)] = id;
+      count++;
     }
+    std::cout << "Loaded " << setAssociativity[id] << "-way set of " << count
+              << "addresses" << std::endl;
+    id++;
   }
 
   // Find sets of addresses that are always in the same contention set
   // when in the same address prefix.
-  std::set<std::set<long>> sets;
-  for (long addr = 0; addr < 1<<MAX_ADDR_BITS; addr += 1<<OFFSET_BITS) {
+  // [<[addresses], associativity>]
+  std::set<std::pair<std::set<long>, int>> sets;
+  for (long addr = 0; addr < 1 << MAX_ADDR_BITS; addr += 1 << OFFSET_BITS) {
     std::cout << "Testing: " << std::hex << addr << std::endl;
     // If no prior sets exist, create new one with just this address.
     if (sets.empty()) {
-      sets.insert(std::set<long>({addr}));
+      sets.insert(std::make_pair(std::set<long>({addr}), 1));
     }
 
-    // Iterate over sets to see if any meet the criteria.
+    // Iterate over sets to see if any can be augmented with addr.
     for (auto candidate : sets) {
       // Check for each prefix if all addresses in set
       // correspond to the same contention set.
       bool found = 0;
-      for (long prefix = 0; contentionSets.count((prefix<<MAX_ADDR_BITS) | addr); prefix++) {
-        int set = contentionSets[(prefix<<MAX_ADDR_BITS) | addr];
+      int maxAssociativity = 0;
+      for (long prefix = 0;
+           contentionSets.count((prefix << MAX_ADDR_BITS) | addr); prefix++) {
+        int set = contentionSets[(prefix << MAX_ADDR_BITS) | addr];
+        if (setAssociativity[set] > maxAssociativity) {
+          maxAssociativity = setAssociativity[set];
+        }
 
-        for (long check : candidate) {
-          if (contentionSets[(prefix<<MAX_ADDR_BITS) | check] != set) {
+        for (long check : candidate.first) {
+          if (contentionSets[(prefix << MAX_ADDR_BITS) | check] != set) {
             found = 1;
             break;
           }
         }
-        if (found) break;
+        if (found)
+          break;
       }
 
       if (found) { // address doesn't always match with set, create a new set.
-        sets.insert(std::set<long>({addr}));
+        sets.insert(std::make_pair(std::set<long>({addr}), 1));
       } else { // Address is always consistent with set, augment set.
         sets.erase(candidate);
-        candidate.insert(addr);
-        std::cout << "Found new set of size " << std::dec << candidate.size() << std::endl;
+        candidate.first.insert(addr);
+        if (maxAssociativity > candidate.second) {
+          candidate.second = maxAssociativity;
+        }
+        std::cout << "Found new " << candidate.second << "-way set of size "
+                  << std::dec << candidate.first.size() << std::endl;
         sets.insert(candidate);
       }
     }
@@ -66,12 +88,11 @@ int main(int argc, char **argv) {
 
   // Dump sets.
   for (auto sit : sets) {
-    std::cout << "Set of size " << std::dec << sit.size() << ":";
-
-    for (long ait : sit) {
-      std::cout << " " << ait;
+    outFile << sit.second << std::endl;
+    for (long ait : sit.first) {
+      outFile << ait << std::endl;
     }
-    std::cout << std::endl;
+    outFile << std::endl;
   }
 
   return 0;
