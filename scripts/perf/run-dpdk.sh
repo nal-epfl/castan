@@ -31,7 +31,7 @@ make clean
 make
 
 echo "[bench] Running $APP ..."
-sudo ./build/nf -- \
+sudo taskset -c 8 hugectl --no-preload --heap=1073741824 ./build/nf -- \
   --eth-dest 0,$TESTER_MAC_INTERNAL \
   --eth-dest 1,$TESTER_MAC_EXTERNAL \
   $ARGS > $LOG_FILE &
