@@ -1,4 +1,4 @@
-TARGETS := local nonlocal variable-array process-contention-sets probe-slices
+TARGETS := local nonlocal variable-array process-contention-sets probe-slices check-contention-sets
 CFLAGS := -I../../include -Wall -g
 LDFLAGS :=
 

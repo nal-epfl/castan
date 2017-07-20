@@ -14,3 +14,6 @@ process-contention-sets.bc
 probe-slices
 probe-slices.o
 probe-slices.bc
+check-contention-sets
+check-contention-sets.bc
+check-contention-sets.o
