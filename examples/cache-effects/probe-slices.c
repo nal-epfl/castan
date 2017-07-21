@@ -11,7 +11,7 @@
 // #define ASSOCIATIVITY 20
 // #define DELAY_THRESHOLD 80
 #define DELAY_DELTA_THRESHOLD 700
-#define OFFSET_BITS 17
+#define OFFSET_BITS 15
 #define LOOP_REPETITIONS 100
 #define PROBE_TRIALS 10
 
@@ -225,7 +225,9 @@ int main(int argc, char *argv[]) {
     do {
       found = 0;
 
-      assert(!is_empty(running_set));
+      if (is_empty(running_set)) {
+        break;
+      }
 
       int done;
       do {
@@ -252,6 +254,13 @@ int main(int argc, char *argv[]) {
         pos = *((long *)&array[pos]);
       } while (!done);
     } while (found);
+
+    if (is_empty(running_set)) {
+      printf("Contention set %d didn't hold up. Retrying.\n",
+             contention_set_id);
+      continue;
+    }
+
     printf("Contention set %d has %ld ways.\n", contention_set_id,
            get_size(running_set) - 1);
     fprintf(file, "%ld\n", get_size(running_set) - 1);
