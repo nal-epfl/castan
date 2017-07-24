@@ -6,7 +6,7 @@
 #include <set>
 #include <vector>
 
-#define OFFSET_BITS 17
+#define OFFSET_BITS 15
 #define MAX_ADDR_BITS 30
 
 int main(int argc, char **argv) {
