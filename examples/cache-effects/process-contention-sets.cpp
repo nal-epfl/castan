@@ -7,46 +7,52 @@
 #include <vector>
 
 #define OFFSET_BITS 15
-#define MAX_ADDR_BITS 30
+#define VIRT_ADDR_BITS 30
+#define MAX_ADDR_BITS 40
 
 int main(int argc, char **argv) {
   assert(argc == 3 &&
-         "Usage: process-contention-sets <input-set-file> <output-set-file>");
-  std::ifstream inFile(argv[1]);
-  assert(inFile.good());
-  std::ofstream outFile(argv[2]);
+         "Usage: process-contention-sets <output-set-file> <input-set-files>");
+  std::ofstream outFile(argv[1]);
   assert(outFile.good());
 
   // Load contention sets from files.
   std::map<long, int> contentionSets;
   std::map<int, unsigned int> setAssociativity;
   int id = 0;
-  while (inFile.good()) {
-    std::string line;
-    std::getline(inFile, line);
-    if (line.empty()) {
-      continue;
-    }
+  for (int arg = 2; arg < argc; arg++) {
+    std::cout << "Loading contention sets from: " << argv[arg] << std::endl;
+    std::ifstream inFile(argv[arg]);
+    assert(inFile.good());
 
-    setAssociativity[id] = std::stoi(line);
+    while (inFile.good()) {
+      std::string line;
+      std::getline(inFile, line);
+      if (line.empty()) {
+        continue;
+      }
 
-    long count = 0;
-    while (inFile.good() && (std::getline(inFile, line), !line.empty())) {
-      contentionSets[std::stol(line)] = id;
-      count++;
+      setAssociativity[id] = std::stoi(line);
+
+      long count = 0;
+      while (inFile.good() && (std::getline(inFile, line), !line.empty())) {
+        // Make sure addresses from different files don't overlap.
+        contentionSets[(((long)arg) << MAX_ADDR_BITS) | std::stol(line)] = id;
+        count++;
+      }
+      std::cout << "   Loaded " << setAssociativity[id] << "-way set of "
+                << count << " addresses" << std::endl;
+      id++;
     }
-    std::cout << "Loaded " << setAssociativity[id] << "-way set of " << count
-              << " addresses" << std::endl;
-    id++;
   }
 
   // Find sets of addresses that are always in the same contention set
   // when in the same address prefix.
   // [<[addresses], associativity>]
   std::set<std::pair<std::set<long>, unsigned int>> sets;
-  for (long addr = 0; addr < 1 << MAX_ADDR_BITS; addr += 1 << OFFSET_BITS) {
+  for (long addr = 0; addr < 1 << VIRT_ADDR_BITS; addr += 1 << OFFSET_BITS) {
     std::cout << "Testing: " << std::hex << addr << " / "
-              << (1 << MAX_ADDR_BITS) << std::endl;
+              << (1 << VIRT_ADDR_BITS) << std::endl;
     // If no prior sets exist, create new one with just this address.
     if (sets.empty()) {
       sets.insert(std::make_pair(std::set<long>({addr}), 1));
@@ -59,14 +65,14 @@ int main(int argc, char **argv) {
       bool found = 0;
       unsigned int maxAssociativity = 0;
       for (long prefix = 0;
-           contentionSets.count((prefix << MAX_ADDR_BITS) | addr); prefix++) {
-        int set = contentionSets[(prefix << MAX_ADDR_BITS) | addr];
+           contentionSets.count((prefix << VIRT_ADDR_BITS) | addr); prefix++) {
+        int set = contentionSets[(prefix << VIRT_ADDR_BITS) | addr];
         if (setAssociativity[set] > maxAssociativity) {
           maxAssociativity = setAssociativity[set];
         }
 
         for (long check : candidate.first) {
-          if (contentionSets[(prefix << MAX_ADDR_BITS) | check] != set) {
+          if (contentionSets[(prefix << VIRT_ADDR_BITS) | check] != set) {
             found = 1;
             break;
           }
