@@ -6,7 +6,6 @@
 #include <set>
 #include <vector>
 
-#define OFFSET_BITS 15
 #define VIRT_ADDR_BITS 30
 #define MAX_ADDR_BITS 40
 
@@ -17,6 +16,7 @@ int main(int argc, char **argv) {
   assert(outFile.good());
 
   // Load contention sets from files.
+  std::set<long> prefixes, suffixes;
   std::map<long, int> contentionSets;
   std::map<int, unsigned int> setAssociativity;
   int id = 0;
@@ -37,7 +37,10 @@ int main(int argc, char **argv) {
       long count = 0;
       while (inFile.good() && (std::getline(inFile, line), !line.empty())) {
         // Make sure addresses from different files don't overlap.
-        contentionSets[(((long)arg) << MAX_ADDR_BITS) | std::stol(line)] = id;
+        long address = (((long)arg) << MAX_ADDR_BITS) | std::stol(line);
+        prefixes.insert(address & ~((1<<VIRT_ADDR_BITS)-1));
+        suffixes.insert(address & ((1<<VIRT_ADDR_BITS)-1));
+        contentionSets[address] = id;
         count++;
       }
       std::cout << "   Loaded " << setAssociativity[id] << "-way set of "
@@ -50,7 +53,7 @@ int main(int argc, char **argv) {
   // when in the same address prefix.
   // [<[addresses], associativity>]
   std::set<std::pair<std::set<long>, unsigned int>> sets;
-  for (long addr = 0; addr < 1 << VIRT_ADDR_BITS; addr += 1 << OFFSET_BITS) {
+  for (long addr : suffixes) {
     std::cout << "Testing: " << std::hex << addr << " / "
               << (1 << VIRT_ADDR_BITS) << std::endl;
     // If no prior sets exist, create new one with just this address.
@@ -64,8 +67,7 @@ int main(int argc, char **argv) {
       // correspond to the same contention set.
       bool found = 0;
       unsigned int maxAssociativity = 0;
-      for (long prefix = 0;
-           contentionSets.count((prefix << VIRT_ADDR_BITS) | addr); prefix++) {
+      for (long prefix : prefixes) {
         int set = contentionSets[(prefix << VIRT_ADDR_BITS) | addr];
         if (setAssociativity[set] > maxAssociativity) {
           maxAssociativity = setAssociativity[set];
@@ -100,7 +102,7 @@ int main(int argc, char **argv) {
   // Dump sets.
   for (auto sit : sets) {
     // Only include sets that are larger than their associativity.
-    if (sit.first.size() >= sit.second) {
+    if (sit.first.size() > sit.second) {
       outFile << sit.second << std::endl;
       for (long ait : sit.first) {
         outFile << ait << std::endl;
