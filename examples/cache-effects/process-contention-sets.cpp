@@ -11,7 +11,7 @@
 #define MAX_ADDR_BITS 40
 
 int main(int argc, char **argv) {
-  assert(argc == 3 &&
+  assert(argc >= 3 &&
          "Usage: process-contention-sets <output-set-file> <input-set-files>");
   std::ofstream outFile(argv[1]);
   assert(outFile.good());
