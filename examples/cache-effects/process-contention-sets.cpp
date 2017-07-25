@@ -38,8 +38,8 @@ int main(int argc, char **argv) {
       while (inFile.good() && (std::getline(inFile, line), !line.empty())) {
         // Make sure addresses from different files don't overlap.
         long address = (((long)arg) << MAX_ADDR_BITS) | std::stol(line);
-        prefixes.insert(address & ~((1<<VIRT_ADDR_BITS)-1));
-        suffixes.insert(address & ((1<<VIRT_ADDR_BITS)-1));
+        prefixes.insert(address & ~((1 << VIRT_ADDR_BITS) - 1));
+        suffixes.insert(address & ((1 << VIRT_ADDR_BITS) - 1));
         contentionSets[address] = id;
         count++;
       }
@@ -68,13 +68,17 @@ int main(int argc, char **argv) {
       bool found = 0;
       unsigned int maxAssociativity = 0;
       for (long prefix : prefixes) {
-        int set = contentionSets[(prefix << VIRT_ADDR_BITS) | addr];
+        assert(contentionSets.count(prefix | addr));
+
+        int set = contentionSets[prefix | addr];
         if (setAssociativity[set] > maxAssociativity) {
           maxAssociativity = setAssociativity[set];
         }
 
         for (long check : candidate.first) {
-          if (contentionSets[(prefix << VIRT_ADDR_BITS) | check] != set) {
+          assert(contentionSets.count(prefix | check));
+
+          if (contentionSets[prefix | check] != set) {
             found = 1;
             break;
           }
