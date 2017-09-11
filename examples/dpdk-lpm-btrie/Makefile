@@ -37,7 +37,7 @@ LDFLAGS += -lstdc++
 include $(RTE_SDK)/mk/rte.extapp.mk
 
 $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
-	llvm-link -o $@ $^; \
+	llvm-link -o $@ $^
 
 %.bc: %.c
 	clang -g -emit-llvm -mno-sse \
@@ -47,6 +47,6 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
 	    -include ../../../include/castan/castan-dpdk.h \
 	    -Wno-deprecated-register \
 	    -o $@ -c $<
-# 
+
 clean-bc:
 	@rm -f *.bc
