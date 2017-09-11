@@ -439,9 +439,6 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
 
         uint32_t dst_device = dispatch_packet(config, device, lpm, mbuf[0]);
 
-        if (dst_device == device) {
-          DROP_PACKET(mbuf, device);
-        } else {
 #ifdef PTP
           struct ptpv2_msg *ptp =
               (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
@@ -451,6 +448,9 @@ void run(struct nf_config *config, struct rte_lpm *lpm) {
           ptp->version = 0x02;
 #endif
 
+        if (dst_device == device) {
+          DROP_PACKET(mbuf, device);
+        } else {
           uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, mbuf, 1);
 
           if (actual_tx_len < 1) {
