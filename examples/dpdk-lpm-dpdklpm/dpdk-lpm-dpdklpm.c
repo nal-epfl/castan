@@ -52,16 +52,16 @@ struct ptpv2_msg {
 #endif
 
 #ifdef NODROP
-#  define DROP_PACKET(mbuf, device) {                                 \
-    uint16_t actual_tx_len = rte_eth_tx_burst(1-device, 0, mbuf, 1);  \
-    if (actual_tx_len < 1) {                                          \
-      rte_pktmbuf_free(mbuf[0]);                                      \
-    }                                                                 \
+#define DROP_PACKET(mbuf, device)                                              \
+  {                                                                            \
+    uint16_t actual_tx_len = rte_eth_tx_burst(1 - device, 0, mbuf, 1);         \
+    if (actual_tx_len < 1) {                                                   \
+      rte_pktmbuf_free(mbuf[0]);                                               \
+    }                                                                          \
   }
-#else //NODROP
-#  define DROP_PACKET(mbuf, device) rte_pktmbuf_free(mbuf[0])
-#endif//NODROP
-
+#else // NODROP
+#define DROP_PACKET(mbuf, device) rte_pktmbuf_free(mbuf[0])
+#endif // NODROP
 
 // Queue sizes for receiving/transmitting packets (set to their values from
 // l3fwd sample)
