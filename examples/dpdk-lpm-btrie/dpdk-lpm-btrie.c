@@ -500,18 +500,18 @@ void run(struct nf_config *config, lpm_t *lpm) {
 
         uint32_t dst_device = dispatch_packet(config, device, lpm, mbuf[0]);
 
+#ifdef PTP
+        struct ptpv2_msg *ptp =
+            (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
+                                  sizeof(struct ether_hdr));
+        rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
+        ptp->msg_id = 0;
+        ptp->version = 0x02;
+#endif
+
         if (dst_device == device) {
           DROP_PACKET(mbuf, device);
         } else {
-#ifdef PTP
-          struct ptpv2_msg *ptp =
-              (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
-                                   sizeof(struct ether_hdr));
-          rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
-          ptp->msg_id = 0;
-          ptp->version = 0x02;
-#endif
-
           uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, mbuf, 1);
 
           if (actual_tx_len < 1) {

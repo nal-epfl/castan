@@ -46,6 +46,14 @@
 
 #endif
 
+#ifdef PTP
+struct ptpv2_msg {
+  uint8_t msg_id;
+  uint8_t version;
+  uint8_t unused[34];
+};
+#endif
+
 #ifdef NODROP
 #  define DROP_PACKET(mbuf, device) {                                 \
     uint16_t actual_tx_len = rte_eth_tx_burst(1-device, 0, mbuf, 1);  \
@@ -600,6 +608,15 @@ void run(struct nf_config *config, hash_table_t hash_table) {
 
         uint32_t dst_device =
             dispatch_packet(config, device, hash_table, mbuf[0]);
+
+#ifdef PTP
+        struct ptpv2_msg *ptp =
+            (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
+                                  sizeof(struct ether_hdr));
+        rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
+        ptp->msg_id = 0;
+        ptp->version = 0x02;
+#endif
 
         if (dst_device == device) {
           DROP_PACKET(mbuf, device);
