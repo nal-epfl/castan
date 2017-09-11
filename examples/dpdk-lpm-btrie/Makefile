@@ -27,6 +27,7 @@ CFLAGS += -std=gnu++11
 
 CFLAGS += -DNDEBUG
 # CFLAGS += -DLATENCY
+# CFLAGS += -DPTP
 # VV always forward a packet, even when it should be dropped.
 # works only if nf has exactly 2 interfaces.
 # CFLAGS += -DNODROP
