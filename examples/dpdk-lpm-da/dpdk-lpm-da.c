@@ -42,6 +42,9 @@
 
 #endif
 
+#define PAGE_SIZE (1 << 30)
+void *aligned_alloc(size_t alignment, size_t size);
+
 #ifdef PTP
 struct ptpv2_msg {
   uint8_t msg_id;
@@ -294,7 +297,10 @@ typedef struct {
 typedef prefix_node_t *lpm_t;
 
 lpm_t lpm_create() {
-  return (lpm_t)calloc(1 << LONGEST_PREFIX, sizeof(prefix_node_t));
+  lpm_t lpm = (lpm_t)aligned_alloc(PAGE_SIZE, (1 << LONGEST_PREFIX) *
+                                                  sizeof(prefix_node_t));
+  memset(lpm, 0, (1 << LONGEST_PREFIX) * sizeof(prefix_node_t));
+  return lpm;
 }
 
 int lpm_set_prefix_port(lpm_t lpm, uint32_t ip, int prefix_len, int port) {
