@@ -43,7 +43,14 @@
 #endif
 
 #define PAGE_SIZE (1 << 30)
+#ifdef __clang__
+void *aligned_alloc(size_t alignment, size_t size) {
+  char *ptr = calloc(1, size + alignment);
+  return ptr + (alignment - ((unsigned long long)ptr) % alignment);
+}
+#else
 void *aligned_alloc(size_t alignment, size_t size);
+#endif
 
 #ifdef PTP
 struct ptpv2_msg {
@@ -288,7 +295,7 @@ char *nf_ipv4_to_str(uint32_t addr) {
   return buffer;
 }
 
-#define LONGEST_PREFIX 24
+#define LONGEST_PREFIX 27
 
 typedef struct {
   int port;
@@ -299,11 +306,14 @@ typedef prefix_node_t *lpm_t;
 lpm_t lpm_create() {
   lpm_t lpm = (lpm_t)aligned_alloc(PAGE_SIZE, (1 << LONGEST_PREFIX) *
                                                   sizeof(prefix_node_t));
+#ifndef __clang__
   memset(lpm, 0, (1 << LONGEST_PREFIX) * sizeof(prefix_node_t));
+#endif
   return lpm;
 }
 
 int lpm_set_prefix_port(lpm_t lpm, uint32_t ip, int prefix_len, int port) {
+#ifndef __clang__
   if (prefix_len > LONGEST_PREFIX) {
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &ip, ip_str, sizeof(ip_str));
@@ -322,6 +332,7 @@ int lpm_set_prefix_port(lpm_t lpm, uint32_t ip, int prefix_len, int port) {
       lpm[i].prefix_len = prefix_len;
     }
   }
+#endif
   return 0;
 }
 
@@ -481,18 +492,18 @@ void run(struct nf_config *config, lpm_t lpm) {
 
         uint32_t dst_device = dispatch_packet(config, device, lpm, mbuf[0]);
 
+#ifdef PTP
+        struct ptpv2_msg *ptp =
+            (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
+                                  sizeof(struct ether_hdr));
+        rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
+        ptp->msg_id = 0;
+        ptp->version = 0x02;
+#endif
+
         if (dst_device == device) {
           DROP_PACKET(mbuf, device);
         } else {
-#ifdef PTP
-          struct ptpv2_msg *ptp =
-              (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
-                                   sizeof(struct ether_hdr));
-          rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
-          ptp->msg_id = 0;
-          ptp->version = 0x02;
-#endif
-
           uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, mbuf, 1);
 
           if (actual_tx_len < 1) {
