@@ -1,5 +1,5 @@
 TARGETS := local nonlocal variable-array process-contention-sets probe-slices check-contention-sets
-CFLAGS := -I../../include -Wall -g -O3 -I$(RTE_SDK)/$(RTE_TARGET)/include
+CFLAGS := -I../../include -Wall -g -O3 -I$(RTE_SDK)/$(RTE_TARGET)/include -include $(RTE_SDK)/$(RTE_TARGET)/include/rte_config.h
 LDFLAGS := -pthread $(RTE_SDK)/$(RTE_TARGET)/lib/librte_eal.a -ldl
 
 .SUFFIXES:
