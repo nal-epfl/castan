@@ -312,9 +312,13 @@ lpm_t lpm_create() {
   const struct rte_memzone *mz = rte_memzone_reserve_aligned(
       "LPM", (1 << LONGEST_PREFIX) * sizeof(prefix_node_t), rte_socket_id(),
       RTE_MEMZONE_1GB, PAGE_SIZE);
+
 #ifndef __clang__
   memset(mz->addr, 0, (1 << LONGEST_PREFIX) * sizeof(prefix_node_t));
 #endif
+
+  NF_INFO("Table physical address: %016lX\n", rte_mem_virt2phy(mz->addr));
+
   return (lpm_t)mz->addr;
 }
 
