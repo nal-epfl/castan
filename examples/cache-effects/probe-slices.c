@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <rte_memory.h>
 
 #define PAGE_SIZE (1 << 30)
 #define ARRAY_SIZE (8ul * PAGE_SIZE)
@@ -184,6 +185,7 @@ int main(int argc, char *argv[]) {
          ARRAY_SIZE >> OFFSET_BITS);
 
   assert((array = aligned_alloc(PAGE_SIZE, ARRAY_SIZE)));
+  printf("Array physical address: %016lX\n", rte_mem_virt2phy(array));
 
   srand(time(NULL));
 
