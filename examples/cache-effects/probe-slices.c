@@ -2,8 +2,8 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <rte_eal.h>
 #include <rte_errno.h>
-#include <rte_lcore.h>
 #include <rte_memzone.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -187,8 +187,9 @@ int main(int argc, char *argv[]) {
          ARRAY_SIZE >> OFFSET_BITS);
 
   //   assert((array = aligned_alloc(PAGE_SIZE, ARRAY_SIZE)));
+  assert(rte_eal_init(0, NULL) >= 0);
   const struct rte_memzone *mz = rte_memzone_reserve_aligned(
-      "array", ARRAY_SIZE, rte_socket_id(), RTE_MEMZONE_1GB, PAGE_SIZE);
+      "array", ARRAY_SIZE, SOCKET_ID_ANY, RTE_MEMZONE_1GB, PAGE_SIZE);
   if (!mz) {
     printf("Unable to allocate memory zone. errno = %d\n", rte_errno);
     exit(-1);
