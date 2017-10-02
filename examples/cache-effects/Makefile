@@ -36,6 +36,6 @@ clean:
 	rm -f $(TARGETS) $(addsuffix .o,$(TARGETS)) $(addsuffix .bc,$(TARGETS)) deps.mk
 
 deps.mk: $(wildcard *.c)
-	gcc $(CFLAGS) -M $^ > $@
+	gcc $(CFLAGS) -M $^ > $@ || true
 
 -include deps.mk
