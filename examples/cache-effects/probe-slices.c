@@ -2,15 +2,12 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <rte_eal.h>
-#include <rte_errno.h>
-#include <rte_memzone.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
 #define PAGE_SIZE (1 << 30)
-#define ARRAY_SIZE (1ul * PAGE_SIZE)
+#define ARRAY_SIZE (8ul * PAGE_SIZE)
 // #define ASSOCIATIVITY 20
 // #define DELAY_THRESHOLD 80
 #define DELAY_DELTA_THRESHOLD 700
@@ -186,16 +183,7 @@ int main(int argc, char *argv[]) {
   printf("Exploring array of %ld bytes, %ld lines.\n", ARRAY_SIZE,
          ARRAY_SIZE >> OFFSET_BITS);
 
-  //   assert((array = aligned_alloc(PAGE_SIZE, ARRAY_SIZE)));
-  assert(rte_eal_init(0, NULL) >= 0);
-  const struct rte_memzone *mz = rte_memzone_reserve_aligned(
-      "array", ARRAY_SIZE, SOCKET_ID_ANY, RTE_MEMZONE_1GB, PAGE_SIZE);
-  if (!mz) {
-    printf("Unable to allocate memory zone. errno = %d\n", rte_errno);
-    exit(-1);
-  }
-  array = mz->addr;
-  printf("Array physical address: %016lX\n", rte_mem_virt2phy(array));
+  assert((array = aligned_alloc(PAGE_SIZE, ARRAY_SIZE)));
 
   srand(time(NULL));
 

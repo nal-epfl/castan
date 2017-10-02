@@ -1,6 +1,6 @@
 TARGETS := local nonlocal variable-array process-contention-sets probe-slices check-contention-sets
-CFLAGS := -I../../include -Wall -g -O3 -I$(RTE_SDK)/$(RTE_TARGET)/include -include $(RTE_SDK)/$(RTE_TARGET)/include/rte_config.h
-LDFLAGS := -pthread $(RTE_SDK)/$(RTE_TARGET)/lib/librte_eal.a -ldl
+CFLAGS := -I../../include -Wall -g
+LDFLAGS :=
 
 .SUFFIXES:
 
@@ -13,7 +13,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS))
 	g++ -std=c++11 $(CFLAGS) -c -o $@ $<
 
 %: %.o
-	g++ -o $@ $^ $(LDFLAGS)
+	g++ $(LDFLAGS) -o $@ $^
 
 %.bc: %.c %
 	clang -std=c11 $(CFLAGS) -emit-llvm -c -o $@ $<
@@ -36,6 +36,6 @@ clean:
 	rm -f $(TARGETS) $(addsuffix .o,$(TARGETS)) $(addsuffix .bc,$(TARGETS)) deps.mk
 
 deps.mk: $(wildcard *.c)
-	gcc $(CFLAGS) -M $^ > $@ || true
+	gcc $(CFLAGS) -M $^ > $@
 
 -include deps.mk
