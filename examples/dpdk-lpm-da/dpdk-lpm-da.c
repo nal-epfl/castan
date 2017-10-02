@@ -44,12 +44,17 @@
 
 #define PAGE_SIZE (1 << 30)
 #ifdef __clang__
-void *aligned_alloc(size_t alignment, size_t size) {
-  char *ptr = calloc(1, size + alignment);
-  return ptr + (alignment - ((unsigned long long)ptr) % alignment);
+const struct rte_memzone *rte_memzone_reserve_aligned(const char *name,
+                                                      size_t len, int socket_id,
+                                                      unsigned flags,
+                                                      unsigned align) {
+  struct rte_memzone *mz = malloc(sizeof(struct rte_memzone));
+  mz->len = len;
+  mz->flags = flags;
+  char *ptr = calloc(1, len + align);
+  mz->addr = ptr + (align - ((unsigned long long)ptr) % align);
+  return mz;
 }
-#else
-void *aligned_alloc(size_t alignment, size_t size);
 #endif
 
 #ifdef PTP
@@ -304,12 +309,13 @@ typedef struct {
 typedef prefix_node_t *lpm_t;
 
 lpm_t lpm_create() {
-  lpm_t lpm = (lpm_t)aligned_alloc(PAGE_SIZE, (1 << LONGEST_PREFIX) *
-                                                  sizeof(prefix_node_t));
+  const struct rte_memzone *mz = rte_memzone_reserve_aligned(
+      "LPM", (1 << LONGEST_PREFIX) * sizeof(prefix_node_t), rte_socket_id(),
+      RTE_MEMZONE_1GB, PAGE_SIZE);
 #ifndef __clang__
-  memset(lpm, 0, (1 << LONGEST_PREFIX) * sizeof(prefix_node_t));
+  memset(mz->addr, 0, (1 << LONGEST_PREFIX) * sizeof(prefix_node_t));
 #endif
-  return lpm;
+  return (lpm_t)mz->addr;
 }
 
 int lpm_set_prefix_port(lpm_t lpm, uint32_t ip, int prefix_len, int port) {
@@ -495,7 +501,7 @@ void run(struct nf_config *config, lpm_t lpm) {
 #ifdef PTP
         struct ptpv2_msg *ptp =
             (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
-                                  sizeof(struct ether_hdr));
+                                 sizeof(struct ether_hdr));
         rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
         ptp->msg_id = 0;
         ptp->version = 0x02;
