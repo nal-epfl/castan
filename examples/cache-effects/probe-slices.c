@@ -5,10 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <rte_memory.h>
 
 #define PAGE_SIZE (1 << 30)
-#define ARRAY_SIZE (8ul * PAGE_SIZE)
+#define ARRAY_SIZE (1ul * PAGE_SIZE)
 // #define ASSOCIATIVITY 20
 // #define DELAY_THRESHOLD 80
 #define DELAY_DELTA_THRESHOLD 700
@@ -19,6 +18,20 @@
 struct timespec timestamp;
 
 char *array;
+
+unsigned long virt2phy(void *addr) {
+  FILE *pagemap = fopen("/proc/self/pagemap", "rb");
+  assert(pagemap);
+  assert(fseek(pagemap, (((unsigned long)addr) >> 12) * 8, SEEK_SET) == 0);
+
+  unsigned long pfn = 0;
+  fread(&pfn, 1, 7, pagemap);
+  pfn &= 0x7FFFFFFFFFFFFF;
+
+  fclose(pagemap);
+
+  return pfn << 12 | (((unsigned long)addr) & ((1 << 12) - 1));
+}
 
 static inline void start() {
   assert(!clock_gettime(CLOCK_MONOTONIC, &timestamp));
@@ -185,7 +198,7 @@ int main(int argc, char *argv[]) {
          ARRAY_SIZE >> OFFSET_BITS);
 
   assert((array = aligned_alloc(PAGE_SIZE, ARRAY_SIZE)));
-  printf("Array physical address: %016lX\n", rte_mem_virt2phy(array));
+  printf("Array physical address: %016lX\n", (unsigned long) array);
 
   srand(time(NULL));
 
