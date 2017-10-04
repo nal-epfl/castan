@@ -192,7 +192,6 @@ int min_probe(long entry) {
   return min;
 }
 
-
 int main(int argc, char *argv[]) {
   // Initialize the Environment Abstraction Layer (EAL)
   int ret = rte_eal_init(argc, argv);
@@ -202,19 +201,19 @@ int main(int argc, char *argv[]) {
   argc -= ret;
   argv += ret;
 
-  assert(argc == 2 && "Usage: probe-slices <set-file>");
-  FILE *file = fopen(argv[1], "w");
+  assert(argc == 1 && "Usage: probe-slices <set-file>");
+  FILE *file = fopen(argv[0], "w");
   assert(file && "Unable to open set file.");
 
   printf("Exploring array of %ld bytes, %ld lines.\n", ARRAY_SIZE,
          ARRAY_SIZE >> OFFSET_BITS);
+  printf("Writing contention sets to: %s.\n", argv[0]);
 
   const struct rte_memzone *mz = rte_memzone_reserve_aligned(
-      "Array", ARRAY_SIZE, rte_socket_id(),
-      RTE_MEMZONE_1GB, PAGE_SIZE);
+      "Array", ARRAY_SIZE, rte_socket_id(), RTE_MEMZONE_1GB, PAGE_SIZE);
   assert(mz && "Unable to allocate memory zone.");
-  array = (char *) mz->addr;
-  printf("Array physical address: %016lX\n", (unsigned long) array);
+  array = (char *)mz->addr;
+  printf("Array physical address: %016lX\n", (unsigned long)array);
 
   srand(time(NULL));
 
