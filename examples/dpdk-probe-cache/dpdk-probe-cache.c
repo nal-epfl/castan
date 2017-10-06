@@ -6,22 +6,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-// #include <arpa/inet.h>
-// #include <cmdline_parse_etheraddr.h>
-// #include <getopt.h>
-// #include <inttypes.h>
-// #include <linux/limits.h>
-// #include <netinet/in.h>
-#include <rte_common.h>
 #include <rte_eal.h>
 #include <rte_memzone.h>
-// #include <rte_ethdev.h>
-// #include <rte_ip.h>
-// #include <rte_launch.h>
 #include <rte_lcore.h>
-// #include <rte_mbuf.h>
-// #include <string.h>
-// #include <sys/types.h>
 
 #define PAGE_SIZE (1 << 30)
 #define ARRAY_SIZE (1ul * PAGE_SIZE)
