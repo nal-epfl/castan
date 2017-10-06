@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
       "Array", ARRAY_SIZE, rte_socket_id(), RTE_MEMZONE_1GB, PAGE_SIZE);
   assert(mz && "Unable to allocate memory zone.");
   array = (char *)mz->addr;
-  printf("Array physical address: %016lX\n", (unsigned long)array);
+  printf("Array physical address: %016lX\n", rte_mem_virt2phy(array));
 
   // Init line sets.
   for (long i = 0; i < ARRAY_SIZE; i += sizeof(long)) {
