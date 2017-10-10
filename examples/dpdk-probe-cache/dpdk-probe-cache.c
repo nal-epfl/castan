@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
           insert(&pos, dropped);
         } else if (post_delay > pre_delay) {
           insert(&pos, dropped);
+          continue;
         } else {
           insert(&remaining_set, dropped);
           found = 1;
