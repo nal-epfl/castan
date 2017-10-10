@@ -263,6 +263,8 @@ int main(int argc, char *argv[]) {
 
         if ((post_delay - pre_delay) < -DELAY_DELTA_THRESHOLD) {
           insert(&pos, dropped);
+        } else if (post_delay > pre_delay) {
+          insert(&pos, dropped);
         } else {
           insert(&remaining_set, dropped);
           found = 1;
