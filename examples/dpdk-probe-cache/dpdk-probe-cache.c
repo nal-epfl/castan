@@ -14,7 +14,7 @@
 #define ARRAY_SIZE (1ul * PAGE_SIZE)
 // #define ASSOCIATIVITY 20
 // #define DELAY_THRESHOLD 80
-#define DELAY_DELTA_THRESHOLD 700
+#define DELAY_DELTA_THRESHOLD 300
 #define OFFSET_BITS 15
 #define LOOP_REPETITIONS 100
 #define PROBE_TRIALS 10
@@ -243,6 +243,7 @@ int main(int argc, char *argv[]) {
 
     printf("Shrinking contention set.\n");
     long pos = running_set;
+    int pre_delay = min_probe(pos);
     int found;
     do {
       found = 0;
@@ -252,7 +253,6 @@ int main(int argc, char *argv[]) {
       }
 
       int done;
-      int pre_delay = min_probe(pos);
       do {
         //         printf("Contention set of %d blocks had delay of %d.\n",
         //               get_size(running_set), pre_delay);
@@ -267,11 +267,15 @@ int main(int argc, char *argv[]) {
         //                pre_delay);
 
         if ((post_delay - pre_delay) < -DELAY_DELTA_THRESHOLD) {
+          // Big drop: address is in contention set. Put it back.
           insert(&pos, dropped);
         } else if (post_delay > pre_delay) {
+          // Increase: measurement is broken. Redo.
           insert(&pos, dropped);
+          pre_delay = min_probe(pos);
           continue;
         } else {
+          // Small drop: address is not in contention set. Leave it out.
           insert(&remaining_set, dropped);
           pre_delay = post_delay;
           found = 1;
