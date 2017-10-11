@@ -7,8 +7,8 @@
 #include <time.h>
 
 #include <rte_eal.h>
-#include <rte_memzone.h>
 #include <rte_lcore.h>
+#include <rte_memzone.h>
 
 #define PAGE_SIZE (1 << 30)
 #define ARRAY_SIZE (1ul * PAGE_SIZE)
@@ -202,6 +202,11 @@ int main(int argc, char *argv[]) {
   array = (char *)mz->addr;
   printf("Array physical address: %016lX\n", rte_mem_virt2phy(array));
 
+  // Spot check if page is actually 1GB.
+  assert(rte_mem_virt2phy(array + (1 << 30) - 1) - rte_mem_virt2phy(array) ==
+             (1 << 30) - 1 &&
+         "Physical page is not a 1GB contiguous block.");
+
   srand(time(NULL));
 
   // Init line sets.
@@ -247,8 +252,8 @@ int main(int argc, char *argv[]) {
       }
 
       int done;
+      int pre_delay = min_probe(pos);
       do {
-        int pre_delay = min_probe(pos);
         //         printf("Contention set of %d blocks had delay of %d.\n",
         //               get_size(running_set), pre_delay);
 
@@ -268,6 +273,7 @@ int main(int argc, char *argv[]) {
           continue;
         } else {
           insert(&remaining_set, dropped);
+          pre_delay = post_delay;
           found = 1;
         }
 
