@@ -277,6 +277,9 @@ void run(struct nf_config *config) {
 #endif
 
         uint32_t dst_device = device ^ 0x01;
+        struct ether_hdr *ether_header = rte_pktmbuf_mtod(*mbuf, struct ether_hdr *);
+        ether_header->s_addr = config->device_macs[dst_device];
+        ether_header->d_addr = config->endpoint_macs[dst_device];
 
 #ifdef PTP
         struct ptpv2_msg *ptp =
