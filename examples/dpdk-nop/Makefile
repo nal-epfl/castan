@@ -30,7 +30,6 @@ CFLAGS += -DNDEBUG
 # CFLAGS += -DPTP
 # VV always forward a packet, even when it should be dropped.
 # works only if nf has exactly 2 interfaces.
-# CFLAGS += -DNODROP
 
 LDFLAGS += -lstdc++
 
