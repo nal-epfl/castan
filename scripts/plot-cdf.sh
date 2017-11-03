@@ -8,37 +8,59 @@ shift 2
 
 HISTOGRAM=$(mktemp)
 
+GLOBAL_MIN=9223372036854775807 # INT_MAX
+GLOBAL_MAX=-9223372036854775808 # INT_MIN
+
 PLOT_LINES="plot"
 while (("$#")); do
   CSV="$1"
   TITLE="$2"
   CDF="$CSV.cdf"
 
-  if [ "$CSV" -nt "$CDF" ]; then
-    echo "Processing $CSV."
+  if [ -s "$CSV" ]; then
+    if [ "$CSV" -nt "$CDF" ]; then
+      echo "Processing $CSV."
 
-    sort -n --parallel=$(nproc) $CSV \
-        | uniq -c > $HISTOGRAM
+      sort -n --parallel=$(nproc) $CSV \
+          | uniq -c > $HISTOGRAM
 
-    TOTAL=$(awk '{sum += $1} END {print sum;}' $HISTOGRAM)
+      TOTAL=$(awk '{sum += $1} END {print sum;}' $HISTOGRAM)
 
-    CDFS+=($(mktemp))
-    cat $HISTOGRAM | awk "
-      BEGIN {
-        print \"0,0\";
-      }
+      CDFS+=($(mktemp))
+      cat $HISTOGRAM | awk "
+        BEGIN {
+          print \"0,0\";
+        }
 
-      {
-        print \$2 \",\" (acc / $TOTAL);
-        acc += \$1;
-        print \$2 \",\" (acc / $TOTAL);
-      }" > $CDF
+        {
+          print \$2 \",\" (acc / $TOTAL);
+          acc += \$1;
+          print \$2 \",\" (acc / $TOTAL);
+        }" > $CDF
+    fi
+
+    MIN=$(sed '2q;d' $CDF | cut -d , -f 1)
+    MAX=$(tail -n 1 $CDF | cut -d , -f 1)
+
+    if [ "$MIN" -lt "$GLOBAL_MIN" ]; then
+      GLOBAL_MIN="$MIN"
+    fi
+    if [ "$MAX" -gt "$GLOBAL_MAX" ]; then
+      GLOBAL_MAX="$MAX"
+    fi
+
+    PLOT_LINES+=" '$CDF' using 1:2 title '$TITLE' with line lw 5,"
+  else
+    echo "No data in $CSV. Skipping."
   fi
-
-  PLOT_LINES+=" '$CDF' using 1:2 title '$TITLE' with line lw 5,"
 
   shift 2
 done
+
+if [ "$RANGE" == "auto" ]; then
+  RANGE="$GLOBAL_MIN:$GLOBAL_MAX"
+  echo "Auto range: $RANGE"
+fi
 
 echo "Plotting CDF into $OUTPUT."
 
