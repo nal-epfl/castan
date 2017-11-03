@@ -1,0 +1,2 @@
+Add the following kernel parameters to /etc/default/grub, appended to the variable GRUB_CMDLINE_LINUX_DEFAULT.
+hugepagesz=1GB hugepages=8 isolcpus=8,9,10,11,12,13,14,15 nohz_full=8,9,10,11,12,13,14,15 acpi=noirq nosoftlockup intel_idle.max_cstate=0 processor.max_cstate=0 idle=poll mce=ignore_ce intel_pstate=disable cpuidle.off=1 pcie_aspm=off processor.ignore_ppc=1
