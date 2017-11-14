@@ -322,11 +322,13 @@ typedef struct tree_node_t {
   hash_value_t value;
 } tree_node_t;
 
-typedef tree_node_t *hash_table_t;
+typedef tree_node_t **hash_table_t;
 
-void hash_init(hash_table_t *hash_table) { *hash_table = NULL; }
+void hash_init(hash_table_t *hash_table) {
+  *hash_table = (hash_table_t)calloc(1, sizeof(hash_table_t));
+}
 
-void hash_set(hash_table_t *hash_table, hash_key_t key, hash_value_t value) {
+void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
   tree_node_t **pos = hash_table;
   while (*pos && (*pos)->key != key) {
     if ((*pos)->key < key) {
@@ -344,7 +346,7 @@ void hash_set(hash_table_t *hash_table, hash_key_t key, hash_value_t value) {
 }
 
 int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
-  tree_node_t *pos = hash_table;
+  tree_node_t *pos = *hash_table;
   while (pos && pos->key != key) {
     if (pos->key < key) {
       pos = pos->right;
@@ -488,13 +490,13 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       translation = key;
       translation.src_ip = config->nat_ip;
       translation.src_port = out_key.dst_port;
-      hash_set(&hash_table, key, translation);
+      hash_set(hash_table, key, translation);
 
       // Save entry for returning traffic.
       hash_key_t out_translation = out_key;
       out_translation.dst_ip = ip->src_addr;
       out_translation.dst_port = sport;
-      hash_set(&hash_table, out_key, out_translation);
+      hash_set(hash_table, out_key, out_translation);
     }
   }
 
