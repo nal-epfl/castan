@@ -1,5 +1,4 @@
 #include <arpa/inet.h>
-#include <assert.h>
 #include <cmdline_parse_etheraddr.h>
 #include <getopt.h>
 #include <inttypes.h>
@@ -313,7 +312,9 @@ lpm_t lpm_create() {
   const struct rte_memzone *mz = rte_memzone_reserve_aligned(
       "LPM", (1 << LONGEST_PREFIX) * sizeof(prefix_node_t), rte_socket_id(),
       RTE_MEMZONE_1GB, PAGE_SIZE);
-  assert(mz && "Unabe to allocate LPM table.");
+  if (!mz) {
+    rte_exit(EXIT_FAILURE, "Unable to allocate LPM table.");
+  }
 
 #ifndef __clang__
   memset(mz->addr, 0, (1 << LONGEST_PREFIX) * sizeof(prefix_node_t));
