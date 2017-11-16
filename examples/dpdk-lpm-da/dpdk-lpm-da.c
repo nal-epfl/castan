@@ -313,7 +313,7 @@ lpm_t lpm_create() {
       "LPM", (1 << LONGEST_PREFIX) * sizeof(prefix_node_t), rte_socket_id(),
       RTE_MEMZONE_1GB, PAGE_SIZE);
   if (!mz) {
-    rte_exit(EXIT_FAILURE, "Unable to allocate LPM table.");
+    rte_exit(EXIT_FAILURE, "Unable to allocate LPM table.\n");
   }
 
 #ifndef __clang__
