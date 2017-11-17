@@ -39,7 +39,8 @@ def create_flows(num_flows, num_packets, bytes_per_packet, output_file):
         f = random.randint(1, num_flows)
         src_ip, dst_ip, prot, sport, dport = ip_table.lookup_flow(f)
 
-        pkt = IP(src=src_ip, dst=dst_ip)
+        pkt = Ether(src="08:00:27:53:8b:38", dst="08:00:27:c1:13:47")
+        pkt = pkt/IP(src=src_ip, dst=dst_ip)
         pkt = pkt/UDP(sport=sport,dport=dport)
         pkt.len = bytes_per_packet
 
