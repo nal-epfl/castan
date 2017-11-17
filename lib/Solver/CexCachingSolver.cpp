@@ -253,7 +253,7 @@ bool CexCachingSolver::getAssignment(const Query& query, Assignment *&result) {
   result = binding;
   cache.insert(key, binding);
 
-  return binding;
+  return true;
 }
 
 ///
