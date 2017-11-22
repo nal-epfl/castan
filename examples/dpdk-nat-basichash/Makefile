@@ -50,6 +50,7 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
 	    -Wno-deprecated-register \
 	    -o $@ -c $<
 
+all: havoc.rt
 make-rainbow-table: make-rainbow-table.c
 	gcc -Wall -O3 $< -o $@
 

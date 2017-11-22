@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <limits.h>
 
 #define NAT_IP "192.168.0.1"
 #define TABLE_SIZE (1 << 16)
@@ -87,7 +88,7 @@ void generate_entry(hash_key_t *key) {
 int main(int argc, char *argv[]) {
   long long num_entries;
   if (argc == 1) {
-    num_entries = -1;
+    num_entries = LLONG_MAX;
   } else if (argc == 2) {
     num_entries = atoll(argv[1]);
   } else {
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
 
   hash_key_t key;
 
-  for (long long count = 0; count < num_entries; count++) {
+  for (long long count = 0; count < num_entries; count += 2) {
     for (int b = 0; b < sizeof(key); b++) {
       ((char *)&key)[b] = rand();
     }
