@@ -52,7 +52,7 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_eal.a
 
 all: havoc.rt
 make-rainbow-table: make-rainbow-table.c
-	gcc -Wall -O3 $< -o $@
+	gcc -std=c99 -Wall -O3 $< -o $@
 
 havoc.rt: make-rainbow-table
 	./make-rainbow-table 10000000 | sort -s -k 1,1 > havoc.rt
