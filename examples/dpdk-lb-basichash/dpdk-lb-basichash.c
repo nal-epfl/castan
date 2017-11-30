@@ -551,6 +551,20 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
 
     ip->dst_addr = translation.dst_ip;
   } else { // Outgoing packet: set source to public IP
+    int found_dip = 0;
+    for (int i = 0; i < NUM_DIPS && config->dips[i]; i++) {
+      if (ip->src_addr == config->dips[i]) {
+        found_dip = 1;
+        break;
+      }
+    }
+    if (!found_dip) {
+      NF_DEBUG(
+          "Packet from port %d %s:%s not involved in load-balancing. Dropping",
+          device, nf_ipv4_to_str(ip->src_addr), nf_ipv4_to_str(ip->dst_addr));
+      return device;
+    }
+
     NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s", device,
              nf_ipv4_to_str(ip->src_addr), nf_ipv4_to_str(ip->dst_addr),
              dst_dev, nf_ipv4_to_str(config->vip),
