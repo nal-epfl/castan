@@ -54,15 +54,16 @@ struct ptpv2_msg {
 #endif
 
 #ifdef NODROP
-#  define DROP_PACKET(mbuf, device) {                                 \
-    uint16_t actual_tx_len = rte_eth_tx_burst(1-device, 0, mbuf, 1);  \
-    if (actual_tx_len < 1) {                                          \
-      rte_pktmbuf_free(mbuf[0]);                                      \
-    }                                                                 \
+#define DROP_PACKET(mbuf, device)                                              \
+  {                                                                            \
+    uint16_t actual_tx_len = rte_eth_tx_burst(1 - device, 0, mbuf, 1);         \
+    if (actual_tx_len < 1) {                                                   \
+      rte_pktmbuf_free(mbuf[0]);                                               \
+    }                                                                          \
   }
-#else //NODROP
-#  define DROP_PACKET(mbuf, device) rte_pktmbuf_free(mbuf[0])
-#endif//NODROP
+#else // NODROP
+#define DROP_PACKET(mbuf, device) rte_pktmbuf_free(mbuf[0])
+#endif // NODROP
 
 // Queue sizes for receiving/transmitting packets (set to their values from
 // l3fwd sample)
@@ -315,9 +316,7 @@ typedef struct __attribute__((packed)) {
   uint16_t src_port;
 } hash_key_t;
 
-typedef struct __attribute__((packed)) {
-  uint32_t dst_ip;
-} hash_value_t;
+typedef struct __attribute__((packed)) { uint32_t dst_ip; } hash_value_t;
 
 typedef struct hash_entry_t {
   hash_key_t key;
@@ -333,8 +332,8 @@ void hash_init(hash_table_t *hash_table) {
 }
 
 int hash_key_equals(hash_key_t a, hash_key_t b) {
-  return (a.src_ip == b.src_ip) &
-         (a.proto == b.proto) & (a.src_port == b.src_port);
+  return (a.src_ip == b.src_ip) & (a.proto == b.proto) &
+         (a.src_port == b.src_port);
 }
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
@@ -522,9 +521,7 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
   }
 
   hash_key_t key = {
-      .src_ip = ip->src_addr,
-      .proto = ip->next_proto_id,
-      .src_port = sport,
+      .src_ip = ip->src_addr, .proto = ip->next_proto_id, .src_port = sport,
   };
 
   // Translate packet inplace.
@@ -547,17 +544,17 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       hash_set(hash_table, key, translation);
     }
 
-    NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s",
-             device, nf_ipv4_to_str(ip->src_addr), nf_ipv4_to_str(ip->dst_addr),
-             dst_dev, nf_ipv4_to_str(ip->src_ip),
+    NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s", device,
+             nf_ipv4_to_str(ip->src_addr), nf_ipv4_to_str(ip->dst_addr),
+             dst_dev, nf_ipv4_to_str(ip->src_addr),
              nf_ipv4_to_str(translation.dst_ip));
 
     ip->dst_addr = translation.dst_ip;
   } else { // Outgoing packet: set source to public IP
-    NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s",
-             device, nf_ipv4_to_str(ip->src_addr), nf_ipv4_to_str(ip->dst_addr),
+    NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s", device,
+             nf_ipv4_to_str(ip->src_addr), nf_ipv4_to_str(ip->dst_addr),
              dst_dev, nf_ipv4_to_str(config->vip),
-             nf_ipv4_to_str(ip->dst_ip));
+             nf_ipv4_to_str(ip->dst_addr));
 
     ip->src_addr = config->vip;
   }
@@ -591,7 +588,7 @@ void run(struct nf_config *config, hash_table_t hash_table) {
 #ifdef PTP
         struct ptpv2_msg *ptp =
             (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
-                                  sizeof(struct ether_hdr));
+                                 sizeof(struct ether_hdr));
         rte_pktmbuf_mtod(mbuf[0], struct ether_hdr *)->ether_type = 0xf788;
         ptp->msg_id = 0;
         ptp->version = 0x02;
