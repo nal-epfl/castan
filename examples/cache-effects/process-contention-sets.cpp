@@ -68,7 +68,10 @@ int main(int argc, char **argv) {
       bool found = 0;
       unsigned int maxAssociativity = 0;
       for (long prefix : prefixes) {
-        assert(contentionSets.count(prefix | addr));
+        if(!contentionSets.count(prefix | addr)){
+          found = 1;
+          break;
+        }
 
         int set = contentionSets[prefix | addr];
         if (setAssociativity[set] > maxAssociativity) {
@@ -76,9 +79,7 @@ int main(int argc, char **argv) {
         }
 
         for (long check : candidate.first) {
-          assert(contentionSets.count(prefix | check));
-
-          if (contentionSets[prefix | check] != set) {
+          if ((!contentionSets.count(prefix | check)) || contentionSets[prefix | check] != set) {
             found = 1;
             break;
           }
