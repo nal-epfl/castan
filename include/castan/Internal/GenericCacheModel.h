@@ -6,6 +6,7 @@
 #include <klee/Solver.h>
 
 #define BLOCK_BITS 6
+#define PAGE_SIZE (1 << 30)
 
 // // Fake cache.
 // #define CACHE_NUM_LAYERS 3
@@ -53,6 +54,7 @@
 // #define CACHE_DRAM_LATENCY 60
 // #define NS_PER_INSTRUCTION .1
 // #define NS_PER_MEMORY_INSTRUCTION (NS_PER_INSTRUCTION + CACHE_L1_LATENCY)
+// #define FIXED_OVERHEAD_NS 0
 
 // Intel(R) Xeon(R) CPU E5 - 2667 v2
 #define CYCLE .23
@@ -66,12 +68,14 @@
 #define CACHE_L2_WRITEBACK 1
 #define CACHE_L2_LATENCY (12 * CYCLE)
 #define CACHE_L3_SIZE (25600 * 1024)
-#define CACHE_L3_ASSOCIATIVITY 20
+#define CACHE_L3_CONTENTIONSETS "XeonE52667v2.dat"
 #define CACHE_L3_WRITEBACK 1
 #define CACHE_L3_LATENCY (30 * CYCLE)
 #define CACHE_DRAM_LATENCY 62
 #define NS_PER_INSTRUCTION 0.05
 #define NS_PER_MEMORY_INSTRUCTION (NS_PER_INSTRUCTION + CACHE_L1_LATENCY)
+#define FIXED_OVERHEAD_NS 0
+#define PAGE_BITS 30
 
 typedef struct {
   // The time of the most recent use.
@@ -104,6 +108,7 @@ private:
   void updateCache(uint64_t address, bool isWrite, uint8_t level);
   unsigned long getCost(uint64_t address, bool isWrite, uint8_t level);
   unsigned long getMissCost(uint64_t address, bool isWrite, uint8_t level);
+  unsigned long getMissesUntilEviction(uint64_t address);
 
   klee::ref<klee::Expr> memoryOperation(klee::TimingSolver *solver,
                                         klee::ExecutionState &state,
