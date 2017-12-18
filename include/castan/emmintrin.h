@@ -1,5 +1,6 @@
 #ifndef __CASTAN_EMMINTRIN_H__
 #define __CASTAN_EMMINTRIN_H__
+#define __XMMINTRIN_H
 
 typedef __int128 __m128i;
 typedef __m128i __m128;
