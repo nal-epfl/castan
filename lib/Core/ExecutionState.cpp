@@ -17,6 +17,7 @@
 #include "klee/Expr.h"
 
 #include "castan/Internal/GenericCacheModel.h"
+#include "castan/Internal/ContentionSetCacheModel.h"
 
 #include "Memory.h"
 #if LLVM_VERSION_CODE >= LLVM_VERSION(3, 3)
@@ -41,13 +42,14 @@ namespace {
   cl::opt<bool>
   DebugLogStateMerge("debug-log-state-merge");
 
-  cl::opt<std::string>
-  CacheModel("cache-model");
+  cl::opt<std::string> CacheModel("cache-model", cl::init("contentionset"));
 }
 
 castan::CacheModel *createCacheModel() {
   if (CacheModel == "generic") {
     return new castan::GenericCacheModel();
+  } else if (CacheModel == "contentionset") {
+    return new castan::ContentionSetCacheModel();
   } else {
     return NULL;
   }
