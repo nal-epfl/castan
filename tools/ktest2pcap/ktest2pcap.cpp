@@ -38,7 +38,7 @@ uint16_t checksum(const void *buf, size_t len) {
 }
 
 int main(int argc, char **argv) {
-  assert(argc == 3 && "Usage: ktest2pcap <ktest-file> <pcap-file>");
+  assert((argc == 3 || argc == 4) && "Usage: ktest2pcap <ktest-file> <pcap-file> [num packets]");
 
   KTest *input = kTest_fromFile(argv[1]);
   assert(input && "Error loading ktest file.");
@@ -46,6 +46,11 @@ int main(int argc, char **argv) {
   pcap_t *pcap = pcap_open_dead(DLT_EN10MB, 65536);
   pcap_dumper_t *out = pcap_dump_open(pcap, argv[2]);
   assert(out && "Error opening pcap file.");
+
+  long num_packets = 0;
+  if (argc == 4) {
+    num_packets = atol(argv[3]);
+  }
 
   for (unsigned i = 0; i < input->numObjects; i++) {
     KTestObject *o = &input->objects[i];
@@ -107,6 +112,10 @@ int main(int argc, char **argv) {
       ip->ip_sum = checksum(ip, ip->ip_hl * 4);
 
       pcap_dump((u_char *)out, &pkthdr, o->bytes);
+
+      if (--num_packets == 0) {
+        break;
+      }
     }
   }
 
