@@ -1,9 +1,14 @@
 #ifndef __CASTAN_EMMINTRIN_H__
 #define __CASTAN_EMMINTRIN_H__
+#define __EMMINTRIN_H
 #define __XMMINTRIN_H
+#define __TMMINTRIN_H
+#define _SMMINTRIN_H
+#define __IMMINTRIN_H
 
 typedef __int128 __m128i;
 typedef __m128i __m128;
+typedef __m128i __m128d;
 
 #define _mm_loadu_si128(x) (*(x))
 

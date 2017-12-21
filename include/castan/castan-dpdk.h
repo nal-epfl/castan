@@ -1,3 +1,5 @@
+#undef __AVX__
+
 #include <assert.h>
 #include <castan/castan.h>
 #include <castan/emmintrin.h>
