@@ -1,0 +1,13 @@
+array castan_packet[40] : w32 -> w8 = symbolic
+
+(query [
+  Constraints.
+]
+false
+[
+  Expressions to evaluate.
+]
+[
+  Symbols to solve for.
+]
+)
