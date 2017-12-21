@@ -167,7 +167,8 @@ bool STPSolverImpl::computeValue(const Query &query, ref<Expr> &result) {
   findSymbolicObjects(query.expr, objects);
   if (!computeInitialValues(query.withFalse(), objects, values, hasSolution))
     return false;
-  assert(hasSolution && "state has invalid constraint set");
+  if (!hasSolution)
+    return false;
 
   // Evaluate the expression with the computed assignment.
   Assignment a(objects, values);
