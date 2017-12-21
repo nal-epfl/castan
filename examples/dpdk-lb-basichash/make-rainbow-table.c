@@ -9,11 +9,9 @@
 #define TABLE_SIZE (1 << 16)
 
 typedef struct __attribute__((packed)) {
-  struct in_addr src_ip;
-  struct in_addr dst_ip;
-  uint8_t proto;
-  uint16_t src_port;
-  uint16_t dst_port;
+  uint32_t src_ip;
+  // uint8_t proto;
+  // uint16_t src_port;
 } hash_key_t;
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
@@ -64,12 +62,9 @@ uint32_t hash_function(hash_key_t *key) {
 
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
-  a += key->src_ip.s_addr;
-  b += key->dst_ip.s_addr;
-  c += ((uint32_t)key->src_port) << 16 | key->dst_port;
-  hash_function_mix(a, b, c);
-
-  a += key->proto;
+  a += key->src_ip;
+//   b += key->proto;
+//   c += key->src_port;
 
   hash_function_final(a, b, c);
   return c;
@@ -105,17 +100,9 @@ int main(int argc, char *argv[]) {
       ((char *)&key)[b] = rand();
     }
 
-    key.proto = 0x11;
+//     key.proto = 0x11;
 
     generate_entry(&key);
-
-    hash_key_t nat_key;
-    nat_key.src_ip = key.dst_ip;
-    inet_pton(AF_INET, NAT_IP, &nat_key.dst_ip);
-    nat_key.proto = key.proto;
-    nat_key.src_port = key.dst_port;
-    nat_key.dst_port = key.src_port;
-    generate_entry(&nat_key);
   }
 
   return 0;
