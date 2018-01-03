@@ -432,6 +432,8 @@ int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
         *value = entry->value;
       }
       return 1;
+    } else if (hash_key_equals(entry->key, NULL_KEY)) {
+      break;
     }
   }
 
