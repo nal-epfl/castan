@@ -314,7 +314,7 @@ typedef struct {
   hash_value_t value;
 } hash_entry_t;
 
-typedef hash_entry_t **hash_table_t;
+typedef hash_entry_t *hash_table_t;
 
 hash_key_t NULL_KEY = {0,0,0,0,0};
 
@@ -407,7 +407,7 @@ void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
   castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
-    entry = hash_table[(hash + pos) % TABLE_SIZE];
+    entry = &hash_table[(hash + pos) % TABLE_SIZE];
     if (hash_key_equals(entry->key, key)) {
       entry->value = value;
       return;
@@ -426,7 +426,7 @@ int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
   castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
-    entry = hash_table[(hash + pos) % TABLE_SIZE];
+    entry = &hash_table[(hash + pos) % TABLE_SIZE];
     if (hash_key_equals(entry->key, key)) {
       if (value) {
         *value = entry->value;
