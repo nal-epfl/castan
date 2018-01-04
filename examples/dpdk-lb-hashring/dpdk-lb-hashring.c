@@ -334,8 +334,6 @@ typedef struct __attribute__((packed)) { uint32_t dst_ip; } hash_value_t;
 typedef struct hash_entry_t {
   hash_key_t key;
   hash_value_t value;
-
-  struct hash_entry_t *next;
 } hash_entry_t;
 
 typedef hash_entry_t *hash_table_t;
