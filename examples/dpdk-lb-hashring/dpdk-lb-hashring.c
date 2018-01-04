@@ -323,22 +323,22 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
   return 0;
 }
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint32_t src_ip;
   // uint8_t proto;
   // uint16_t src_port;
 } hash_key_t;
 
-typedef struct __attribute__((packed)) { uint32_t dst_ip; } hash_value_t;
+typedef struct { uint32_t dst_ip; } hash_value_t;
 
 typedef struct hash_entry_t {
   hash_key_t key;
   hash_value_t value;
+
+  int used;
 } hash_entry_t;
 
 typedef hash_entry_t *hash_table_t;
-
-hash_key_t NULL_KEY = {0/*,0,0*/};
 
 #define TABLE_SIZE (PAGE_SIZE / sizeof(hash_entry_t))
 
@@ -427,14 +427,14 @@ void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
     entry = &hash_table[(hash + pos) % TABLE_SIZE];
-    if (hash_key_equals(entry->key, key)) {
-      entry->value = value;
-      return;
-    } else if (hash_key_equals(entry->key, NULL_KEY)) {
+    if (! entry->used) {
       entry->key = key;
       entry->value = value;
+      entry->used = 1;
       return;
-      break;
+    } else if (hash_key_equals(entry->key, key)) {
+      entry->value = value;
+      return;
     }
   }
 }
@@ -446,13 +446,13 @@ int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
     entry = &hash_table[(hash + pos) % TABLE_SIZE];
-    if (hash_key_equals(entry->key, key)) {
+    if (! entry->used) {
+      break;
+    } else if (hash_key_equals(entry->key, key)) {
       if (value) {
         *value = entry->value;
       }
       return 1;
-    } else if (hash_key_equals(entry->key, NULL_KEY)) {
-      break;
     }
   }
 
