@@ -325,8 +325,8 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
 
 typedef struct {
   uint32_t src_ip;
-  // uint8_t proto;
-  // uint16_t src_port;
+  uint8_t proto;
+  uint16_t src_port;
 } hash_key_t;
 
 typedef struct { uint32_t dst_ip; } hash_value_t;
@@ -359,9 +359,9 @@ void hash_init(hash_table_t *hash_table) {
 }
 
 int hash_key_equals(hash_key_t a, hash_key_t b) {
-  return (a.src_ip == b.src_ip); 
-         // & (a.proto == b.proto);
-         // & (a.src_port == b.src_port);
+  return (a.src_ip == b.src_ip)
+         & (a.proto == b.proto)
+         & (a.src_port == b.src_port);
 }
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
@@ -413,8 +413,8 @@ uint32_t hash_function(hash_key_t key) {
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
   a += key.src_ip;
-//   b += key.proto;
-//   c += key.src_port;
+  b += key.proto;
+  c += key.src_port;
 
   hash_function_final(a, b, c);
   return c;
@@ -550,7 +550,7 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
   }
 
   hash_key_t key = {
-      .src_ip = ip->src_addr, // .proto = ip->next_proto_id, .src_port = sport,
+      .src_ip = ip->src_addr, .proto = ip->next_proto_id, .src_port = sport,
   };
 
   // Translate packet inplace.

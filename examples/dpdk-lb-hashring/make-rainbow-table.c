@@ -9,8 +9,8 @@
 
 typedef struct {
   uint32_t src_ip;
-  // uint8_t proto;
-  // uint16_t src_port;
+  uint8_t proto;
+  uint16_t src_port;
 } hash_key_t;
 
 typedef struct { uint32_t dst_ip; } hash_value_t;
@@ -74,8 +74,8 @@ uint32_t hash_function(hash_key_t *key) {
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
   a += key->src_ip;
-//   b += key->proto;
-//   c += key->src_port;
+  b += key->proto;
+  c += key->src_port;
 
   hash_function_final(a, b, c);
   return c;
