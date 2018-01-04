@@ -6,13 +6,22 @@
 #include <limits.h>
 
 #define NAT_IP "192.168.0.1"
-#define TABLE_SIZE (1 << 16)
 
 typedef struct __attribute__((packed)) {
   uint32_t src_ip;
   // uint8_t proto;
   // uint16_t src_port;
 } hash_key_t;
+
+typedef struct __attribute__((packed)) { uint32_t dst_ip; } hash_value_t;
+
+typedef struct hash_entry_t {
+  hash_key_t key;
+  hash_value_t value;
+} hash_entry_t;
+
+#define PAGE_SIZE (1 << 30)
+#define TABLE_SIZE (PAGE_SIZE / sizeof(hash_entry_t))
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
 
