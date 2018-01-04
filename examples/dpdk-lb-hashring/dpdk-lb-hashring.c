@@ -323,7 +323,7 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
   return 0;
 }
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint32_t src_ip;
   uint8_t proto;
   uint16_t src_port;

@@ -7,7 +7,7 @@
 
 #define NAT_IP "192.168.0.1"
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint32_t src_ip;
   uint8_t proto;
   uint16_t src_port;
