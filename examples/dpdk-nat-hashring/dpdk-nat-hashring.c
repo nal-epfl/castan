@@ -309,7 +309,7 @@ typedef struct __attribute__((packed)) {
 
 typedef hash_key_t hash_value_t;
 
-typedef struct {
+typedef struct __attribute__((aligned(64))) {
   hash_key_t key;
   hash_value_t value;
 
