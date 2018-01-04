@@ -331,7 +331,7 @@ typedef struct __attribute__((packed)) {
 
 typedef struct { uint32_t dst_ip; } hash_value_t;
 
-typedef struct hash_entry_t {
+typedef struct __attribute__((aligned(64))) hash_entry_t {
   hash_key_t key;
   hash_value_t value;
 
