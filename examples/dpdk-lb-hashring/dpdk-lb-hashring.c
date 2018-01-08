@@ -545,18 +545,18 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
     return device;
   }
 
-  hash_key_t key = {
-      .src_ip = ip->src_addr, .proto = ip->next_proto_id, .src_port = sport,
-  };
-
   // Translate packet inplace.
   uint32_t dst_dev = device ^ 0x01;
   ip->hdr_checksum = 0;
 
   if (ip->dst_addr == config->vip) { // Incoming packet.
-    hash_value_t translation;
+    hash_key_t key = {
+        .src_ip = ip->src_addr, .proto = ip->next_proto_id, .src_port = sport,
+    };
     uint32_t hash;
     castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
+
+    hash_value_t translation;
     if (!hash_get(hash_table, key, &translation, hash)) {
       NF_DEBUG("New connection.");
       // New connection. Set up state.
