@@ -106,8 +106,12 @@ function timerSlave(txQueue, rxQueue, duration, fname)
       --txBufs:alloc(64);
       --local buf = txBufs[1]
       local lat = myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
-      hist:update(lat)
-      file:write(lat .. "\n")
+      if lat then
+        hist:update(lat)
+        file:write(lat .. "\n")
+      else
+        log:warn("Failed to measure latency.")
+      end
     end
   end
   hist:print()
