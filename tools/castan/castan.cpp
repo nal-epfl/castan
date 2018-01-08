@@ -513,6 +513,13 @@ void KleeHandler::processTestCase(const ExecutionState &state,
             klee_message("    Ran out of collisions in rainbow table for havoc "
                          "0. Giving up.");
             fail = true;
+
+            klee_message("Havoc input expression:");
+            for (unsigned b = 0; b < havocInput.size(); b++) {
+              klee_message("[%d] =", b);
+              packet.second[havoc_id].first[b]->dump();
+            }
+
             break;
           }
         } else {
