@@ -515,7 +515,8 @@ void KleeHandler::processTestCase(const ExecutionState &state,
             fail = true;
 
             klee_message("Havoc input expression:");
-            for (unsigned b = 0; b < havocInput.size(); b++) {
+            for (unsigned b = 0; b < packet.second[havoc_id].first.size();
+                 b++) {
               klee_message("[%d] =", b);
               packet.second[havoc_id].first[b]->dump();
             }
