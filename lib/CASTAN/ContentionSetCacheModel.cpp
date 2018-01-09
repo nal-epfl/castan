@@ -187,6 +187,10 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
 
     klee::klee_message("    Expr:");
     address->dump();
+    klee::klee_message("    Assuming:");
+    for (auto c : state.constraints) {
+      c->dump();
+    }
 
     bool found = false;
     if (WorstCaseSymIndices) {
