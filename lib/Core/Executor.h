@@ -383,6 +383,7 @@ private:
 
   bool shouldExitOn(enum TerminateReason termReason);
 
+public:
   // remove state from queue and delete
   void terminateState(ExecutionState &state);
   // call exit handler and terminate state
@@ -395,6 +396,7 @@ private:
                              const char *suffix = NULL,
                              const llvm::Twine &longMessage = "");
 
+private:
   // call error handler and terminate state, for execution errors
   // (things that should not be possible, like illegal instruction or
   // unlowered instrinsic, or are unsupported, like inline assembly)

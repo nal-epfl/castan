@@ -2133,7 +2133,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
   case Instruction::Load: {
     ref<Expr> base = eval(ki, 0, state).value;
     if (state.cacheModel) {
-      base = state.cacheModel->load(solver, state, base);
+      base = state.cacheModel->load(this, state, base);
     }
     executeMemoryOperation(state, false, base, 0, ki);
     break;
@@ -2142,7 +2142,7 @@ void Executor::executeInstruction(ExecutionState &state, KInstruction *ki) {
     ref<Expr> base = eval(ki, 1, state).value;
     ref<Expr> value = eval(ki, 0, state).value;
     if (state.cacheModel) {
-      base = state.cacheModel->store(solver, state, base);
+      base = state.cacheModel->store(this, state, base);
     }
     executeMemoryOperation(state, true, base, value, 0);
     break;

@@ -3,8 +3,6 @@
 
 #include <castan/Internal/CacheModel.h>
 
-#include <klee/Solver.h>
-
 // Intel(R) Xeon(R) CPU E5 - 2667 v2
 #define CYCLE .23
 #define CACHE_SIZE (25600 * 1024)
@@ -48,7 +46,7 @@ public:
   void updateCache(uint64_t address, bool isWrite);
   unsigned long getMissCost(int setIdx, bool isWrite);
 
-  klee::ref<klee::Expr> memoryOperation(klee::TimingSolver *solver,
+  klee::ref<klee::Expr> memoryOperation(klee::Executor *executor,
                                         klee::ExecutionState &state,
                                         klee::ref<klee::Expr> address,
                                         bool isWrite);
@@ -61,22 +59,22 @@ public:
 
   CacheModel *clone() { return new ContentionSetCacheModel(*this); }
 
-  klee::ref<klee::Expr> load(klee::TimingSolver *solver,
+  klee::ref<klee::Expr> load(klee::Executor *executor,
                              klee::ExecutionState &state,
                              klee::ref<klee::Expr> address) {
     if (enabled) {
       loopStats.back().readCount++;
-      return memoryOperation(solver, state, address, false);
+      return memoryOperation(executor, state, address, false);
     } else {
       return address;
     }
   }
-  klee::ref<klee::Expr> store(klee::TimingSolver *solver,
+  klee::ref<klee::Expr> store(klee::Executor *executor,
                               klee::ExecutionState &state,
                               klee::ref<klee::Expr> address) {
     if (enabled) {
       loopStats.back().writeCount++;
-      return memoryOperation(solver, state, address, true);
+      return memoryOperation(executor, state, address, true);
     } else {
       return address;
     }
