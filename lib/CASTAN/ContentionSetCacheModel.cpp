@@ -309,6 +309,7 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
     if (!found) {
       if (TerminateOnUNSAT) {
         executor->terminateStateEarly(state, "unable to induce cache miss.");
+        return address;
       } else {
         klee::klee_message("Concretizing address without worst-case analysis.");
         klee::ref<klee::ConstantExpr> concreteAddress;
