@@ -283,6 +283,7 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
             }
           } else {
             //               klee::klee_message("      UNSAT.");
+            break;
           }
         }
         if (found) {
