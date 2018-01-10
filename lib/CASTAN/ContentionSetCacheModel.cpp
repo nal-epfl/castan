@@ -243,18 +243,6 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
         for (long a : contentionSets[set.second].first) {
           klee::klee_message("    Trying address %08lX.", a);
 
-          bool hit = false;
-          for (auto idx : contentionSetIdxs[a]) {
-            if (cache[idx].count(a)) {
-              hit = true;
-              break;
-            }
-          }
-          if (hit) {
-            klee::klee_message("      Already a hit.");
-            continue;
-          }
-
           // Constrain cache line:
           // a == address & ((1<<PAGE_BITS)-1) & ~((1<<BLOCK_BITS)-1)
           klee::ConstraintManager constraints(state.constraints);
@@ -279,6 +267,20 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
           if (executor->solver->solver->getValue(
                   klee::Query(constraints, address), concreteAddress)) {
             //               klee::klee_message("Line fits constraints.");
+
+            uint64_t blockAddr =
+                concreteAddress->getZExtValue() & ~((1 << BLOCK_BITS) - 1);
+            bool hit = false;
+            for (auto idx : contentionSetIdxs[a]) {
+              if (cache[idx].count(blockAddr)) {
+                hit = true;
+                break;
+              }
+            }
+            if (hit) {
+              klee::klee_message("      Already a hit.");
+              continue;
+            }
 
             hitCount++;
             klee::klee_message("    Found potential hit, %d more needed.",
