@@ -22,12 +22,13 @@ extern llvm::cl::opt<unsigned> MaxLoops;
 
 llvm::cl::opt<bool> GiveUpOnComplexSymIndices(
     "give-up-on-complex-sym-indices", llvm::cl::init(false),
-    llvm::cl::desc("Give up early if symbolic pointer constraints look too complex (default=off)"));
+    llvm::cl::desc("Give up early if symbolic pointer constraints look too "
+                   "complex (default=off)"));
 
 llvm::cl::opt<bool> TerminateOnUNSAT(
     "terminate-on-unsat-sym-indices", llvm::cl::init(false),
-    llvm::cl::desc("Terminate states where a symbolic pointer doesn't fit the cache constraints (default=off)"));
-
+    llvm::cl::desc("Terminate states where a symbolic pointer doesn't fit the "
+                   "cache constraints (default=off)"));
 
 ContentionSetCacheModel::ContentionSetCacheModel() {
   std::ifstream inFile(CACHE_CONTENTIONSETS);
@@ -275,8 +276,8 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
           constraints.addConstraint(e);
 
           klee::ref<klee::ConstantExpr> concreteAddress;
-          if (executor->solver->solver->getValue(klee::Query(constraints, address),
-                                       concreteAddress)) {
+          if (executor->solver->solver->getValue(
+                  klee::Query(constraints, address), concreteAddress)) {
             //               klee::klee_message("Line fits constraints.");
 
             hitCount++;
@@ -288,6 +289,10 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
                   klee::EqExpr::create(concreteAddress, address));
               address = concreteAddress;
               found = true;
+
+              klee::klee_message(
+                  "Picked address: %08lX",
+                  dyn_cast<klee::ConstantExpr>(address)->getZExtValue());
               break;
             }
           } else {
@@ -314,7 +319,7 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
         klee::klee_message("Concretizing address without worst-case analysis.");
         klee::ref<klee::ConstantExpr> concreteAddress;
         assert(executor->solver->getValue(state, address, concreteAddress) &&
-              "Failed to concretize symbolic address.");
+               "Failed to concretize symbolic address.");
         state.constraints.addConstraint(
             klee::EqExpr::create(concreteAddress, address));
         address = concreteAddress;
