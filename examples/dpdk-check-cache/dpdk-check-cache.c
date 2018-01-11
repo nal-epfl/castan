@@ -220,17 +220,18 @@ int main(int argc, char *argv[]) {
       insert(&output_set, drop_next(&running_set, running_set));
     }
 
-    if (get_size(output_set) > associativity) {
-      if (output_file) {
-        fprintf(output_file, "%d\n", associativity);
+    if (output_file && get_size(output_set) > associativity) {
+      fprintf(output_file, "%d\n", associativity);
 
-        while (!is_empty(output_set)) {
-          fprintf(output_file, "%ld\n", drop_next(&output_set, output_set));
-        }
-        fprintf(output_file, "\n");
+      while (!is_empty(output_set)) {
+        fprintf(output_file, "%ld\n", drop_next(&output_set, output_set));
       }
+      fprintf(output_file, "\n");
     } else {
-      printf("Contention set no longer holds. Filtering out entire set.\n");
+      if (get_size(output_set) > associativity) {
+        printf("Contention set no longer holds. Filtering out entire set.\n");
+      }
+
       while (!is_empty(output_set)) {
         drop_next(&output_set, output_set);
       }
