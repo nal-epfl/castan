@@ -209,6 +209,7 @@ int main(int argc, char *argv[]) {
       printf("Baseline probe: %d, Contended probe: %d, delta: %d\n",
              baseline_probe, contended_probe, contended_probe - baseline_probe);
       if (!(contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD)) {
+        printf("Filtering probed value out.\n");
         drop_next(&output_set, output_set);
       }
     }
@@ -224,6 +225,8 @@ int main(int argc, char *argv[]) {
         fprintf(output_file, "%ld\n", drop_next(&output_set, output_set));
       }
       fprintf(output_file, "\n");
+    } else {
+      printf("Contention set no longer holds. Filtering out entire set.\n");
     }
   }
 
