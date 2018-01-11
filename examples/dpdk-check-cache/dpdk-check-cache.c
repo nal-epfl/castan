@@ -200,18 +200,19 @@ int main(int argc, char *argv[]) {
       printf("Baseline probe: %d, Contended probe: %d, delta: %d\n",
              baseline_probe, contended_probe, contended_probe - baseline_probe);
 
+      long output_value = drop_next(&running_set, running_set);
       if (contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD) {
-        insert(&output_set, drop_next(&running_set, running_set));
-      } else {
-        drop_next(&running_set, running_set);
+        output_value = -1;
       }
 
       baseline_probe = probe(running_set);
       printf("Baseline probe: %d, Contended probe: %d, delta: %d\n",
              baseline_probe, contended_probe, contended_probe - baseline_probe);
-      if (!(contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD)) {
+      if (output_value >= 0 &&
+          contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD) {
+        insert(&output_set, output_value);
+      } else {
         printf("Filtering probed value out.\n");
-        drop_next(&output_set, output_set);
       }
     }
 
