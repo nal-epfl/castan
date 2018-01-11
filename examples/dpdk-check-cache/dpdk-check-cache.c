@@ -137,7 +137,8 @@ int main(int argc, char *argv[]) {
   argc -= ret;
   argv += ret;
 
-  assert(argc >= 2 && argc <= 3 && "Usage: check-contention-sets <set-file>");
+  assert(argc >= 2 && argc <= 3 &&
+         "Usage: dpdk-check-cache <input-set-file> [output-set-file]");
   FILE *input_file = fopen(argv[1], "r");
   assert(input_file && "Unable to open input set file.");
 
@@ -219,19 +220,23 @@ int main(int argc, char *argv[]) {
     }
 
     if (get_size(output_set) > associativity) {
-      fprintf(output_file, "%d\n", associativity);
+      if (output_file) {
+        fprintf(output_file, "%d\n", associativity);
 
-      while (!is_empty(output_set)) {
-        fprintf(output_file, "%ld\n", drop_next(&output_set, output_set));
+        while (!is_empty(output_set)) {
+          fprintf(output_file, "%ld\n", drop_next(&output_set, output_set));
+        }
+        fprintf(output_file, "\n");
       }
-      fprintf(output_file, "\n");
     } else {
       printf("Contention set no longer holds. Filtering out entire set.\n");
     }
   }
 
   fclose(input_file);
-  fclose(output_file);
+  if (output_file) {
+    fclose(output_file);
+  }
 
   return 0;
 }
