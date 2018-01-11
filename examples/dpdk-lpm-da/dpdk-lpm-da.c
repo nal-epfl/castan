@@ -14,6 +14,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
+#include <assert.h>
+#include "x86intrin.h"
+
+#ifdef arch_measure
+#include "/home/rishabh/Analysis/hand_analysis/papi-5.5.1/src/papi.h"
+#endif
 
 #ifdef __clang__
 
@@ -496,6 +503,28 @@ void run(struct nf_config *config, lpm_t lpm) {
       uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
 
       if (actual_rx_len != 0) {
+#ifdef arch_measure
+	int retval,EventSet = PAPI_NULL, native;
+        retval = PAPI_library_init(PAPI_VER_CURRENT);
+	assert(retval == PAPI_VER_CURRENT);
+	assert(PAPI_create_eventset(&EventSet) == PAPI_OK);
+
+	retval  = PAPI_event_name_to_code("CPU_CLK_UNHALTED",&native);
+	assert(retval == PAPI_OK);
+	assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+	retval  = PAPI_event_name_to_code("CYCLE_ACTIVITY:CYCLES_NO_EXECUTE",&native);
+	assert(retval == PAPI_OK);
+	assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+	retval  = PAPI_event_name_to_code("CYCLE_ACTIVITY:STALLS_LDM_PENDING",&native);
+	assert(retval == PAPI_OK);
+	assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+	long long native_values[3] ;
+
+	assert(PAPI_start(EventSet)==PAPI_OK);
+#endif
 #ifdef LATENCY
         struct timespec timestamp;
         if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
@@ -529,9 +558,23 @@ void run(struct nf_config *config, lpm_t lpm) {
         if (clock_gettime(CLOCK_MONOTONIC, &new_timestamp)) {
           rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
         }
+#endif
+
+#ifdef arch_measure 
+	assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+#endif
+
+#ifdef LATENCY
         NF_INFO("Latency: %ld ns.",
                 (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
                     (new_timestamp.tv_nsec - timestamp.tv_nsec));
+#endif
+
+#ifdef arch_measure 
+	 printf("Total reference cycles %lld \n",native_values[0]);
+ 	printf("Total cycles stalled %lld \n",native_values[1]);
+	 printf("Total cycles stalled due to memory  %lld \n",native_values[2]);
+
 #endif
       }
     }
