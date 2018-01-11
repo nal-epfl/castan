@@ -231,6 +231,9 @@ int main(int argc, char *argv[]) {
       }
     } else {
       printf("Contention set no longer holds. Filtering out entire set.\n");
+      while (!is_empty(output_set)) {
+        drop_next(&output_set, output_set);
+      }
     }
   }
 
