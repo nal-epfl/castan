@@ -23,13 +23,9 @@ function master(args)
 	rxDev = device.config{port = args.rxDev, rxQueues = 1, txQueues = 1}
 	device.waitForLinks()
   -- Heatup phase
-  --[[
   printf("heatup  - %d secs", args.upheat);
   local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.upheat, args.file)
   mg.waitForTasks()
-  printf("heatup finished. testing is commented out");
-  mg.waitForTasks()
-  ]]--
   -- Testing phase
   local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(0), rxDev:getRxQueue(0), args.timeout, args.file)
   timerTask:wait()
@@ -59,6 +55,7 @@ function myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
           if buf:hasTimestamp() then
             local rxTs = rxQueue:getTimestamp(nil, nil)
             if not rxTs then
+              printf("Failed to timestamp packet on reception")
               return nil, numPkts
             end
             rxBufs:freeAll()
@@ -66,13 +63,15 @@ function myMeasureLatency(txQueue, rxQueue, buf, rxBufs)
             if 0 < lat and lat < 2 * maxWait * 10^9 then
               return lat, numPkts
             end
+            printf("lat out of range: %d", lat)
           end
         end
       end
     end
+    printf("Timer stopped running")
     return nil, numPkts
   else
-    log:warn("Failed to timestamp packet on transmission")
+    printf("Failed to timestamp packet on transmission")
     timer:new(maxWait):wait()
     return nil, numPkts
   end
