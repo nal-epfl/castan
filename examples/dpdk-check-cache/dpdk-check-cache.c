@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <assert.h>
 #include <limits.h>
@@ -7,8 +9,8 @@
 #include <time.h>
 
 #include <rte_eal.h>
-#include <rte_memzone.h>
 #include <rte_lcore.h>
+#include <rte_memzone.h>
 
 #define PAGE_SIZE (1 << 30)
 #define ARRAY_SIZE (1ul * PAGE_SIZE)
@@ -38,6 +40,24 @@ static inline long stop() {
 }
 
 int is_empty(long entry) { return entry < 0; }
+
+long get_size(long entry) {
+  if (entry < 0) {
+    return 0;
+  }
+
+  if (*((long *)&array[entry]) == entry) {
+    return 1;
+  }
+
+  long pos = entry, size = 0;
+  do {
+    pos = *((long *)&array[pos]);
+    size++;
+  } while (pos != entry);
+
+  return size;
+}
 
 void insert(long *pos, long item) {
   assert(item >= 0);
@@ -117,9 +137,16 @@ int main(int argc, char *argv[]) {
   argc -= ret;
   argv += ret;
 
-  assert(argc == 2 && "Usage: check-contention-sets <set-file>");
-  FILE *file = fopen(argv[1], "r");
-  assert(file && "Unable to open set file.");
+  assert(argc >= 2 && argc <= 3 &&
+         "Usage: dpdk-check-cache <input-set-file> [output-set-file]");
+  FILE *input_file = fopen(argv[1], "r");
+  assert(input_file && "Unable to open input set file.");
+
+  FILE *output_file = NULL;
+  if (argc == 3) {
+    output_file = fopen(argv[2], "w");
+    assert(output_file && "Unable to open output set file.");
+  }
 
   const struct rte_memzone *mz = rte_memzone_reserve_aligned(
       "Array", ARRAY_SIZE, rte_socket_id(), RTE_MEMZONE_1GB, PAGE_SIZE);
@@ -135,7 +162,7 @@ int main(int argc, char *argv[]) {
   char *line = NULL;
   size_t size = 0;
   while (1) {
-    if (getline(&line, &size, file) < 0) {
+    if (getline(&line, &size, input_file) < 0) {
       free(line);
       break;
     }
@@ -146,7 +173,7 @@ int main(int argc, char *argv[]) {
 
     long contention_set = -1;
     long count = 0;
-    while (getline(&line, &size, file) >= 0 && *line != '\n') {
+    while (getline(&line, &size, input_file) >= 0 && *line != '\n') {
       long address = atol(line);
 
       assert(address < ARRAY_SIZE);
@@ -165,27 +192,51 @@ int main(int argc, char *argv[]) {
       insert(&running_set, drop_next(&contention_set, contention_set));
     }
 
+    long output_set = -1;
     while (!is_empty(contention_set)) {
       int baseline_probe = probe(running_set);
       insert(&running_set, drop_next(&contention_set, contention_set));
       int contended_probe = probe(running_set);
       printf("Baseline probe: %d, Contended probe: %d, delta: %d\n",
              baseline_probe, contended_probe, contended_probe - baseline_probe);
-      assert(contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD);
 
-      drop_next(&running_set, running_set);
+      if (contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD) {
+        insert(&output_set, drop_next(&running_set, running_set));
+      } else {
+        drop_next(&running_set, running_set);
+      }
+
       baseline_probe = probe(running_set);
       printf("Baseline probe: %d, Contended probe: %d, delta: %d\n",
              baseline_probe, contended_probe, contended_probe - baseline_probe);
-      assert(contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD);
+      if (!(contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD)) {
+        printf("Filtering probed value out.\n");
+        drop_next(&output_set, output_set);
+      }
     }
 
     while (!is_empty(running_set)) {
-      drop_next(&running_set, running_set);
+      insert(&output_set, drop_next(&running_set, running_set));
+    }
+
+    if (get_size(output_set) > associativity) {
+      if (output_file) {
+        fprintf(output_file, "%d\n", associativity);
+
+        while (!is_empty(output_set)) {
+          fprintf(output_file, "%ld\n", drop_next(&output_set, output_set));
+        }
+        fprintf(output_file, "\n");
+      }
+    } else {
+      printf("Contention set no longer holds. Filtering out entire set.\n");
     }
   }
 
-  fclose(file);
+  fclose(input_file);
+  if (output_file) {
+    fclose(output_file);
+  }
 
   return 0;
 }
