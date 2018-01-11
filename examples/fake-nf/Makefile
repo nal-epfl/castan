@@ -1,6 +1,6 @@
 TARGETS := ip-asn-lookup-trie ip-asn-lookup-da nat-hash-table simple-loop-count simple-memory-access
 CFLAGS := -D_GNU_SOURCE -I../../include -Wall -g
-LDFLAGS := -lpcap
+LDFLAGS := -lpcap -L../../../papi/src -lpapi
 
 SHELL=/bin/bash -o pipefail
 
@@ -15,7 +15,7 @@ default: $(TARGETS) $(addsuffix .bc,$(TARGETS)) make-rainbow-table
 	gcc $(CFLAGS) -c -o $@ $<
 
 %: %.o
-	gcc $(LDFLAGS) -o $@ $<
+	gcc -o $@ $< $(LDFLAGS)
 
 %.bc: %.c
 	clang $(CFLAGS) -Wno-unused-variable -emit-llvm -c -o $@ $<

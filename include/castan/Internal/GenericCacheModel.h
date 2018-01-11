@@ -3,8 +3,6 @@
 
 #include <castan/Internal/CacheModel.h>
 
-#include <klee/Solver.h>
-
 #define BLOCK_BITS 6
 #define PAGE_SIZE (1 << 30)
 
@@ -110,7 +108,7 @@ private:
   unsigned long getMissCost(uint64_t address, bool isWrite, uint8_t level);
   unsigned long getMissesUntilEviction(uint64_t address);
 
-  klee::ref<klee::Expr> memoryOperation(klee::TimingSolver *solver,
+  klee::ref<klee::Expr> memoryOperation(klee::Executor *executor,
                                         klee::ExecutionState &state,
                                         klee::ref<klee::Expr> address,
                                         bool isWrite);
@@ -123,22 +121,22 @@ public:
 
   CacheModel *clone() { return new GenericCacheModel(*this); }
 
-  klee::ref<klee::Expr> load(klee::TimingSolver *solver,
+  klee::ref<klee::Expr> load(klee::Executor *executor,
                              klee::ExecutionState &state,
                              klee::ref<klee::Expr> address) {
     if (enabled) {
       loopStats.back().readCount++;
-      return memoryOperation(solver, state, address, false);
+      return memoryOperation(executor, state, address, false);
     } else {
       return address;
     }
   }
-  klee::ref<klee::Expr> store(klee::TimingSolver *solver,
+  klee::ref<klee::Expr> store(klee::Executor *executor,
                               klee::ExecutionState &state,
                               klee::ref<klee::Expr> address) {
     if (enabled) {
       loopStats.back().writeCount++;
-      return memoryOperation(solver, state, address, true);
+      return memoryOperation(executor, state, address, true);
     } else {
       return address;
     }

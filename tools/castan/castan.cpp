@@ -219,6 +219,11 @@ cl::opt<std::string>
     RainbowTableFile("rainbow-table",
                      cl::desc("Rainbow table file to use to reverse havocs."),
                      cl::init("/dev/null"));
+
+cl::opt<bool> OutputUnreconciled(
+    "output-unreconciled",
+    cl::desc("Enable outputting paths that haven't reconciled all havocs."),
+    cl::init(false));
 }
 
 extern cl::opt<double> MaxTime;
@@ -508,6 +513,14 @@ void KleeHandler::processTestCase(const ExecutionState &state,
             klee_message("    Ran out of collisions in rainbow table for havoc "
                          "0. Giving up.");
             fail = true;
+
+            klee_message("Havoc input expression:");
+            for (unsigned b = 0; b < packet.second[havoc_id].first.size();
+                 b++) {
+              klee_message("[%d] =", b);
+              packet.second[havoc_id].first[b]->dump();
+            }
+
             break;
           }
         } else {
@@ -562,6 +575,10 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 
   klee_message("Reconciled %d of %ld packets.", reconciled_packets,
                havocs.size());
+  if (reconciled_packets < (ssize_t)havocs.size() && !OutputUnreconciled) {
+    klee_warning("Ignoring path with unreconciled havocs.");
+    return;
+  }
 
   if (!NoOutput) {
     std::vector<std::pair<std::string, std::vector<unsigned char>>> out;

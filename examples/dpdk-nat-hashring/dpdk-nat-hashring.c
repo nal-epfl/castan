@@ -309,14 +309,14 @@ typedef struct __attribute__((packed)) {
 
 typedef hash_key_t hash_value_t;
 
-typedef struct {
+typedef struct __attribute__((aligned(64))) {
   hash_key_t key;
   hash_value_t value;
+
+  int used;
 } hash_entry_t;
 
 typedef hash_entry_t *hash_table_t;
-
-hash_key_t NULL_KEY = {0,0,0,0,0};
 
 #define TABLE_SIZE (PAGE_SIZE / sizeof(hash_entry_t))
 
@@ -401,39 +401,35 @@ uint32_t hash_function(hash_key_t key) {
   return c;
 }
 
-void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
+void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
     entry = &hash_table[(hash + pos) % TABLE_SIZE];
-    if (hash_key_equals(entry->key, key)) {
-      entry->value = value;
-      return;
-    } else if (hash_key_equals(entry->key, NULL_KEY)) {
+    if (! entry->used) {
       entry->key = key;
       entry->value = value;
+      entry->used = 1;
       return;
-      break;
+    } else if (hash_key_equals(entry->key, key)) {
+      entry->value = value;
+      return;
     }
   }
 }
 
-int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
+int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
     entry = &hash_table[(hash + pos) % TABLE_SIZE];
-    if (hash_key_equals(entry->key, key)) {
+    if (! entry->used) {
+      break;
+    } else if (hash_key_equals(entry->key, key)) {
       if (value) {
         *value = entry->value;
       }
       return 1;
-    } else if (hash_key_equals(entry->key, NULL_KEY)) {
-      break;
     }
   }
 
@@ -539,9 +535,11 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       .src_port = sport,
       .dst_port = dport,
   };
+  uint32_t hash;
+  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   hash_value_t translation;
-  if (!hash_get(hash_table, key, &translation)) {
+  if (!hash_get(hash_table, key, &translation, hash)) {
     NF_DEBUG("New connection.");
 
     // New connection. Set up state.
@@ -558,7 +556,11 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
           .src_port = dport,
           .dst_port = sport,
       };
-      for (; hash_get(hash_table, out_key, NULL); out_key.dst_port++) {
+      uint32_t out_hash;
+      castan_havoc(out_key, out_hash, hash_function(out_key) % TABLE_SIZE);
+      while (hash_get(hash_table, out_key, NULL, out_hash)) {
+        out_key.dst_port++;
+        castan_havoc(out_key, out_hash, hash_function(out_key) % TABLE_SIZE);
       }
       NF_DEBUG("Translating source port: %d -> %d.", rte_be_to_cpu_16(sport),
                rte_be_to_cpu_16(out_key.dst_port));
@@ -567,13 +569,13 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       translation = key;
       translation.src_ip = config->nat_ip;
       translation.src_port = out_key.dst_port;
-      hash_set(hash_table, key, translation);
+      hash_set(hash_table, key, translation, hash);
 
       // Save entry for returning traffic.
       hash_key_t out_translation = out_key;
       out_translation.dst_ip = ip->src_addr;
       out_translation.dst_port = sport;
-      hash_set(hash_table, out_key, out_translation);
+      hash_set(hash_table, out_key, out_translation, out_hash);
     }
   }
 

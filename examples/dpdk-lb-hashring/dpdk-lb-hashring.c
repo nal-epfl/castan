@@ -325,22 +325,20 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
 
 typedef struct __attribute__((packed)) {
   uint32_t src_ip;
-  // uint8_t proto;
-  // uint16_t src_port;
+  uint8_t proto;
+  uint16_t src_port;
 } hash_key_t;
 
-typedef struct __attribute__((packed)) { uint32_t dst_ip; } hash_value_t;
+typedef struct { uint32_t dst_ip; } hash_value_t;
 
-typedef struct hash_entry_t {
+typedef struct __attribute__((aligned(64))) hash_entry_t {
   hash_key_t key;
   hash_value_t value;
 
-  struct hash_entry_t *next;
+  int used;
 } hash_entry_t;
 
 typedef hash_entry_t *hash_table_t;
-
-hash_key_t NULL_KEY = {0/*,0,0*/};
 
 #define TABLE_SIZE (PAGE_SIZE / sizeof(hash_entry_t))
 
@@ -361,9 +359,9 @@ void hash_init(hash_table_t *hash_table) {
 }
 
 int hash_key_equals(hash_key_t a, hash_key_t b) {
-  return (a.src_ip == b.src_ip); 
-         // & (a.proto == b.proto);
-         // & (a.src_port == b.src_port);
+  return (a.src_ip == b.src_ip)
+         & (a.proto == b.proto)
+         & (a.src_port == b.src_port);
 }
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
@@ -415,46 +413,42 @@ uint32_t hash_function(hash_key_t key) {
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
   a += key.src_ip;
-//   b += key.proto;
-//   c += key.src_port;
+  b += key.proto;
+  c += key.src_port;
 
   hash_function_final(a, b, c);
   return c;
 }
 
-void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
+void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
     entry = &hash_table[(hash + pos) % TABLE_SIZE];
-    if (hash_key_equals(entry->key, key)) {
-      entry->value = value;
-      return;
-    } else if (hash_key_equals(entry->key, NULL_KEY)) {
+    if (! entry->used) {
       entry->key = key;
       entry->value = value;
+      entry->used = 1;
       return;
-      break;
+    } else if (hash_key_equals(entry->key, key)) {
+      entry->value = value;
+      return;
     }
   }
 }
 
-int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
+int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
 
   for (long pos = 0; pos < TABLE_SIZE; pos++) {
     entry = &hash_table[(hash + pos) % TABLE_SIZE];
-    if (hash_key_equals(entry->key, key)) {
+    if (! entry->used) {
+      break;
+    } else if (hash_key_equals(entry->key, key)) {
       if (value) {
         *value = entry->value;
       }
       return 1;
-    } else if (hash_key_equals(entry->key, NULL_KEY)) {
-      break;
     }
   }
 
@@ -551,17 +545,19 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
     return device;
   }
 
-  hash_key_t key = {
-      .src_ip = ip->src_addr, // .proto = ip->next_proto_id, .src_port = sport,
-  };
-
   // Translate packet inplace.
   uint32_t dst_dev = device ^ 0x01;
   ip->hdr_checksum = 0;
 
   if (ip->dst_addr == config->vip) { // Incoming packet.
+    hash_key_t key = {
+        .src_ip = ip->src_addr, .proto = ip->next_proto_id, .src_port = sport,
+    };
+    uint32_t hash;
+    castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
+
     hash_value_t translation;
-    if (!hash_get(hash_table, key, &translation)) {
+    if (!hash_get(hash_table, key, &translation, hash)) {
       NF_DEBUG("New connection.");
       // New connection. Set up state.
       // Pick next IP.
@@ -572,7 +568,7 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       }
 
       // Save entry for future Incoming traffic.
-      hash_set(hash_table, key, translation);
+      hash_set(hash_table, key, translation, hash);
     }
 
     NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s", device,

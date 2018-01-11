@@ -6,13 +6,24 @@
 #include <limits.h>
 
 #define NAT_IP "192.168.0.1"
-#define TABLE_SIZE (1 << 16)
 
 typedef struct __attribute__((packed)) {
   uint32_t src_ip;
-  // uint8_t proto;
-  // uint16_t src_port;
+  uint8_t proto;
+  uint16_t src_port;
 } hash_key_t;
+
+typedef struct { uint32_t dst_ip; } hash_value_t;
+
+typedef struct __attribute__((aligned(64))) hash_entry_t {
+  hash_key_t key;
+  hash_value_t value;
+
+  int used;
+} hash_entry_t;
+
+#define PAGE_SIZE (1 << 30)
+#define TABLE_SIZE (PAGE_SIZE / sizeof(hash_entry_t))
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
 
@@ -63,8 +74,8 @@ uint32_t hash_function(hash_key_t *key) {
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
   a += key->src_ip;
-//   b += key->proto;
-//   c += key->src_port;
+  b += key->proto;
+  c += key->src_port;
 
   hash_function_final(a, b, c);
   return c;
@@ -100,7 +111,7 @@ int main(int argc, char *argv[]) {
       ((char *)&key)[b] = rand();
     }
 
-//     key.proto = 0x11;
+    key.proto = 0x11;
 
     generate_entry(&key);
   }

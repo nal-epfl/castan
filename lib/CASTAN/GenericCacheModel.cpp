@@ -342,7 +342,7 @@ unsigned long GenericCacheModel::getMissesUntilEviction(uint64_t address) {
 }
 
 klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
-    klee::TimingSolver *solver, klee::ExecutionState &state,
+    klee::Executor *executor, klee::ExecutionState &state,
     klee::ref<klee::Expr> address, bool isWrite) {
   //       klee::klee_message("Memory %s at %s:%d.", isWrite ? "write" : "read",
   //                          state.pc->info->file.c_str(),
@@ -478,7 +478,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
             constraints.addConstraint(e);
 
             klee::ref<klee::ConstantExpr> concreteAddress;
-            if (solver->solver->getValue(klee::Query(constraints, address),
+            if (executor->solver->solver->getValue(klee::Query(constraints, address),
                                          concreteAddress)) {
               //               klee::klee_message("Line fits constraints.");
 
@@ -554,7 +554,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
           }
 
           klee::ref<klee::ConstantExpr> concreteAddress;
-          if (solver->solver->getValue(klee::Query(constraints, address),
+          if (executor->solver->solver->getValue(klee::Query(constraints, address),
                                        concreteAddress)) {
             klee::klee_message("Line fits constraints.");
             state.addConstraint(klee::EqExpr::create(concreteAddress, address));
@@ -571,7 +571,7 @@ klee::ref<klee::Expr> GenericCacheModel::memoryOperation(
     if (!found) {
       klee::klee_message("Concretizing address without worst-case analysis.");
       klee::ref<klee::ConstantExpr> concreteAddress;
-      assert(solver->getValue(state, address, concreteAddress) &&
+      assert(executor->solver->getValue(state, address, concreteAddress) &&
              "Failed to concretize symbolic address.");
       state.constraints.addConstraint(
           klee::EqExpr::create(concreteAddress, address));
