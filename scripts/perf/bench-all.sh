@@ -19,14 +19,21 @@ $DIR/init-machines.sh
 
 NOW=$(date +"%d.%m.%Y_%H_%M")
 
-MIDDLEBOXES=("dpdk-lpm-dpdklpm" \
+MIDDLEBOXES=("dpdk-nop" \
+             "dpdk-lpm-dpdklpm" \
+             "dpdk-lpm-da" \
              "dpdk-lpm-btrie" \
              "dpdk-nat-stlmap" \
+             "dpdk-nat-hashring" \
              "dpdk-nat-basichash" \
              "dpdk-nat-cc" \
-            "dpdk-nat-dpdkhash" \
-            "dpdk-nat-ruby" \
-            "dpdk-nat-stlumap")
+             "dpdk-nat-dpdkhash" \
+             "dpdk-nat-ruby" \
+             "dpdk-nat-tree" \
+             "dpdk-nat-stlmap" \
+             "dpdk-nat-stlumap" \
+             "dpdk-lb-hashring" \
+             "dpdk-lb-basichash")
 
 mkdir -p $NOW
 
