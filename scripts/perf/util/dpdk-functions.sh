@@ -5,22 +5,33 @@
 
 create_mnt_huge()
 {
-	  echo "Creating /mnt/huge and mounting as hugetlbfs"
-	  sudo mkdir -p /mnt/huge
+  echo "Creating /mnt/huge and /mnt/huge1G and mounting as hugetlbfs"
+  sudo mkdir -p /mnt/huge
+  sudo mkdir -p /mnt/huge1G
 
-	  grep -s '/mnt/huge' /proc/mounts > /dev/null \
-        || sudo mount -t hugetlbfs nodev /mnt/huge
+  grep -s '/mnt/huge' /proc/mounts > /dev/null \
+      || sudo mount -t hugetlbfs nodev /mnt/huge -o pagesize=2MB
+  echo
+  grep -s '/mnt/huge1G' /proc/mounts > /dev/null \
+      || sudo mount -t hugetlbfs nodev /mnt/huge -o pagesize=1GB
+  echo
 }
 
 remove_mnt_huge()
 {
-	  echo "Unmounting /mnt/huge and removing directory"
+	  echo "Unmounting /mnt/huge and /mnt/huge1G and removing directories"
 	  grep -s '/mnt/huge' /proc/mounts > /dev/null \
-        && sudo umount /mnt/huge
+        && sudo umount /mnt/huge || true
+	  grep -s '/mnt/huge1G' /proc/mounts > /dev/null \
+        && sudo umount /mnt/huge || true
 
 	  if [ -d /mnt/huge ] ; then
-		    sudo rm -R /mnt/huge
+		    sudo rm -R /mnt/huge || true
 	  fi
+	  if [ -d /mnt/huge1G ] ; then
+		    sudo rm -R /mnt/huge1G || true
+	  fi
+	echo
 }
 
 clear_huge_pages()
@@ -31,6 +42,7 @@ clear_huge_pages()
 	  done
 
 	  remove_mnt_huge
+    echo
 }
 
 set_numa_pages()
@@ -45,6 +57,7 @@ set_numa_pages()
 	  done
 
 	  create_mnt_huge
+    echo
 }
 
 remove_igb_uio_module()
@@ -78,7 +91,6 @@ load_igb_uio_module()
 	  echo "Loading DPDK UIO module"
 	  if ! sudo /sbin/insmod $RTE_SDK/$RTE_TARGET/kmod/igb_uio.ko; then
 		    echo "## ERROR: Could not load kmod/igb_uio.ko."
-		    quit
 	  fi
 }
 
