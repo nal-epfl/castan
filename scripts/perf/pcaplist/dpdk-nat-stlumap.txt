@@ -1,7 +1,6 @@
+castan/dpdk-nat-stlumap-castan.pcap
+manual/dpdk-nat-stlumap-manual.pcap
+random/dpdk-nat-stlumap-unirand-castan.pcap
 random/imc10-2pt8-zipf.pcap
-random/unirand1000.pcap
-facebook/cluster_A_1.pcap
-facebook/cluster_B_1.pcap
-facebook/cluster_C_1.pcap
-imc10/univ2_pt8.pcap
-imc10/univ1_pt1.pcap
+random/unirand-all.pcap
+1packet.pcap

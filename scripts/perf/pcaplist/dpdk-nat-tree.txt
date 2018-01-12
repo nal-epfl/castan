@@ -1,11 +1,8 @@
 castan/dpdk-nat-tree-castan.pcap
-random/dpdk-nat-tree-unirand.pcap
+manual/dpdk-nat-tree-manual.pcap
+manual/dpdk-nat-tree-manual-30.pcap
+manual/dpdk-nat-tree-manual-50.pcap
+random/dpdk-nat-tree-unirand-castan.pcap
 random/imc10-2pt8-zipf.pcap
-random/unirand1000.pcap
 random/unirand-all.pcap
-facebook/cluster_A_1.pcap
-facebook/cluster_B_1.pcap
-facebook/cluster_C_1.pcap
-imc10/univ2_pt8-np.pcap
-imc10/univ1_pt1-np.pcap
 1packet.pcap
