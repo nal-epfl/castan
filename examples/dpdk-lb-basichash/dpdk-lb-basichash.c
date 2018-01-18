@@ -393,11 +393,8 @@ uint32_t hash_function(hash_key_t key) {
   return c;
 }
 
-void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
+void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
-  hash = hash % TABLE_SIZE;
 
   for (entry = hash_table[hash]; entry; entry = entry->next) {
     if (hash_key_equals(entry->key, key)) {
@@ -413,11 +410,8 @@ void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
   hash_table[hash] = entry;
 }
 
-int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
+int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
-  hash = hash % TABLE_SIZE;
 
   for (entry = hash_table[hash]; entry; entry = entry->next) {
     if (hash_key_equals(entry->key, key)) {
@@ -521,17 +515,19 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
     return device;
   }
 
-  hash_key_t key = {
-      .src_ip = ip->src_addr, // .proto = ip->next_proto_id, .src_port = sport,
-  };
-
   // Translate packet inplace.
   uint32_t dst_dev = device ^ 0x01;
   ip->hdr_checksum = 0;
 
   if (ip->dst_addr == config->vip) { // Incoming packet.
+    hash_key_t key = {
+        .src_ip = ip->src_addr, // .proto = ip->next_proto_id, .src_port = sport,
+    };
+    uint32_t hash;
+    castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
+
     hash_value_t translation;
-    if (!hash_get(hash_table, key, &translation)) {
+    if (!hash_get(hash_table, key, &translation, hash)) {
       NF_DEBUG("New connection.");
       // New connection. Set up state.
       // Pick next IP.
@@ -542,7 +538,7 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       }
 
       // Save entry for future Incoming traffic.
-      hash_set(hash_table, key, translation);
+      hash_set(hash_table, key, translation, hash);
     }
 
     NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s", device,
