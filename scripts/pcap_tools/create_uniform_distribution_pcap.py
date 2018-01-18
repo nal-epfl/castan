@@ -30,7 +30,7 @@ class IPTable():
 
 
 
-def create_flows(num_flows, num_packets, bytes_per_packet, output_file):
+def create_flows(num_flows, num_packets, output_file):
     pktdump = PcapWriter(output_file, append=False)
 
     ip_table = IPTable()
@@ -42,7 +42,6 @@ def create_flows(num_flows, num_packets, bytes_per_packet, output_file):
         pkt = Ether(src="08:00:27:53:8b:38", dst="08:00:27:c1:13:47")
         pkt = pkt/IP(src=src_ip, dst=dst_ip)
         pkt = pkt/UDP(sport=sport,dport=dport)
-        pkt.len = bytes_per_packet
 
         pktdump.write(pkt)
 
@@ -52,9 +51,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="create a pcap file with n flows with equal distribution of b bytes")
     parser.add_argument('--nflows', type=int, help='number of flows', required=True)
     parser.add_argument('--npackets', type=int, help='number of packets total (across all flows)', required=True)
-    parser.add_argument('--bytes_per_packet',  type=int, help='number of bytes per packet', required=True)
     parser.add_argument('--output',  help='name of output pcap file', required=True)
 
     args = parser.parse_args()
 
-    create_flows(args.nflows, args.npackets, args.bytes_per_packet, args.output)
+    create_flows(args.nflows, args.npackets, args.output)
