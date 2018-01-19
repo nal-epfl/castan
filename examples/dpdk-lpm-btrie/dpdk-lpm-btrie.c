@@ -617,7 +617,7 @@ long long ref_cycles = values[0];
    assert(PAPI_add_event(EventSet, native) == PAPI_OK);
 */
    long long native_values[10] ;
-   int Events[] = {PAPI_TOT_CYC,PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L3_TCM,PAPI_LD_INS,PAPI_SR_INS};
+   int Events[] = {PAPI_TOT_CYC,PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L3_TCM,PAPI_LD_INS,PAPI_SR_INS,PAPI_TOT_INS};
 //assert((num_hwcntrs = PAPI_num_counters()) > PAPI_OK);
 num_hwcntrs = PAPI_num_counters();
 //assert(sizeof(Events) / sizeof(Events[0]) <= num_hwcntrs);
@@ -632,6 +632,7 @@ long long l2_dcm = values[2];
 long long l3_tcm = values[3];
 long long loads = values[4];
 long long stores = values[5];
+long long tot_ins = values[6];
 
 #endif
 
@@ -647,7 +648,8 @@ long long stores = values[5];
    //assert(PAPI_start(EventSet)==PAPI_OK);
   papi_ok_proxy = PAPI_start(EventSet) ;
 
-//assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+//retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+//assert((retval  == PAPI_OK));
 #endif
 
 #ifdef uarch_measure 
@@ -693,12 +695,10 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
         }
 #endif
 
-
 #ifdef arch_measure 
-  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
   papi_ok_proxy = PAPI_stop(EventSet,native_values);
-//assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
-//ref_cycles = values[0];
+ // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
 #endif
 
 #ifdef uarch_measure 
@@ -712,6 +712,7 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
  l3_tcm = values[3];
  loads = values[4];
  stores = values[5];
+ tot_ins = values[6];
 #endif
 
 #ifdef LATENCY
@@ -721,21 +722,18 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
 #endif
 
 #ifdef arch_measure 
-    NF_INFO("Total_ref_cycles  %lld ",native_values[0]);
+//  NF_INFO("Total reference cycles using metric 1  %lld ",native_values[0]);
     NF_INFO("Total_cycles  %lld ",native_values[1]);
     NF_INFO("Num_cycles_stalled %lld",native_values[2]);
 //  NF_INFO("Percentage_stalled %lld ", (100*native_values[2])/native_values[1]);
-    NF_INFO("No_execute_cycles %lld",native_values[3]);
-    NF_INFO("Fetch_stalls_cycles %lld",native_values[4]);
-    NF_INFO("Mem_stalls_cycles %lld",native_values[5]);
-    NF_INFO("Resource_stalls_cycles %lld",native_values[6]);
+    NF_INFO("Fetch_stalls_cycles %lld",native_values[3]);
+    NF_INFO("Mem_stalls_cycles %lld",native_values[4]);
+    NF_INFO("Resource_stalls_cycles %lld",native_values[5]);
 //  NF_INFO("Total cycles stalled due to LLC+Mem %lld",native_values[6]);
 //  NF_INFO("Stalled_fraction_contributions %lld %lld %lld %lld ", (100*native_values[3])/native_values[2], (100*native_values[4])/native_values[2], (100*native_values[5])/native_values[2], (100*native_values[6])/native_values[2] );
 
 // NF_INFO("Total micro-ops retired  %lld",native_values[4]);
-//NF_INFO("Reference cycles %lld ",ref_cycles);
 #endif
-
 
 #ifdef uarch_measure
 /* 
@@ -758,12 +756,8 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
  NF_INFO("L2D_misses %llu", l2_dcm);
  NF_INFO("Total_L3_misses %llu", l3_tcm);
  NF_INFO("Total_memory_instructions_retired %llu", loads+stores);
-
-
-
+ NF_INFO("Total_instructions_retired %llu", tot_ins);
 #endif
-
-
       }
     }
   }

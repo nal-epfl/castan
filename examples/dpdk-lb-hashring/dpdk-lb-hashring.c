@@ -17,6 +17,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <time.h>
+#include <assert.h>
+#include "x86intrin.h"
+
+#ifdef arch_measure
+#include "../../../papi-5.5.1/src/papi.h"
+#endif
+
+#ifdef uarch_measure
+#include "../../../papi-5.5.1/src/papi.h"
+#endif
+
 
 #ifdef __clang__
 
@@ -610,12 +622,171 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
 }
 
 void run(struct nf_config *config, hash_table_t hash_table) {
-  while (1) {
+
+ #ifdef arch_measure
+  int retval,num_hwcntrs = 0, EventSet = PAPI_NULL, native;
+  typeof (PAPI_OK) papi_ok_proxy ;
+
+   retval = PAPI_library_init(PAPI_VER_CURRENT);
+   assert(retval == PAPI_VER_CURRENT);
+   papi_ok_proxy =  PAPI_create_eventset(&EventSet);
+ //  assert(PAPI_create_eventset(&EventSet) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("CPU_CLK_UNHALTED:THREAD_P",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+//   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("UOPS_RETIRED:TOTAL_CYCLES",&native);
+    assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+//   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("UOPS_RETIRED:STALL_CYCLES",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+//   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+ retval  = PAPI_event_name_to_code("CYCLE_ACTIVITY:CYCLES_NO_EXECUTE",&native);
+    assert(retval == PAPI_OK);
+     papi_ok_proxy = PAPI_add_event(EventSet, native);
+  // assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("ICACHE:IFETCH_STALL",&native);
+    assert(retval == PAPI_OK);
+     papi_ok_proxy = PAPI_add_event(EventSet, native);
+  // assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("CYCLE_ACTIVITY:STALLS_LDM_PENDING",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+ //  assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("RESOURCE_STALLS:ANY",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+
+ //  assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+
+/*   retval  = PAPI_event_name_to_code("UOPS_RETIRED:ALL",&native);
+   assert(retval == PAPI_OK);
+   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+*/
+   long long native_values[10] ;
+/*   int Events[] = {PAPI_TOT_CYC};
+assert((num_hwcntrs = PAPI_num_counters()) > PAPI_OK);
+assert(sizeof(Events) / sizeof(Events[0]) <= num_hwcntrs);
+assert((retval = PAPI_start_counters(Events, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+long long values[sizeof(Events) / sizeof(Events[0])];
+assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+long long ref_cycles = values[0];
+*/
+#endif
+
+#ifdef uarch_measure
+  int retval,num_hwcntrs = 0, EventSet = PAPI_NULL, native;
+  typeof (PAPI_OK) papi_ok_proxy ;
+/*
+   retval = PAPI_library_init(PAPI_VER_CURRENT);
+   assert(retval == PAPI_VER_CURRENT);
+   papi_ok_proxy =  PAPI_create_eventset(&EventSet);
+  //  assert(PAPI_create_eventset(&EventSet) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("CPU_CLK_UNHALTED:THREAD_P",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+ //  assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("INSTRUCTIONS_RETIRED",&native);
+    assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+ //  assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("ICACHE:MISSES",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+ //  assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+  retval  = PAPI_event_name_to_code("MEM_UOPS_RETIRED:ALL_LOADS",&native);
+     assert(retval == PAPI_OK);
+     papi_ok_proxy = PAPI_add_event(EventSet, native);
+  // assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("MEM_LOAD_UOPS_RETIRED:L1_HIT",&native);
+    assert(retval == PAPI_OK);
+     papi_ok_proxy = PAPI_add_event(EventSet, native);
+  // assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("MEM_LOAD_UOPS_RETIRED:HIT_LFB",&native);
+   assert(retval == PAPI_OK);
+   papi_ok_proxy = PAPI_add_event(EventSet, native);
+  // assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("MEM_LOAD_UOPS_RETIRED:L2_HIT",&native);
+     assert(retval == PAPI_OK);
+    papi_ok_proxy = PAPI_add_event(EventSet, native);
+  // assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+*/
+/*   retval  = PAPI_event_name_to_code("MEM_LOAD_UOPS_RETIRED:L3_HIT",&native);
+    assert(retval == PAPI_OK);
+  //   papi_ok_proxy = PAPI_add_event(EventSet, native);
+   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("MEM_LOAD_UOPS_RETIRED:L3_HIT",&native);
+   assert(retval == PAPI_OK);
+  // papi_ok_proxy = PAPI_add_event(EventSet, native);
+   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+
+   retval  = PAPI_event_name_to_code("MEM_LOAD_UOPS_RETIRED:L3_MISS",&native);
+   assert(retval == PAPI_OK);
+  // papi_ok_proxy = PAPI_add_event(EventSet, native);
+   assert(PAPI_add_event(EventSet, native) == PAPI_OK);
+*/
+   long long native_values[10] ;
+   int Events[] = {PAPI_TOT_CYC,PAPI_L1_DCM,PAPI_L2_DCM,PAPI_L3_TCM,PAPI_LD_INS,PAPI_SR_INS,PAPI_TOT_INS};
+//assert((num_hwcntrs = PAPI_num_counters()) > PAPI_OK);
+num_hwcntrs = PAPI_num_counters();
+//assert(sizeof(Events) / sizeof(Events[0]) <= num_hwcntrs);
+//assert((retval = PAPI_start_counters(Events, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+retval = PAPI_start_counters(Events, sizeof(Events) / sizeof(Events[0]));
+long long values[sizeof(Events) / sizeof(Events[0])];
+//assert((retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]))) == PAPI_OK);
+retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+long long ref_cycles = values[0];
+long long l1_dcm = values[1];
+long long l2_dcm = values[2];
+long long l3_tcm = values[3];
+long long loads = values[4];
+long long stores = values[5];
+long long tot_ins = values[6];
+
+#endif
+  
+ while (1) {
     for (uint32_t device = 0; device < NUM_ETHPORTS; ++device) {
       struct rte_mbuf *mbuf[1];
       uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
 
       if (actual_rx_len != 0) {
+
+#ifdef arch_measure 
+   //assert(PAPI_start(EventSet)==PAPI_OK);
+  papi_ok_proxy = PAPI_start(EventSet) ;
+
+//retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+//assert((retval  == PAPI_OK));
+#endif
+
+#ifdef uarch_measure 
+   //assert(PAPI_start(EventSet)==PAPI_OK);
+  //papi_ok_proxy = PAPI_start(EventSet) ;
+retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+//assert((retval  == PAPI_OK));
+#endif
+
+
+
 #ifdef LATENCY
         struct timespec timestamp;
         if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
@@ -644,17 +815,79 @@ void run(struct nf_config *config, hash_table_t hash_table) {
             rte_pktmbuf_free(mbuf[0]);
           }
         }
-
 #ifdef LATENCY
         struct timespec new_timestamp;
         if (clock_gettime(CLOCK_MONOTONIC, &new_timestamp)) {
           rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
         }
+#endif
+
+
+#ifdef arch_measure 
+//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+  papi_ok_proxy = PAPI_stop(EventSet,native_values);
+ // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+#endif
+
+#ifdef uarch_measure 
+ // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+ // papi_ok_proxy = PAPI_stop(EventSet,native_values);
+  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+  //assert(retval == PAPI_OK);
+ ref_cycles = values[0];
+ l1_dcm = values[1];
+ l2_dcm = values[2];
+ l3_tcm = values[3];
+ loads = values[4];
+ stores = values[5];
+ tot_ins = values[6];
+#endif
+
+#ifdef LATENCY
         NF_INFO("Latency: %ld ns.",
                 (new_timestamp.tv_sec - timestamp.tv_sec) * 1000000000 +
                     (new_timestamp.tv_nsec - timestamp.tv_nsec));
 #endif
-      }
+
+#ifdef arch_measure 
+//  NF_INFO("Total reference cycles using metric 1  %lld ",native_values[0]);
+    NF_INFO("Total_cycles  %lld ",native_values[1]);
+    NF_INFO("Num_cycles_stalled %lld",native_values[2]);
+//  NF_INFO("Percentage_stalled %lld ", (100*native_values[2])/native_values[1]);
+    NF_INFO("Fetch_stalls_cycles %lld",native_values[3]);
+    NF_INFO("Mem_stalls_cycles %lld",native_values[4]);
+    NF_INFO("Resource_stalls_cycles %lld",native_values[5]);
+//  NF_INFO("Total cycles stalled due to LLC+Mem %lld",native_values[6]);
+//  NF_INFO("Stalled_fraction_contributions %lld %lld %lld %lld ", (100*native_values[3])/native_values[2], (100*native_values[4])/native_values[2], (100*native_values[5])/native_values[2], (100*native_values[6])/native_values[2] );
+
+// NF_INFO("Total micro-ops retired  %lld",native_values[4]);
+#endif
+
+#ifdef uarch_measure
+/* 
+    NF_INFO("Total_ref_cycles  %lld ",native_values[0]);
+    NF_INFO("Instructions_retired  %lld ",native_values[1]);
+    NF_INFO("ICache_misses %lld",native_values[2]);
+    NF_INFO("Load_uops_retired %lld",native_values[3]);
+    NF_INFO("L1D_hits %lld",native_values[4]);
+    NF_INFO("Fill_Buffer_hits %lld",native_values[5]);
+    NF_INFO("L2D_hits  %lld",native_values[6]);
+ //  NF_INFO("L3_hits  %lld",native_values[7]);
+//  NF_INFO("Total cycles stalled due to LLC+Mem %lld",native_values[6]);
+//  NF_INFO("Stalled_fraction_contributions %lld %lld %lld %lld ", (100*native_values[3])/native_values[2], (100*native_values[4])/native_values[2], (100*native_values[5])/native_values[2], (100*native_values[6])/native_values[2] );
+*/
+// NF_INFO("Total micro-ops retired  %lld",native_values[4]);
+
+//NF_INFO("Reference cycles %lld ",ref_cycles);
+ NF_INFO("Ref_clock_cycles %llu",ref_cycles);
+ NF_INFO("L1D_misses %llu",l1_dcm);
+ NF_INFO("L2D_misses %llu", l2_dcm);
+ NF_INFO("Total_L3_misses %llu", l3_tcm);
+ NF_INFO("Total_memory_instructions_retired %llu", loads+stores);
+ NF_INFO("Total_instructions_retired %llu", tot_ins);
+#endif
+      
+	}
     }
   }
 }
