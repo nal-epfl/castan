@@ -27,11 +27,14 @@ CFLAGS += -std=gnu++11
 
 CFLAGS += -DNDEBUG
 # CFLAGS += -DLATENCY
-# CFLAGS += -DPTP
+CFLAGS += -DPTP
+#CFLAGS += -Darch_measure
+CFLAGS += -Duarch_measure
 # VV always forward a packet, even when it should be dropped.
 # works only if nf has exactly 2 interfaces.
 # CFLAGS += -DNODROP
 
+LDFLAGS += ../../../../papi-5.5.1/src/libpapi.a
 LDFLAGS += -lstdc++
 
 include $(RTE_SDK)/mk/rte.extapp.mk
