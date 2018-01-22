@@ -26,6 +26,7 @@
 #include "../../../papi-5.5.1/src/papi.h"
 #endif
 
+
 #ifdef __clang__
 
 #define NF_INFO(text, ...)                                                     \
@@ -673,6 +674,26 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
 #endif
         uint32_t dst_device = dispatch_packet(config, device, lpm, mbuf[0]);
 
+#ifdef arch_measure 
+//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+  papi_ok_proxy = PAPI_stop(EventSet,native_values);
+ // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+#endif
+
+#ifdef uarch_measure 
+ // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+ // papi_ok_proxy = PAPI_stop(EventSet,native_values);
+  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+  //assert(retval == PAPI_OK);
+ ref_cycles = values[0];
+ l1_dcm = values[1];
+ l2_dcm = values[2];
+ l3_tcm = values[3];
+ loads = values[4];
+ stores = values[5];
+ tot_ins = values[6];
+#endif
+
 #ifdef PTP
         struct ptpv2_msg *ptp =
             (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
@@ -699,26 +720,6 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
         }
 #endif
 
-
-#ifdef arch_measure 
-//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
-  papi_ok_proxy = PAPI_stop(EventSet,native_values);
- // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-#endif
-
-#ifdef uarch_measure 
- // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
- // papi_ok_proxy = PAPI_stop(EventSet,native_values);
-  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-  //assert(retval == PAPI_OK);
- ref_cycles = values[0];
- l1_dcm = values[1];
- l2_dcm = values[2];
- l3_tcm = values[3];
- loads = values[4];
- stores = values[5];
- tot_ins = values[6];
-#endif
 
 #ifdef LATENCY
         NF_INFO("Latency: %ld ns.",

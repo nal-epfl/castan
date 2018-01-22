@@ -29,6 +29,7 @@
 #include "../../../papi-5.5.1/src/papi.h"
 #endif
 
+
 #ifdef __clang__
 
 #define NF_INFO(text, ...)                                                     \
@@ -54,6 +55,21 @@
   fflush(stdout)
 #endif
 
+#endif
+
+#define PAGE_SIZE (1 << 30)
+#ifdef __clang__
+const struct rte_memzone *rte_memzone_reserve_aligned(const char *name,
+                                                      size_t len, int socket_id,
+                                                      unsigned flags,
+                                                      unsigned align) {
+  struct rte_memzone *mz = malloc(sizeof(struct rte_memzone));
+  mz->len = len;
+  mz->flags = flags;
+  char *ptr = calloc(1, len + align);
+  mz->addr = ptr + (align - ((unsigned long long)ptr) % align);
+  return mz;
+}
 #endif
 
 #ifdef PTP
@@ -319,33 +335,45 @@ static int nf_init_device(uint32_t device, struct rte_mempool *mbuf_pool) {
   return 0;
 }
 
-#define TABLE_SIZE (1 << 16)
-
 typedef struct __attribute__((packed)) {
   uint32_t src_ip;
-  // uint8_t proto;
-  // uint16_t src_port;
+  uint8_t proto;
+  uint16_t src_port;
 } hash_key_t;
 
-typedef struct __attribute__((packed)) { uint32_t dst_ip; } hash_value_t;
+typedef struct { uint32_t dst_ip; } hash_value_t;
 
-typedef struct hash_entry_t {
+typedef struct __attribute__((aligned(64))) hash_entry_t {
   hash_key_t key;
   hash_value_t value;
 
-  struct hash_entry_t *next;
+  int used;
 } hash_entry_t;
 
-typedef hash_entry_t **hash_table_t;
+typedef hash_entry_t *hash_table_t;
+
+#define TABLE_SIZE (PAGE_SIZE / sizeof(hash_entry_t))
 
 void hash_init(hash_table_t *hash_table) {
-  *hash_table = (hash_table_t)calloc(TABLE_SIZE, sizeof(hash_entry_t *));
+  const struct rte_memzone *mz = rte_memzone_reserve_aligned(
+      "HASHRING", TABLE_SIZE * sizeof(hash_entry_t), rte_socket_id(), RTE_MEMZONE_1GB, PAGE_SIZE);
+  if (!mz) {
+    rte_exit(EXIT_FAILURE, "Unable to allocate hash ring.\n");
+  }
+
+#ifndef __clang__
+  memset(mz->addr, 0, TABLE_SIZE * sizeof(hash_entry_t));
+#endif
+
+  NF_INFO("Hash ring physical address: %016lX\n", rte_mem_virt2phy(mz->addr));
+
+  *hash_table = (hash_table_t)mz->addr;
 }
 
 int hash_key_equals(hash_key_t a, hash_key_t b) {
-  return (a.src_ip == b.src_ip); 
-         // & (a.proto == b.proto);
-         // & (a.src_port == b.src_port);
+  return (a.src_ip == b.src_ip)
+         & (a.proto == b.proto)
+         & (a.src_port == b.src_port);
 }
 
 #define hash_function_rot(x, k) (((x) << (k)) | ((x) >> (32 - (k))))
@@ -397,41 +425,38 @@ uint32_t hash_function(hash_key_t key) {
   a = b = c = 0xdeadbeef + ((uint32_t)sizeof(hash_key_t));
 
   a += key.src_ip;
-//   b += key.proto;
-//   c += key.src_port;
+  b += key.proto;
+  c += key.src_port;
 
   hash_function_final(a, b, c);
   return c;
 }
 
-void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value) {
+void hash_set(hash_table_t hash_table, hash_key_t key, hash_value_t value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
-  hash = hash % TABLE_SIZE;
 
-  for (entry = hash_table[hash]; entry; entry = entry->next) {
-    if (hash_key_equals(entry->key, key)) {
+  for (long pos = 0; pos < TABLE_SIZE; pos++) {
+    entry = &hash_table[(hash + pos) % TABLE_SIZE];
+    if (! entry->used) {
+      entry->key = key;
+      entry->value = value;
+      entry->used = 1;
+      return;
+    } else if (hash_key_equals(entry->key, key)) {
       entry->value = value;
       return;
     }
   }
-
-  entry = (hash_entry_t *)malloc(sizeof(hash_entry_t));
-  entry->key = key;
-  entry->value = value;
-  entry->next = hash_table[hash];
-  hash_table[hash] = entry;
 }
 
-int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value) {
+int hash_get(hash_table_t hash_table, hash_key_t key, hash_value_t *value, uint32_t hash) {
   hash_entry_t *entry;
-  uint32_t hash;
-  castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
-  hash = hash % TABLE_SIZE;
 
-  for (entry = hash_table[hash]; entry; entry = entry->next) {
-    if (hash_key_equals(entry->key, key)) {
+  for (long pos = 0; pos < TABLE_SIZE; pos++) {
+    entry = &hash_table[(hash + pos) % TABLE_SIZE];
+    if (! entry->used) {
+      break;
+    } else if (hash_key_equals(entry->key, key)) {
       if (value) {
         *value = entry->value;
       }
@@ -532,17 +557,19 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
     return device;
   }
 
-  hash_key_t key = {
-      .src_ip = ip->src_addr, // .proto = ip->next_proto_id, .src_port = sport,
-  };
-
   // Translate packet inplace.
   uint32_t dst_dev = device ^ 0x01;
   ip->hdr_checksum = 0;
 
   if (ip->dst_addr == config->vip) { // Incoming packet.
+    hash_key_t key = {
+        .src_ip = ip->src_addr, .proto = ip->next_proto_id, .src_port = sport,
+    };
+    uint32_t hash;
+    castan_havoc(key, hash, hash_function(key) % TABLE_SIZE);
+
     hash_value_t translation;
-    if (!hash_get(hash_table, key, &translation)) {
+    if (!hash_get(hash_table, key, &translation, hash)) {
       NF_DEBUG("New connection.");
       // New connection. Set up state.
       // Pick next IP.
@@ -553,7 +580,7 @@ uint32_t dispatch_packet(struct nf_config *config, uint32_t device,
       }
 
       // Save entry for future Incoming traffic.
-      hash_set(hash_table, key, translation);
+      hash_set(hash_table, key, translation, hash);
     }
 
     NF_DEBUG("Translating packet from port %d %s:%s to port %d %s:%s", device,
@@ -735,13 +762,14 @@ long long stores = values[5];
 long long tot_ins = values[6];
 
 #endif
-
-  while (1) {
+  
+ while (1) {
     for (uint32_t device = 0; device < NUM_ETHPORTS; ++device) {
       struct rte_mbuf *mbuf[1];
       uint16_t actual_rx_len = rte_eth_rx_burst(device, 0, mbuf, 1);
 
       if (actual_rx_len != 0) {
+
 #ifdef arch_measure 
    //assert(PAPI_start(EventSet)==PAPI_OK);
   papi_ok_proxy = PAPI_start(EventSet) ;
@@ -757,6 +785,8 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
 //assert((retval  == PAPI_OK));
 #endif
 
+
+
 #ifdef LATENCY
         struct timespec timestamp;
         if (clock_gettime(CLOCK_MONOTONIC, &timestamp)) {
@@ -766,26 +796,6 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
 
         uint32_t dst_device =
             dispatch_packet(config, device, hash_table, mbuf[0]);
-
-#ifdef arch_measure 
-//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
-  papi_ok_proxy = PAPI_stop(EventSet,native_values);
- // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-#endif
-
-#ifdef uarch_measure 
- // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
- // papi_ok_proxy = PAPI_stop(EventSet,native_values);
-  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-  //assert(retval == PAPI_OK);
- ref_cycles = values[0];
- l1_dcm = values[1];
- l2_dcm = values[2];
- l3_tcm = values[3];
- loads = values[4];
- stores = values[5];
- tot_ins = values[6];
-#endif
 
 #ifdef PTP
         struct ptpv2_msg *ptp =
@@ -812,6 +822,26 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
         }
 #endif
 
+
+#ifdef arch_measure 
+//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+  papi_ok_proxy = PAPI_stop(EventSet,native_values);
+ // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+#endif
+
+#ifdef uarch_measure 
+ // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+ // papi_ok_proxy = PAPI_stop(EventSet,native_values);
+  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+  //assert(retval == PAPI_OK);
+ ref_cycles = values[0];
+ l1_dcm = values[1];
+ l2_dcm = values[2];
+ l3_tcm = values[3];
+ loads = values[4];
+ stores = values[5];
+ tot_ins = values[6];
+#endif
 
 #ifdef LATENCY
         NF_INFO("Latency: %ld ns.",
@@ -856,8 +886,8 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
  NF_INFO("Total_memory_instructions_retired %llu", loads+stores);
  NF_INFO("Total_instructions_retired %llu", tot_ins);
 #endif
-
-      }
+      
+	}
     }
   }
 }

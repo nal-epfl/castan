@@ -276,7 +276,6 @@ void run(struct nf_config *config) {
 
   uint8_t nb_devices = rte_eth_dev_count();
 
-
  #ifdef arch_measure
   int retval,num_hwcntrs = 0, EventSet = PAPI_NULL, native;
   typeof (PAPI_OK) papi_ok_proxy ;
@@ -426,9 +425,9 @@ long long tot_ins = values[6];
 
 #ifdef arch_measure 
    //assert(PAPI_start(EventSet)==PAPI_OK);
- // papi_ok_proxy = PAPI_start(EventSet) ;
+  papi_ok_proxy = PAPI_start(EventSet) ;
 
-retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+//retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
 //assert((retval  == PAPI_OK));
 #endif
 
@@ -451,6 +450,26 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
         ether_header->s_addr = config->device_macs[dst_device];
         ether_header->d_addr = config->endpoint_macs[dst_device];
 
+#ifdef arch_measure 
+//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+  papi_ok_proxy = PAPI_stop(EventSet,native_values);
+ // retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+#endif
+
+#ifdef uarch_measure 
+ // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
+ // papi_ok_proxy = PAPI_stop(EventSet,native_values);
+  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
+  //assert(retval == PAPI_OK);
+ ref_cycles = values[0];
+ l1_dcm = values[1];
+ l2_dcm = values[2];
+ l3_tcm = values[3];
+ loads = values[4];
+ stores = values[5];
+ tot_ins = values[6];
+#endif
+
 #ifdef PTP
         struct ptpv2_msg *ptp =
             (struct ptpv2_msg *)(rte_pktmbuf_mtod(mbuf[0], char *) +
@@ -471,28 +490,6 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
         if (clock_gettime(CLOCK_MONOTONIC, &new_timestamp)) {
           rte_exit(EXIT_FAILURE, "Cannot get timestamp.\n");
         }
-#endif
-
-#ifdef arch_measure 
-//  assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
- // papi_ok_proxy = PAPI_stop(EventSet,native_values);
-  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-
-
-#endif
-
-#ifdef uarch_measure 
- // assert(PAPI_stop(EventSet,native_values)==PAPI_OK);
- // papi_ok_proxy = PAPI_stop(EventSet,native_values);
-  retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
-  //assert(retval == PAPI_OK);
- ref_cycles = values[0];
- l1_dcm = values[1];
- l2_dcm = values[2];
- l3_tcm = values[3];
- loads = values[4];
- stores = values[5];
- tot_ins = values[6];
 #endif
 
 #ifdef LATENCY
@@ -537,8 +534,10 @@ retval = PAPI_read_counters(values, sizeof(Events) / sizeof(Events[0]));
  NF_INFO("Total_L3_misses %llu", l3_tcm);
  NF_INFO("Total_memory_instructions_retired %llu", loads+stores);
  NF_INFO("Total_instructions_retired %llu", tot_ins);
-
 #endif
+
+
+
       }
     }
   }
