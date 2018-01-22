@@ -203,6 +203,11 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
     }
 
     bool found = false, giveup = false;
+    // Address to use if no contention is a full match.
+    // In that case, just try to greedily maximize the number of matches
+    // and hope for the best.
+    unsigned int backupHits = 0;
+    klee::ref<klee::ConstantExpr> backupAddress;
     if (WorstCaseSymIndices) {
       // Symbolic pointer, may hold several values: try the worst case scenarios
       // in turn until the constraints are SAT.
@@ -296,6 +301,9 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
                   "Picked address: %08lX",
                   dyn_cast<klee::ConstantExpr>(address)->getZExtValue());
               break;
+            } else if (hitCount > backupHits) {
+              backupHits = hitCount;
+              backupAddress = concreteAddress;
             }
           } else {
             //               klee::klee_message("      UNSAT.");
@@ -318,13 +326,25 @@ klee::ref<klee::Expr> ContentionSetCacheModel::memoryOperation(
         executor->terminateStateEarly(state, "unable to induce cache miss.");
         return address;
       } else {
-        klee::klee_message("Concretizing address without worst-case analysis.");
-        klee::ref<klee::ConstantExpr> concreteAddress;
-        assert(executor->solver->getValue(state, address, concreteAddress) &&
-               "Failed to concretize symbolic address.");
-        state.constraints.addConstraint(
-            klee::EqExpr::create(concreteAddress, address));
-        address = concreteAddress;
+        if (!backupAddress.isNull()) {
+          klee::klee_message("Unable to find optimally matching address to "
+                             "always induce a miss.");
+          klee::klee_message(
+              "Using an address that can cause at least %d misses.",
+              backupHits);
+          state.constraints.addConstraint(
+              klee::EqExpr::create(backupAddress, address));
+          address = backupAddress;
+        } else {
+          klee::klee_message(
+              "Concretizing address without worst-case analysis.");
+          klee::ref<klee::ConstantExpr> concreteAddress;
+          assert(executor->solver->getValue(state, address, concreteAddress) &&
+                 "Failed to concretize symbolic address.");
+          state.constraints.addConstraint(
+              klee::EqExpr::create(concreteAddress, address));
+          address = concreteAddress;
+        }
       }
     }
   }
