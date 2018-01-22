@@ -495,44 +495,24 @@ void KleeHandler::processTestCase(const ExecutionState &state,
 
     // Check if havoc is consistent with path constraint.
     ref<Expr> query = klee::ConstantExpr::create(1, Expr::Bool);
-    // Make sure havoc 0's table never resets.
-    castan::RainbowTable rt0(RainbowTableFile, values[0]);
-    // Reverse the havocs using a rainbow table.
-    bool fail = false;
-    for (unsigned havoc_id = 0; havoc_id < objects.size() && !fail;
-         havoc_id++) {
+    unsigned int reconciled_havocs = 0;
+    for (unsigned havoc_id = 0; havoc_id < objects.size(); havoc_id++) {
       klee_message("  Reversing havoc #%d = %ld.", havoc_id, values[havoc_id]);
 
       castan::RainbowTable rt(RainbowTableFile, values[havoc_id]);
 
       while (true) {
-        std::vector<uint8_t> havocInput;
-        if (havoc_id == 0) {
-          havocInput = rt0.getValue();
-          if (havocInput.empty()) {
-            klee_message("    Ran out of collisions in rainbow table for havoc "
-                         "0. Giving up.");
-            fail = true;
-
-            klee_message("Havoc input expression:");
-            for (unsigned b = 0; b < packet.second[havoc_id].first.size();
-                 b++) {
-              klee_message("[%d] =", b);
-              packet.second[havoc_id].first[b]->dump();
-            }
-
-            break;
+        std::vector<uint8_t> havocInput = rt.getValue();
+        if (havocInput.empty()) {
+          klee_message(
+              "    Ran out of collisions in rainbow table for havoc %d.",
+              havoc_id);
+          klee_message("Havoc input expression:");
+          for (unsigned b = 0; b < packet.second[havoc_id].first.size(); b++) {
+            klee_message("[%d] =", b);
+            packet.second[havoc_id].first[b]->dump();
           }
-        } else {
-          havocInput = rt.getValue();
-          if (havocInput.empty()) {
-            klee_message("    Ran out of collisions in rainbow table for havoc "
-                         "%d. Back-tracking.",
-                         havoc_id);
-            havoc_id = 0;
-            query = klee::ConstantExpr::create(1, Expr::Bool);
-            continue;
-          }
+          break;
         }
         assert(havocInput.size() == packet.second[havoc_id].first.size() &&
                "Rainbow table input data size mis-match.");
@@ -558,16 +538,18 @@ void KleeHandler::processTestCase(const ExecutionState &state,
           klee_message("    Havoc fits constraints as f(%s) = %ld.",
                        ss.str().substr(1).c_str(), values[havoc_id]);
           query = new_query;
+          reconciled_havocs++;
           break;
         }
       }
     }
 
-    if (fail) {
-      klee_message("  Packet %d not reconciled.", packet_id);
+    const_cast<ExecutionState *>(&state)->addConstraint(query);
+    if (reconciled_havocs < objects.size()) {
+      klee_message("  Packet %d not reconciled (%d of %ld havocs matched).",
+                   packet_id, reconciled_havocs, objects.size());
     } else {
       klee_message("  Packet %d reconciled.", packet_id);
-      const_cast<ExecutionState *>(&state)->addConstraint(query);
       reconciled_packets++;
     }
     packet_id++;
