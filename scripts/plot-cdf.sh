@@ -3,8 +3,9 @@
 set -e
 
 OUTPUT="$1"
-RANGE="$2"
-shift 2
+XLABEL="$2"
+RANGE="$3"
+shift 3
 
 HISTOGRAM=$(mktemp)
 
@@ -66,9 +67,10 @@ echo "Plotting CDF into $OUTPUT."
 
 gnuplot <<EOF
   set ylabel 'CDF'
-  set xlabel 'Latency (ns)'
+  set xlabel '$XLABEL'
   set grid
   set xr [$RANGE]
+  set yr [0:1]
   set term epscairo
   set output '$OUTPUT'
   set datafile separator ","
