@@ -1,6 +1,6 @@
 castan/dpdk-lb-basichash-castan.pcap
 manual/dpdk-lb-basichash-manual.pcap
 random/dpdk-lb-basichash-unirand-castan.pcap
-random/imc10-2pt8-zipf.pcap
-random/unirand-all.pcap
-1packet.pcap
+random/lb-imc10-2pt8-zipf.pcap
+random/lb-unirand-all.pcap
+lb-1packet.pcap

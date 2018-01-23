@@ -1,6 +1,6 @@
 castan/dpdk-lb-hashring-castan.pcap
 manual/dpdk-lb-hashring-manual.pcap
 random/dpdk-lb-hashring-unirand-castan.pcap
-random/imc10-2pt8-zipf.pcap
-random/unirand-all.pcap
-1packet.pcap
+random/lb-imc10-2pt8-zipf.pcap
+random/lb-unirand-all.pcap
+lb-1packet.pcap
