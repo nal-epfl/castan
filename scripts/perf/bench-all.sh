@@ -33,7 +33,9 @@ MIDDLEBOXES=("dpdk-nop" \
              "dpdk-nat-stlmap" \
              "dpdk-nat-stlumap" \
              "dpdk-lb-hashring" \
-             "dpdk-lb-basichash")
+             "dpdk-lb-basichash" \
+             "dpdk-lb-stlmap"\
+             "dpdk-lb-tree")
 
 mkdir -p $NOW
 
