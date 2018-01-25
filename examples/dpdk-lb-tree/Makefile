@@ -24,6 +24,7 @@ SRCS-y := dpdk-lb-tree.c
 CFLAGS += -O3
 CFLAGS += -I..
 CFLAGS += -std=gnu++11
+CFLAGS += -I../../../include
 
 CFLAGS += -DNDEBUG
 # CFLAGS += -DLATENCY
