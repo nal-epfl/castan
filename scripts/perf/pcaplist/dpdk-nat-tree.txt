@@ -2,6 +2,7 @@ castan/dpdk-nat-tree-castan.pcap
 manual/dpdk-nat-tree-manual.pcap
 manual/dpdk-nat-tree-manual-30.pcap
 manual/dpdk-nat-tree-manual-50.pcap
+manual/dpdk-nat-tree-manual-64k.pcap
 random/dpdk-nat-tree-unirand-castan.pcap
 random/imc10-2pt8-zipf.pcap
 random/unirand-all.pcap
