@@ -15,15 +15,15 @@ GLOBAL_MAX=-9223372036854775808 # INT_MIN
 
 # Line style parameters
 declare -A LINE_STYLES
-LINE_STYLES["nop"]='dt 1 lw 2 lc rgb "#000000"'
-LINE_STYLES["1packet"]='dt 2 lw 2 lc rgb "#E69F00"'
-LINE_STYLES["zipf"]='dt 3 lw 3 lc rgb "#56B4E9"'
+LINE_STYLES["nop"]='dt 1 lw 5 lc rgb "#000000"'
+LINE_STYLES["1packet"]='dt 2 lw 7 lc rgb "#E69F00"'
+LINE_STYLES["zipf"]='dt 3 lw 8 lc rgb "#56B4E9"'
 LINE_STYLES["unirand-all"]='dt 4 lw 4 lc rgb "#009E73"'
 LINE_STYLES["unirand-castan"]='dt 5 lw 5 lc rgb "#F0E442"'
 LINE_STYLES["castan"]='dt 6 lw 6 lc rgb "#0072B2"'
 LINE_STYLES["manual50"]='dt 7 lw 6 lc rgb "#D55E00"'
 LINE_STYLES["manual"]='dt 7 lw 6 lc rgb "#D55E00"'
-LINE_STYLES["manual64k"]='dt 8 lw 6 lc rgb "#CC79A7"'
+LINE_STYLES["manual64k"]='dt 8 lw 12 lc rgb "#CC79A7"'
 
 declare -A TITLES
 TITLES["unirand-all"]="UniRand"
