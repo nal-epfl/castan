@@ -15,33 +15,33 @@ GLOBAL_MAX=-9223372036854775808 # INT_MIN
 
 # Line style parameters
 declare -A LINE_STYLES
-LINE_STYLES["nop"]='dt 1 lw 5 lc rgb "#000000"'
-LINE_STYLES["1packet"]='dt 2 lw 7 lc rgb "#E69F00"'
-LINE_STYLES["zipf"]='dt 3 lw 8 lc rgb "#56B4E9"'
-LINE_STYLES["unirand-all"]='dt 4 lw 4 lc rgb "#009E73"'
-LINE_STYLES["unirand-castan"]='dt 5 lw 5 lc rgb "#F0E442"'
-LINE_STYLES["castan"]='dt 6 lw 6 lc rgb "#0072B2"'
-LINE_STYLES["manual50"]='dt 7 lw 6 lc rgb "#D55E00"'
-LINE_STYLES["manual"]='dt 7 lw 6 lc rgb "#D55E00"'
-LINE_STYLES["manual64k"]='dt 8 lw 12 lc rgb "#CC79A7"'
+LINE_STYLES["nop.csv"]='dt 1 lw 5 lc rgb "#000000"'
+LINE_STYLES["1packet.csv"]='dt 2 lw 7 lc rgb "#E69F00"'
+LINE_STYLES["zipf.csv"]='dt 3 lw 8 lc rgb "#56B4E9"'
+LINE_STYLES["unirand-all.csv"]='dt 4 lw 4 lc rgb "#009E73"'
+LINE_STYLES["unirand-castan.csv"]='dt 5 lw 5 lc rgb "#F0E442"'
+LINE_STYLES["castan.csv"]='dt 6 lw 6 lc rgb "#0072B2"'
+LINE_STYLES["manual50.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
+LINE_STYLES["manual.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
+LINE_STYLES["manual64k.csv"]='dt 8 lw 12 lc rgb "#CC79A7"'
 
 declare -A TITLES
-TITLES["unirand-all"]="UniRand"
-TITLES["unirand-castan"]="UniRand CASTAN"
-TITLES["1packet"]="1 Packet"
-TITLES["zipf"]="Zipfian"
-TITLES["nop"]="NOP"
-TITLES["castan"]="CASTAN"
-TITLES["manual50"]="Manual CASTAN"
-TITLES["manual64k"]="Manual 64k"
-TITLES["manual"]="Manual"
+TITLES["unirand-all.csv"]="UniRand"
+TITLES["unirand-castan.csv"]="UniRand CASTAN"
+TITLES["1packet.csv"]="1 Packet"
+TITLES["zipf.csv"]="Zipfian"
+TITLES["nop.csv"]="NOP"
+TITLES["castan.csv"]="CASTAN"
+TITLES["manual50.csv"]="Manual CASTAN"
+TITLES["manual64k.csv"]="Manual 64k"
+TITLES["manual.csv"]="Manual"
 
 PLOT_LINES="plot"
 DASH_TYPE=1
 while (("$#")); do
   CSV="$1"
   NAME="$2"
-  TITLE="${TITLES[$NAME]}"
+  TITLE="${TITLES[$CSV]}"
   CDF="$CSV.cdf"
 
   if [ -s "$CSV" ]; then
@@ -76,7 +76,7 @@ while (("$#")); do
       GLOBAL_MAX="$MAX"
     fi
 
-    PLOT_LINES+=" '$CDF' using 1:2 title '$TITLE' with line ${LINE_STYLES[$NAME]},"
+    PLOT_LINES+=" '$CDF' using 1:2 title '$TITLE' with line ${LINE_STYLES[$CSV]},"
   else
     echo "No data in $CSV. Skipping."
   fi
