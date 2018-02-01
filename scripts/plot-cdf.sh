@@ -21,9 +21,9 @@ LINE_STYLES["zipf.csv"]='dt 3 lw 8 lc rgb "#56B4E9"'
 LINE_STYLES["unirand-all.csv"]='dt 4 lw 4 lc rgb "#009E73"'
 LINE_STYLES["unirand-castan.csv"]='dt 5 lw 5 lc rgb "#F0E442"'
 LINE_STYLES["castan.csv"]='dt 6 lw 6 lc rgb "#0072B2"'
-LINE_STYLES["manual50.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
+LINE_STYLES["manual-50.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
 LINE_STYLES["manual.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
-LINE_STYLES["manual64k.csv"]='dt 8 lw 12 lc rgb "#CC79A7"'
+LINE_STYLES["manual-64k.csv"]='dt 8 lw 12 lc rgb "#CC79A7"'
 
 declare -A TITLES
 TITLES["unirand-all.csv"]="UniRand"
@@ -32,8 +32,8 @@ TITLES["1packet.csv"]="1 Packet"
 TITLES["zipf.csv"]="Zipfian"
 TITLES["nop.csv"]="NOP"
 TITLES["castan.csv"]="CASTAN"
-TITLES["manual50.csv"]="Manual CASTAN"
-TITLES["manual64k.csv"]="Manual 64k"
+TITLES["manual-50.csv"]="Manual"
+TITLES["manual-64k.csv"]="Manual 64k"
 TITLES["manual.csv"]="Manual"
 
 PLOT_LINES="plot"
