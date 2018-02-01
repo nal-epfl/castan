@@ -17,7 +17,7 @@ GLOBAL_MAX=-9223372036854775808 # INT_MIN
 declare -A LINE_STYLES
 LINE_STYLES["nop"]='dt 1 lw 3 lc rgb "#000000"'
 LINE_STYLES["1packet"]='dt 2 lw 7 lc rgb "#E69F00"'
-LINE_STYLES["zipf"]='dt 7 lw 3 lc rgb "#56B4E9"'
+LINE_STYLES["zipf"]='dt 7 lw 7 lc rgb "#56B4E9"'
 LINE_STYLES["unirand-all"]='dt 4 lw 4 lc rgb "#009E73"'
 LINE_STYLES["unirand-castan"]='dt 5 lw 5 lc rgb "#F0E442"'
 LINE_STYLES["castan"]='dt 6 lw 6 lc rgb "#0072B2"'
