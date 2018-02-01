@@ -32,7 +32,7 @@ TITLES["1packet"]="1 Packet"
 TITLES["zipf"]="Zipfian"
 TITLES["nop"]="NOP"
 TITLES["castan"]="CASTAN"
-TITLES["manual50"]="Manual CASTAN"
+TITLES["manual50"]="Manual"
 TITLES["manual64k"]="Manual 64k"
 TITLES["manual"]="Manual"
 
