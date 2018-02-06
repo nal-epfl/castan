@@ -17,10 +17,10 @@ GLOBAL_MAX=-9223372036854775808 # INT_MIN
 declare -A LINE_STYLES
 LINE_STYLES["nop.csv"]='dt 1 lw 3 lc rgb "#000000"'
 LINE_STYLES["1packet.csv"]='dt 2 lw 7 lc rgb "#E69F00"'
-LINE_STYLES["zipf.csv"]='dt 7 lw 3 lc rgb "#56B4E9"'
+LINE_STYLES["zipf.csv"]='dt 1 lw 4 lc rgb "#56B4E9"'
 LINE_STYLES["unirand-all.csv"]='dt 4 lw 4 lc rgb "#009E73"'
 LINE_STYLES["unirand-castan.csv"]='dt 5 lw 5 lc rgb "#F0E442"'
-LINE_STYLES["castan.csv"]='dt 6 lw 6 lc rgb "#0072B2"'
+LINE_STYLES["castan.csv"]='dt 6 lw 7 lc rgb "#0072B2"'
 LINE_STYLES["manual-50.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
 LINE_STYLES["manual.csv"]='dt 7 lw 6 lc rgb "#D55E00"'
 LINE_STYLES["manual-64k.csv"]='dt 8 lw 12 lc rgb "#CC79A7"'
