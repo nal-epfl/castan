@@ -182,7 +182,13 @@ int main(int argc, char *argv[]) {
     }
     printf("Loaded %d-way contention set with %ld addresses.\n", associativity,
            count);
-    assert(count >= associativity);
+    if (count < associativity) {
+      printf("Invalid contention set, filtering out.\n");
+      while (!is_empty(contention_set)) {
+        drop_next(&contention_set, contention_set);
+      }
+      continue;
+    }
 
     // Warm-up
     min_probe(contention_set);
@@ -201,7 +207,7 @@ int main(int argc, char *argv[]) {
              baseline_probe, contended_probe, contended_probe - baseline_probe);
 
       long output_value = drop_next(&running_set, running_set);
-      if (contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD) {
+      if (contended_probe - baseline_probe < DELAY_DELTA_THRESHOLD) {
         output_value = -1;
       }
 
@@ -209,7 +215,7 @@ int main(int argc, char *argv[]) {
       printf("Baseline probe: %d, Contended probe: %d, delta: %d\n",
              baseline_probe, contended_probe, contended_probe - baseline_probe);
       if (output_value >= 0 &&
-          contended_probe - baseline_probe > DELAY_DELTA_THRESHOLD) {
+          contended_probe - baseline_probe >= DELAY_DELTA_THRESHOLD) {
         insert(&output_set, output_value);
       } else {
         printf("Filtering probed value out.\n");
