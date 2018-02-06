@@ -17,7 +17,6 @@ At a high level, code is organized as follows:
  * examples/ - NF code to be analyzed.
  * include/ - Header files.
  * lib/ - KLEE and CASTAN libraries.
- * scripts/ - Useful script to deploy and measure NFs and to process the resulting data.
  * tools/ - Main files for the final executables.
 
 The core components of CASTAN are:
