@@ -1,3 +1,5 @@
+#!/usr/bin/Rscript
+
 library(stats4)
 
 args <- commandArgs(trailingOnly=TRUE)
