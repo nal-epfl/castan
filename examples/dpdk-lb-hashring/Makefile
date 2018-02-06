@@ -55,7 +55,7 @@ make-rainbow-table: make-rainbow-table.c
 	gcc -std=c99 -Wall -O3 $< -o $@
 
 havoc.rt: make-rainbow-table
-	./make-rainbow-table 10000000 | sort -s -k 1,1 > havoc.rt
+	./make-rainbow-table 500000000 | sort -s -k 1,1 > havoc.rt
 
 clean-bc:
 	@rm -f *.bc

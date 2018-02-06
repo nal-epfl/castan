@@ -498,6 +498,15 @@ void KleeHandler::processTestCase(const ExecutionState &state,
     unsigned int reconciled_havocs = 0;
     for (unsigned havoc_id = 0; havoc_id < objects.size(); havoc_id++) {
       klee_message("  Reversing havoc #%d = %ld.", havoc_id, values[havoc_id]);
+      klee_message("Havoc input expression:");
+      for (unsigned b = 0; b < packet.second[havoc_id].first.size(); b++) {
+        klee_message("[%d] =", b);
+        packet.second[havoc_id].first[b]->dump();
+      }
+      klee_message("Assuming:");
+      for (auto c : state.constraints) {
+        c->dump();
+      }
 
       castan::RainbowTable rt(RainbowTableFile, values[havoc_id]);
 
@@ -507,11 +516,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
           klee_message(
               "    Ran out of collisions in rainbow table for havoc %d.",
               havoc_id);
-          klee_message("Havoc input expression:");
-          for (unsigned b = 0; b < packet.second[havoc_id].first.size(); b++) {
-            klee_message("[%d] =", b);
-            packet.second[havoc_id].first[b]->dump();
-          }
+
           break;
         }
         assert(havocInput.size() == packet.second[havoc_id].first.size() &&
@@ -528,6 +533,7 @@ void KleeHandler::processTestCase(const ExecutionState &state,
         bool result = false;
         if (!(((Executor *)m_interpreter)
                   ->solver->mayBeTrue(state, new_query, result))) {
+          klee_message("    Solver fail.");
           result = false;
         }
         if (result) {
@@ -540,6 +546,8 @@ void KleeHandler::processTestCase(const ExecutionState &state,
           query = new_query;
           reconciled_havocs++;
           break;
+        } else {
+          klee_message("    Rainbow table entry UNSAT.");
         }
       }
     }
