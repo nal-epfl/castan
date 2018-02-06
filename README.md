@@ -1,27 +1,87 @@
-KLEE Symbolic Virtual Machine
-=============================
+# CASTAN: Cycle Approximating Symbolic Timing Analysis for Network Function
 
-[![Build Status](https://travis-ci.org/klee/klee.svg?branch=master)](https://travis-ci.org/klee/klee)
+## Overview
 
-`KLEE` is a symbolic virtual machine built on top of the LLVM compiler
-infrastructure. Currently, there are two primary components:
+Software network functions promise to simplify the deployment of network services and reduce network operation cost.
+However, they face the challenge of unpredictable performance.
+Given this performance variability, it is imperative that during deployment, network operators consider the performance of the NF not only for typical but also adversarial workloads.
+We contribute a tool that helps solve this challenge: it takes as input the LLVM code of a network function and outputs packet sequences that trigger slow execution paths.
+Under the covers, it combines directed symbolic execution with a sophisticated cache model to look for execution paths that incur many CPU cycles and involve adversarial memory-access patterns.
+We used our tool on 11 network functions that implement a variety of data structures and discovered workloads that can in some cases triple latency and cut throughput by 19% relative to typical testing workloads.
 
-  1. The core symbolic virtual machine engine; this is responsible for
-     executing LLVM bitcode modules with support for symbolic
-     values. This is comprised of the code in lib/.
+## Source Code
 
-  2. A POSIX/Linux emulation layer oriented towards supporting uClibc,
-     with additional support for making parts of the operating system
-     environment symbolic.
+CASTAN was developed as a fork of [KLEE](https://klee.github.io/) and so follows a similar code structure.
+At a high level, code is organized as follows:
 
-Additionally, there is a simple library for replaying computed inputs
-on native code (for closed programs). There is also a more complicated
-infrastructure for replaying the inputs generated for the POSIX/Linux
-emulation layer, which handles running native programs in an
-environment that matches a computed test input, including setting up
-files, pipes, environment variables, and passing command line
-arguments.
+ * examples/ - NF code to be analyzed.
+ * include/ - Header files.
+ * lib/ - KLEE and CASTAN libraries.
+ * scripts/ - Useful script to deploy and measure NFs and to process the resulting data.
+ * tools/ - Main files for the final executables.
 
-Coverage information can be found [here](http://vm-klee.doc.ic.ac.uk:55555/index.html).
+The core components of CASTAN are:
 
-For further information, see the [webpage](http://klee.github.io/).
+ * The CPU cache model (lib/CASTAN/ContentionSetCacheModel.cpp).
+ * The directed symbolic execution heuristic (lib/CASTAN/CastanSearcher.cpp).
+ * Havoc reconciliation (tools/castan/castan.cpp, within the KleeHandler::processTestCase function).
+
+Additionally, several NFs were implemented and analyzed (in the examples/ directory):
+
+ * dpdk-lb-basichash: Load Balancer implemented with a hash table.
+ * dpdk-lb-hashring: Load Balancer implemented with a hash ring.
+ * dpdk-lb-stlmap: Load Balancer implemented with a red-black tree.
+ * dpdk-lb-tree: Load Balancer implemented with an unbalanced tree.
+ * dpdk-lpm-btrie: Longest Prefix Match implemented with a patricia trie.
+ * dpdk-lpm-da: Longest Prefix Match implemented with a lookup table.
+ * dpdk-lpm-dpdklpm: Longest Prefix Match implemented with a hierarchical lookup table.
+ * dpdk-nat-basichash: Network Address Translator implemented with a hash table.
+ * dpdk-nat-hashring: Network Address Translator implemented with a hash ring.
+ * dpdk-nat-stlmap: Network Address Translator implemented with a red-black tree.
+ * dpdk-nat-tree: Network Address Translator implemented with an unbalanced tree.
+ * dpdk-nop: NOP network function.
+
+## Building CASTAN
+
+CASTAN follows the same build procedure as KLEE.
+It depends on LLVM 3.4, STP, MiniSAT, and KLEE uClibC.
+We build CASTAN with the following commands:
+
+    $ CXXFLAGS="-std=c++11" \
+      LDFLAGS=-L/usr/local/src/minisat/build \
+      ./configure --with-llvmsrc=/usr/local/src/llvm-3.4 \
+                  --with-llvmobj=/usr/local/src/llvm-3.4/build \
+                  --with-stp=/usr/local/src/stp/build \
+                  --with-uclibc=/usr/local/src/klee-uclibc \
+                  --enable-posix-runtime
+    $ make ENABLE_OPTIMIZED=1
+
+## Using CASTAN
+
+To analyze an NF, it must first be built into LLVM bit-code.
+The NFs implemented in examples/ already do this automatically when built with make.
+
+CASTAN uses the following argument syntax:
+
+    $ castan <--max-loops=n> \
+             [--worst-case-sym-indices] \
+             [--rainbow-table <rainbow-table-file>] \
+             [--output-unreconciled] \
+             <NF-bit-code-file>
+
+Where the arguments mean:
+
+ * --max-loops=n: The number of packets to generate.
+ * --worst-case-sym-indices: Compute adversarial values for symbolic pointers.
+ * --rainbow-table <rainbow-table-file>: Specify a rainbow table to use during havoc reconciliation.
+ * --output-unreconciled: Enable outputting packets that have unreconciled havocs.
+ * \<NF-bit-code-file\>: Specify the NF's LLVM bit-code.
+
+CASTAN creates output files in the klee-last folder:
+
+ * test*.ktest: Concretized adversarial inputs.
+ * test*.cache: Report with predicted performance metrics.
+
+KTEST files can be converted into PCAP files with the ktest2pcap tool:
+
+    $ ktest2pcap <input-ktest-file> <output-pcap-file>
