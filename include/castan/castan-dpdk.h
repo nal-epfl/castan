@@ -26,8 +26,8 @@ struct packet {
 
 struct rte_eth_dev __attribute__((weak)) rte_eth_devices[RTE_MAX_ETHPORTS];
 
-struct rte_mempool_ops_table __attribute__((weak))
-rte_mempool_ops_table = {.sl = RTE_SPINLOCK_INITIALIZER, .num_ops = 0};
+//struct rte_mempool_ops_table __attribute__((weak))
+//rte_mempool_ops_table = {.sl = RTE_SPINLOCK_INITIALIZER, .num_ops = 0};
 
 __thread unsigned int __attribute__((weak)) per_lcore__lcore_id = 0;
 
@@ -44,7 +44,7 @@ int __attribute__((weak)) rte_eal_init(int argc, char **argv) {
   if (rte_eal_tailqs_init() < 0)
     rte_panic("Cannot init tail queues for objects\n");
 
-  return 0;
+  return 1;
 }
 
 struct rte_config __attribute__((weak)) * rte_eal_get_configuration() {
