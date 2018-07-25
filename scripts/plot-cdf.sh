@@ -86,6 +86,11 @@ while (("$#")); do
 done
 
 if [ "$RANGE" == "auto" ]; then
+  if [ "$GLOBAL_MIN" -eq "$GLOBAL_MAX" ]; then
+    GLOBAL_MIN=$((GLOBAL_MIN - 1))
+    GLOBAL_MAX=$((GLOBAL_MAX + 1))
+  fi
+
   RANGE="$GLOBAL_MIN:$GLOBAL_MAX"
   echo "Auto range: $RANGE"
 fi
