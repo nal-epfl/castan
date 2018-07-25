@@ -43,17 +43,20 @@ Additionally, several NFs were implemented and analyzed (in the examples/ direct
 ## Building CASTAN
 
 CASTAN follows the same build procedure as KLEE.
-It depends on LLVM 3.4, STP, MiniSAT, and KLEE uClibC.
-We build CASTAN with the following commands:
+It depends on LLVM and CLang 3.4, STP, MiniSAT, and KLEE uClibC (klee_0_9_29).
+We build CASTAN with the following commands (adapt as needed):
 
     $ CXXFLAGS="-std=c++11" \
-      LDFLAGS=-L/usr/local/src/minisat/build \
-      ./configure --with-llvmsrc=/usr/local/src/llvm-3.4 \
-                  --with-llvmobj=/usr/local/src/llvm-3.4/build \
-                  --with-stp=/usr/local/src/stp/build \
-                  --with-uclibc=/usr/local/src/klee-uclibc \
+      ./configure --with-llvm=../llvm-3.4 \
+                  --with-stp=../stp \
+                  --with-uclibc=../klee-uclibc \
                   --enable-posix-runtime
     $ make ENABLE_OPTIMIZED=1
+
+CASTAN analyzes network functions built on the DPDK framework.
+Although CASTAN does not require any changes to DPDK itself to work, if the NF uses any DPDK libraries you may need to compile parts of DPDK into LLVM bit-code for analysis.
+We have prepared a fork of the DPDK repository with scripts to handle such scenarios:
+https://github.com/nal-epfl/castan-dpdk/
 
 ## Using CASTAN
 
@@ -62,15 +65,15 @@ The NFs implemented in examples/ already do this automatically when built with m
 
 CASTAN uses the following argument syntax:
 
-    $ castan <--max-loops=n> \
+    $ castan --max-loops=\<n\> \
              [--worst-case-sym-indices] \
              [--rainbow-table <rainbow-table-file>] \
              [--output-unreconciled] \
-             <NF-bit-code-file>
+             \<NF-bit-code-file\>
 
 Where the arguments mean:
 
- * --max-loops=n: The number of packets to generate.
+ * --max-loops=\<n\>: The number of packets to generate.
  * --worst-case-sym-indices: Compute adversarial values for symbolic pointers.
  * --rainbow-table <rainbow-table-file>: Specify a rainbow table to use during havoc reconciliation.
  * --output-unreconciled: Enable outputting packets that have unreconciled havocs.
