@@ -43,7 +43,8 @@ Additionally, several NFs were implemented and analyzed (in the examples/ direct
 ## Building CASTAN
 
 CASTAN follows the same build procedure as KLEE.
-It depends on LLVM and CLang 3.4, STP, MiniSAT, and KLEE uClibC (klee_0_9_29).
+It depends on LLVM and CLang 3.4, STP, MiniSAT, and KLEE uClibC (branch: klee_0_9_29).
+We have tested it on Ubuntu 16.04 LTS.
 We build CASTAN with the following commands (adapt as needed):
 
     $ CXXFLAGS="-std=c++11" \
@@ -54,7 +55,7 @@ We build CASTAN with the following commands (adapt as needed):
     $ make ENABLE_OPTIMIZED=1
 
 CASTAN analyzes network functions built on the DPDK framework.
-Although CASTAN does not require any changes to DPDK itself to work, if the NF uses any DPDK libraries you may need to compile parts of DPDK into LLVM bit-code for analysis.
+Although CASTAN does not require any changes to DPDK itself to work (other than what is done in castan-dpdk.h), if the NF uses any DPDK libraries you may need to compile parts of DPDK into LLVM bit-code for analysis.
 We have prepared a fork of the DPDK repository with scripts to handle such scenarios:
 https://github.com/nal-epfl/castan-dpdk/
 
