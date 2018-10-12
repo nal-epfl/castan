@@ -66,19 +66,19 @@ The NFs implemented in examples/ already do this automatically when built with m
 
 CASTAN uses the following argument syntax:
 
-    $ castan --max-loops=\<n\> \
+    $ castan --max-loops=<n> \
              [--worst-case-sym-indices] \
              [--rainbow-table <rainbow-table-file>] \
              [--output-unreconciled] \
-             \<NF-bit-code-file\>
+             <NF-bit-code-file>
 
 Where the arguments mean:
 
- * --max-loops=\<n\>: The number of packets to generate.
+ * --max-loops=<n>: The number of packets to generate.
  * --worst-case-sym-indices: Compute adversarial values for symbolic pointers.
  * --rainbow-table <rainbow-table-file>: Specify a rainbow table to use during havoc reconciliation.
  * --output-unreconciled: Enable outputting packets that have unreconciled havocs.
- * \<NF-bit-code-file\>: Specify the NF's LLVM bit-code.
+ * <NF-bit-code-file>: Specify the NF's LLVM bit-code.
 
 CASTAN creates output files in the klee-last folder:
 
