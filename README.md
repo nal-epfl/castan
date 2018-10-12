@@ -95,7 +95,7 @@ Where the arguments mean:
  * --rainbow-table <rainbow-table-file>: Specify a rainbow table to use during havoc reconciliation.
  * --output-unreconciled: Enable outputting packets that have unreconciled havocs.
  * -max-memory: CASTAN may need a fair bit of memory to process some NFs and KLEE default to a 2GB cap which in some cases is not enough. This option can increase the cap by specifying a larger value in MB.
- * <NF-bit-code-file>: Specify the NF's LLVM bit-code.
+ * \<NF-bit-code-file\>: Specify the NF's LLVM bit-code.
 
 CASTAN creates output files in the klee-last folder:
 
