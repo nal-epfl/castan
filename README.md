@@ -22,9 +22,9 @@ At a high level, code is organized as follows:
 
 The core components of CASTAN are:
 
- * The CPU cache model ([lib/CASTAN/ContentionSetCacheModel.cpp](lib/CASTAN/ContentionSetCacheModel.cpp)).
- * The directed symbolic execution heuristic ([lib/CASTAN/CastanSearcher.cpp](lib/CASTAN/CastanSearcher.cpp)).
- * Havoc reconciliation ([tools/castan/castan.cpp](tools/castan/castan.cpp), within the KleeHandler::processTestCase function).
+ * The CPU cache model ([ContentionSetCacheModel.cpp](lib/CASTAN/ContentionSetCacheModel.cpp)).
+ * The directed symbolic execution heuristic ([CastanSearcher.cpp](lib/CASTAN/CastanSearcher.cpp)).
+ * Havoc reconciliation ([castan.cpp](tools/castan/castan.cpp), within the KleeHandler::processTestCase function).
 
 Additionally, several NFs were implemented and analyzed (in the examples/ directory):
 
@@ -65,10 +65,10 @@ https://github.com/nal-epfl/castan-dpdk/
 ## Building the Cache Model
 
 CASTAN uses a cache model to predict the performance of memory accesses.
-The model is built using standard documented cache parameters (include/castan/Internal/ContentionSetCacheModel.h), and learned contention sets which are loaded from a file.
-The contention set file for the Intel(R) Xeon(R) CPU E5-2667v2 is included in this repo for convenience (examples/XeonE52667v2.dat.bz2), and can be used once decompressed with bunzip2.
+The model is built using standard documented cache parameters ([ContentionSetCacheModel.h](include/castan/Internal/ContentionSetCacheModel.h), and learned contention sets which are loaded from a file.
+The [contention set file for the Intel(R) Xeon(R) CPU E5-2667v2](examples/XeonE52667v2.dat.bz2) is included in this repo for convenience, and can be used once decompressed with bunzip2.
 
-Generating new models is done with the dpdk-probe-cache (examples/dpdk-probe-cache/), process-contention-sets ([examples/cache-effects/process-contention-sets.cpp](examples/cache-effects/process-contention-sets.cpp)), and dpdk-check-cache (examples/dpdk-check-cache) tools.
+Generating new models is done with the [dpdk-probe-cache](examples/dpdk-probe-cache/), [process-contention-sets](examples/cache-effects/process-contention-sets.cpp), and [dpdk-check-cache](examples/dpdk-check-cache) tools.
 dpdk-probe-cache generates a contention set file based on a single probe within a single 1GB huge page.
 process-contention-sets processes files from multiple probes to find the contention sets that hold across multiple pages.
 Finally, dpdk-check-cache validates the model within a single page and optionally filters out contention sets that no longer hold.
