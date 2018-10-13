@@ -1,12 +1,4 @@
-ifeq ($(NOT_FIRST_CALL),)
 default: all
-else
-ifeq ($(shell which clang),)
-default: all
-else
-default: all nf.bc
-endif
-endif
 clean: clean-bc
 
 include $(RTE_SDK)/mk/rte.vars.mk

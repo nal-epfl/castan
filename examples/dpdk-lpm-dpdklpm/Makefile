@@ -1,12 +1,4 @@
-ifeq ($(NOT_FIRST_CALL),)
 default: all
-else
-ifeq ($(shell which clang),)
-default: all
-else
-default: all nf.bc
-endif
-endif
 clean: clean-bc
 
 include $(RTE_SDK)/mk/rte.vars.mk
@@ -41,12 +33,19 @@ $(APP).bc: $(SRCS-y:.c=.bc) $(RTE_SDK)/build-llvm/librte_lpm.a $(RTE_SDK)/build-
 
 %.bc: %.c
 	clang -g -emit-llvm -mno-sse \
-	    -I../../../include/castan -I../../../include \
+	    -I../../include/castan -I../../include \
 	    -Ibuild/include -I$(RTE_SDK_BIN)/include \
 	    -include $(RTE_SDK_BIN)/include/rte_config.h -I. \
-	    -include ../../../include/castan/castan-dpdk.h \
+	    -include ../../include/castan/castan-dpdk.h \
 	    -Wno-deprecated-register \
 	    -o $@ -c $<
+
+castan: $(APP).bc
+	castan --max-loops=50 \
+	       --worst-case-sym-indices \
+	       -max-memory=10000 \
+	       $(APP).bc
+	ktest2pcap klee-last/test000001.ktest $(APP).pcap
 
 clean-bc:
 	@rm -f *.bc
