@@ -15,16 +15,16 @@ We used our tool on 11 network functions that implement a variety of data struct
 CASTAN was developed as a fork of [KLEE](https://klee.github.io/) and so follows a similar code structure.
 At a high level, code is organized as follows:
 
- * examples/ - NF code to be analyzed.
- * include/ - Header files.
- * lib/ - KLEE and CASTAN libraries.
- * tools/ - Main files for the final executables.
+ * [examples/](examples/) - NF code to be analyzed.
+ * [include/](include/) - Header files.
+ * [lib/](lib/) - KLEE and CASTAN libraries.
+ * [tools/](tools/) - Main files for the final executables.
 
 The core components of CASTAN are:
 
- * The CPU cache model (lib/CASTAN/ContentionSetCacheModel.cpp).
- * The directed symbolic execution heuristic (lib/CASTAN/CastanSearcher.cpp).
- * Havoc reconciliation (tools/castan/castan.cpp, within the KleeHandler::processTestCase function).
+ * The CPU cache model ([lib/CASTAN/ContentionSetCacheModel.cpp](lib/CASTAN/ContentionSetCacheModel.cpp)).
+ * The directed symbolic execution heuristic ([lib/CASTAN/CastanSearcher.cpp](lib/CASTAN/CastanSearcher.cpp)).
+ * Havoc reconciliation ([tools/castan/castan.cpp](tools/castan/castan.cpp), within the KleeHandler::processTestCase function).
 
 Additionally, several NFs were implemented and analyzed (in the examples/ directory):
 
@@ -68,7 +68,7 @@ CASTAN uses a cache model to predict the performance of memory accesses.
 The model is built using standard documented cache parameters (include/castan/Internal/ContentionSetCacheModel.h), and learned contention sets which are loaded from a file.
 The contention set file for the Intel(R) Xeon(R) CPU E5-2667v2 is included in this repo for convenience (examples/XeonE52667v2.dat.bz2), and can be used once decompressed with bunzip2.
 
-Generating new models is done with the dpdk-probe-cache (examples/dpdk-probe-cache/), process-contention-sets (examples/cache-effects/process-contention-sets.cpp), and dpdk-check-cache (examples/dpdk-check-cache) tools.
+Generating new models is done with the dpdk-probe-cache (examples/dpdk-probe-cache/), process-contention-sets ([examples/cache-effects/process-contention-sets.cpp](examples/cache-effects/process-contention-sets.cpp)), and dpdk-check-cache (examples/dpdk-check-cache) tools.
 dpdk-probe-cache generates a contention set file based on a single probe within a single 1GB huge page.
 process-contention-sets processes files from multiple probes to find the contention sets that hold across multiple pages.
 Finally, dpdk-check-cache validates the model within a single page and optionally filters out contention sets that no longer hold.
@@ -111,3 +111,46 @@ Many of the NFs in the examples directory have an additional make target that au
     make castan
 
 This generates nf.pcap with the adversarial workload.
+
+
+## Measuring the Resulting Performance
+
+The [CASTAN paper](https://dl.acm.org/citation.cfm?id=3230573) evaluates CASTAN by comparing the performance of several of the NFs in the examples directory under varying workloads, including the CASTAN generated one.
+We automated the performance measurements using the scripts in the [scripts/perf/](scripts/perf/) directory.
+The test-bed configuration is loaded from [config.sh](scripts/perf/config.sh).
+We run the following command from the DUT to perform a single run for a single set of <NF, workload, metric>:
+
+    bench.sh <NF> <thru-1p|latency> <workload>
+
+Where the arguments are:
+ * <NF>: the name of the NF to run, i.e. the subdirectory in examples where it resides.
+ * <thru-1p|latency>: *thru-1p* performs a throughput experiment where packets are sent at varying throughputs to find the maximum point at which only 1% of packets are dropped. *latency* performs a latency experiment, where packets are sent one at a time and the latency is measured using hardware timestamps on the TG.
+ * <workload>: The name of the pcap file to replay during the experiment.
+
+Several workloads were used in the performance evaluation of the paper.
+We include them in the [pcaps/](pcaps/) folder for convenience and reproducibility.
+These include generic workloads used across all NFs and NF specific workloads.
+The generic worklaods also have special variants for load-balancer NFs that set the destination IP to the VIP, as described in the paper.
+
+
+### Generic Workloads:
+
+ * [1packet.pcap](pcaps/1packet.pcap) & [lb-1packet.pcap](pcaps/lb-1packet.pcap): A single packet.
+ * [unirand.pcap](pcaps/unirand.pcap) & [lb-unirand.pcap](pcaps/lb-unirand.pcap): Packets following a uniform random distribution, like traditional adversarial traffic.
+ * [zipf.pcap](pcaps/zipf.pcap) & [lb-zipf.pcap](pcaps/lb-zipf.pcap): Packets forming a Zipfian distribution, like typical Internet traffic.
+
+
+### NF Specific Worklaods:
+
+| NF | CASTAN Workload | Manual Workload | Uniform Random with the same number of flows as CASTAN |
+| NAT / Hash Table | [dpdk-nat-basichash-castan.pcap])(pcaps/dpdk-nat-basichash-castan.pcap) | -- | [dpdk-nat-basichash-unirand-castan.pcap])(pcaps/dpdk-nat-basichash-unirand-castan.pcap) |
+| NAT / Hash Ring | [dpdk-nat-hashring-castan.pcap])(pcaps/dpdk-nat-hashring-castan.pcap) | -- | [dpdk-nat-hashring-unirand-castan.pcap])(pcaps/dpdk-nat-hashring-unirand-castan.pcap) |
+| NAT / Red-Black Tree | [dpdk-nat-stlmap-castan.pcap])(pcaps/dpdk-nat-stlmap-castan.pcap) | -- | [dpdk-nat-stlmap-unirand-castan.pcap])(pcaps/dpdk-nat-stlmap-unirand-castan.pcap) |
+| NAT / Unbalanced Tree | [dpdk-nat-tree-castan.pcap])(pcaps/dpdk-nat-tree-castan.pcap) | [dpdk-nat-tree-manual.pcap])(pcaps/dpdk-nat-tree-manual.pcap) | [dpdk-nat-tree-unirand-castan.pcap])(pcaps/dpdk-nat-tree-unirand-castan.pcap) |
+| LB  / Hash Table | [dpdk-lb-basichash-castan.pcap])(pcaps/dpdk-lb-basichash-castan.pcap) | -- | [dpdk-lb-basichash-unirand-castan.pcap])(pcaps/dpdk-lb-basichash-unirand-castan.pcap) |
+| LB / Hash Ring | [dpdk-lb-hashring-castan.pcap])(pcaps/dpdk-lb-hashring-castan.pcap) | -- | [dpdk-lb-hashring-unirand-castan.pcap])(pcaps/dpdk-lb-hashring-unirand-castan.pcap) |
+| LB / Red-Black Tree | [dpdk-lb-stlmap-castan.pcap])(pcaps/dpdk-lb-stlmap-castan.pcap) | -- | [dpdk-lb-stlmap-unirand-castan.pcap])(pcaps/dpdk-lb-stlmap-unirand-castan.pcap) |
+| LB / Unbalanced Tree | [dpdk-lb-tree-castan.pcap])(pcaps/dpdk-lb-tree-castan.pcap) | [dpdk-lb-tree-manual.pcap])(pcaps/dpdk-lb-tree-manual.pcap) | [dpdk-lb-tree-unirand-castan.pcap])(pcaps/dpdk-lb-tree-unirand-castan.pcap) |
+| LPM / PATRICIA Trie | [dpdk-lpm-btrie-castan.pcap])(pcaps/dpdk-lpm-btrie-castan.pcap) | [dpdk-lpm-btrie-manual.pcap])(pcaps/dpdk-lpm-btrie-manual.pcap) | [dpdk-lpm-btrie-unirand-castan.pcap])(pcaps/dpdk-lpm-btrie-unirand-castan.pcap) |
+| LPM / 1-Stage Lookup | [dpdk-lpm-da-castan.pcap])(pcaps/dpdk-lpm-da-castan.pcap) | -- | [dpdk-lpm-da-unirand-castan.pcap])(pcaps/dpdk-lpm-da-unirand-castan.pcap) |
+| LPM / 2-Stage Lookup (DPDK) | [dpdk-lpm-dpdklpm-castan.pcap])(pcaps/dpdk-lpm-dpdklpm-castan.pcap) | -- | [dpdk-lpm-dpdklpm-unirand-castan.pcap])(pcaps/dpdk-lpm-dpdklpm-unirand-castan.pcap) |
