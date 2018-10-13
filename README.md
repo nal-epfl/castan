@@ -123,14 +123,14 @@ We run the following command from the DUT to perform a single run for a single s
     bench.sh <NF> <thru-1p|latency> <workload>
 
 Where the arguments are:
- * <NF>: the name of the NF to run, i.e. the subdirectory in examples where it resides.
+ * \<NF\>: the name of the NF to run, i.e. the subdirectory in examples where it resides.
  * <thru-1p|latency>: *thru-1p* performs a throughput experiment where packets are sent at varying throughputs to find the maximum point at which only 1% of packets are dropped. *latency* performs a latency experiment, where packets are sent one at a time and the latency is measured using hardware timestamps on the TG.
- * <workload>: The name of the pcap file to replay during the experiment.
+ * \<workload\>: The name of the pcap file to replay during the experiment.
 
 Several workloads were used in the performance evaluation of the paper.
 We include them in the [pcaps/](pcaps/) folder for convenience and reproducibility.
 These include generic workloads used across all NFs and NF specific workloads.
-The generic worklaods also have special variants for load-balancer NFs that set the destination IP to the VIP, as described in the paper.
+The generic workloads also have special variants for load-balancer NFs that set the destination IP to the VIP, as described in the paper.
 
 
 ### Generic Workloads:
@@ -140,7 +140,7 @@ The generic worklaods also have special variants for load-balancer NFs that set 
  * [zipf.pcap](pcaps/zipf.pcap) & [lb-zipf.pcap](pcaps/lb-zipf.pcap): Packets forming a Zipfian distribution, like typical Internet traffic.
 
 
-### NF Specific Worklaods:
+### NF Specific Workloads:
 
 | NF | CASTAN Workload | Manual Workload | Uniform Random with the same number of flows as CASTAN |
 | NAT / Hash Table | [dpdk-nat-basichash-castan.pcap])(pcaps/dpdk-nat-basichash-castan.pcap) | -- | [dpdk-nat-basichash-unirand-castan.pcap])(pcaps/dpdk-nat-basichash-unirand-castan.pcap) |
