@@ -144,14 +144,14 @@ The generic workloads also have special variants for load-balancer NFs that set 
 
 | NF | CASTAN Workload | Manual Workload | Uniform Random with the same number of flows as CASTAN |
 | --- | --- | --- | --- |
-| NAT / Hash Table | [dpdk-nat-basichash-castan.pcap])(pcaps/dpdk-nat-basichash-castan.pcap) | -- | [dpdk-nat-basichash-unirand-castan.pcap])(pcaps/dpdk-nat-basichash-unirand-castan.pcap) |
-| NAT / Hash Ring | [dpdk-nat-hashring-castan.pcap])(pcaps/dpdk-nat-hashring-castan.pcap) | -- | [dpdk-nat-hashring-unirand-castan.pcap])(pcaps/dpdk-nat-hashring-unirand-castan.pcap) |
-| NAT / Red-Black Tree | [dpdk-nat-stlmap-castan.pcap])(pcaps/dpdk-nat-stlmap-castan.pcap) | -- | [dpdk-nat-stlmap-unirand-castan.pcap])(pcaps/dpdk-nat-stlmap-unirand-castan.pcap) |
-| NAT / Unbalanced Tree | [dpdk-nat-tree-castan.pcap])(pcaps/dpdk-nat-tree-castan.pcap) | [dpdk-nat-tree-manual.pcap])(pcaps/dpdk-nat-tree-manual.pcap) | [dpdk-nat-tree-unirand-castan.pcap])(pcaps/dpdk-nat-tree-unirand-castan.pcap) |
-| LB  / Hash Table | [dpdk-lb-basichash-castan.pcap])(pcaps/dpdk-lb-basichash-castan.pcap) | -- | [dpdk-lb-basichash-unirand-castan.pcap])(pcaps/dpdk-lb-basichash-unirand-castan.pcap) |
-| LB / Hash Ring | [dpdk-lb-hashring-castan.pcap])(pcaps/dpdk-lb-hashring-castan.pcap) | -- | [dpdk-lb-hashring-unirand-castan.pcap])(pcaps/dpdk-lb-hashring-unirand-castan.pcap) |
-| LB / Red-Black Tree | [dpdk-lb-stlmap-castan.pcap])(pcaps/dpdk-lb-stlmap-castan.pcap) | -- | [dpdk-lb-stlmap-unirand-castan.pcap])(pcaps/dpdk-lb-stlmap-unirand-castan.pcap) |
-| LB / Unbalanced Tree | [dpdk-lb-tree-castan.pcap])(pcaps/dpdk-lb-tree-castan.pcap) | [dpdk-lb-tree-manual.pcap])(pcaps/dpdk-lb-tree-manual.pcap) | [dpdk-lb-tree-unirand-castan.pcap])(pcaps/dpdk-lb-tree-unirand-castan.pcap) |
-| LPM / PATRICIA Trie | [dpdk-lpm-btrie-castan.pcap])(pcaps/dpdk-lpm-btrie-castan.pcap) | [dpdk-lpm-btrie-manual.pcap])(pcaps/dpdk-lpm-btrie-manual.pcap) | [dpdk-lpm-btrie-unirand-castan.pcap])(pcaps/dpdk-lpm-btrie-unirand-castan.pcap) |
-| LPM / 1-Stage Lookup | [dpdk-lpm-da-castan.pcap])(pcaps/dpdk-lpm-da-castan.pcap) | -- | [dpdk-lpm-da-unirand-castan.pcap])(pcaps/dpdk-lpm-da-unirand-castan.pcap) |
-| LPM / 2-Stage Lookup (DPDK) | [dpdk-lpm-dpdklpm-castan.pcap])(pcaps/dpdk-lpm-dpdklpm-castan.pcap) | -- | [dpdk-lpm-dpdklpm-unirand-castan.pcap])(pcaps/dpdk-lpm-dpdklpm-unirand-castan.pcap) |
+| NAT / Hash Table | [dpdk-nat-basichash-castan.pcap](pcaps/dpdk-nat-basichash-castan.pcap) | -- | [dpdk-nat-basichash-unirand-castan.pcap](pcaps/dpdk-nat-basichash-unirand-castan.pcap) |
+| NAT / Hash Ring | [dpdk-nat-hashring-castan.pcap](pcaps/dpdk-nat-hashring-castan.pcap) | -- | [dpdk-nat-hashring-unirand-castan.pcap](pcaps/dpdk-nat-hashring-unirand-castan.pcap) |
+| NAT / Red-Black Tree | [dpdk-nat-stlmap-castan.pcap](pcaps/dpdk-nat-stlmap-castan.pcap) | -- | [dpdk-nat-stlmap-unirand-castan.pcap](pcaps/dpdk-nat-stlmap-unirand-castan.pcap) |
+| NAT / Unbalanced Tree | [dpdk-nat-tree-castan.pcap](pcaps/dpdk-nat-tree-castan.pcap) | [dpdk-nat-tree-manual.pcap](pcaps/dpdk-nat-tree-manual.pcap) | [dpdk-nat-tree-unirand-castan.pcap](pcaps/dpdk-nat-tree-unirand-castan.pcap) |
+| LB  / Hash Table | [dpdk-lb-basichash-castan.pcap](pcaps/dpdk-lb-basichash-castan.pcap) | -- | [dpdk-lb-basichash-unirand-castan.pcap](pcaps/dpdk-lb-basichash-unirand-castan.pcap) |
+| LB / Hash Ring | [dpdk-lb-hashring-castan.pcap](pcaps/dpdk-lb-hashring-castan.pcap) | -- | [dpdk-lb-hashring-unirand-castan.pcap](pcaps/dpdk-lb-hashring-unirand-castan.pcap) |
+| LB / Red-Black Tree | [dpdk-lb-stlmap-castan.pcap](pcaps/dpdk-lb-stlmap-castan.pcap) | -- | [dpdk-lb-stlmap-unirand-castan.pcap](pcaps/dpdk-lb-stlmap-unirand-castan.pcap) |
+| LB / Unbalanced Tree | [dpdk-lb-tree-castan.pcap](pcaps/dpdk-lb-tree-castan.pcap) | [dpdk-lb-tree-manual.pcap](pcaps/dpdk-lb-tree-manual.pcap) | [dpdk-lb-tree-unirand-castan.pcap](pcaps/dpdk-lb-tree-unirand-castan.pcap) |
+| LPM / PATRICIA Trie | [dpdk-lpm-btrie-castan.pcap](pcaps/dpdk-lpm-btrie-castan.pcap) | [dpdk-lpm-btrie-manual.pcap](pcaps/dpdk-lpm-btrie-manual.pcap) | [dpdk-lpm-btrie-unirand-castan.pcap](pcaps/dpdk-lpm-btrie-unirand-castan.pcap) |
+| LPM / 1-Stage Lookup | [dpdk-lpm-da-castan.pcap](pcaps/dpdk-lpm-da-castan.pcap) | -- | [dpdk-lpm-da-unirand-castan.pcap](pcaps/dpdk-lpm-da-unirand-castan.pcap) |
+| LPM / 2-Stage Lookup (DPDK) | [dpdk-lpm-dpdklpm-castan.pcap](pcaps/dpdk-lpm-dpdklpm-castan.pcap) | -- | [dpdk-lpm-dpdklpm-unirand-castan.pcap](pcaps/dpdk-lpm-dpdklpm-unirand-castan.pcap) |
