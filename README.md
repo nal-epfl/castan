@@ -143,6 +143,7 @@ The generic workloads also have special variants for load-balancer NFs that set 
 ### NF Specific Workloads:
 
 | NF | CASTAN Workload | Manual Workload | Uniform Random with the same number of flows as CASTAN |
+| --- | --- | --- | --- |
 | NAT / Hash Table | [dpdk-nat-basichash-castan.pcap])(pcaps/dpdk-nat-basichash-castan.pcap) | -- | [dpdk-nat-basichash-unirand-castan.pcap])(pcaps/dpdk-nat-basichash-unirand-castan.pcap) |
 | NAT / Hash Ring | [dpdk-nat-hashring-castan.pcap])(pcaps/dpdk-nat-hashring-castan.pcap) | -- | [dpdk-nat-hashring-unirand-castan.pcap])(pcaps/dpdk-nat-hashring-unirand-castan.pcap) |
 | NAT / Red-Black Tree | [dpdk-nat-stlmap-castan.pcap])(pcaps/dpdk-nat-stlmap-castan.pcap) | -- | [dpdk-nat-stlmap-unirand-castan.pcap])(pcaps/dpdk-nat-stlmap-unirand-castan.pcap) |
