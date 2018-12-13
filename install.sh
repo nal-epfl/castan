@@ -36,10 +36,11 @@ sudo apt-get install -y \
   subversion \
   texinfo \
   unzip \
+  wget \
   zlib1g \
   zlib1g-dev
 
-cat >> ~/.bashrc <<EOF
+cat >> ~/.bash_profile <<EOF
 
 export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
 export CPLUS_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
@@ -49,11 +50,11 @@ export PATH="$PATH:/usr/local/src/llvm-3.4/build/Release+Debug+Asserts/bin:$SCRI
 ulimit -s unlimited
 EOF
 
-. ~/.bashrc
+. ~/.bash_profile
 
 sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
 sudo svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4/tools/clang
-chmod -R $(id -nu):$(id -ng) /usr/local/src/llvm-3.4
+sudo chown -R $(id -nu):$(id -ng) /usr/local/src/llvm-3.4
 mkdir -p /usr/local/src/llvm-3.4/build
 pushd /usr/local/src/llvm-3.4/build
 /usr/local/src/llvm-3.4/configure --enable-optimized --enable-assertions --enable-debug-symbols --enable-libffi --enable-doxygen
@@ -62,7 +63,7 @@ sudo ln -fs ld.gold /usr/bin/ld
 popd
 
 sudo git clone https://github.com/stp/minisat.git /usr/local/src/minisat
-chmod -R $(id -nu):$(id -ng) /usr/local/src/minisat
+sudo chown -R $(id -nu):$(id -ng) /usr/local/src/minisat
 mkdir /usr/local/src/minisat/build
 pushd /usr/local/src/minisat/build
 cmake -DSTATICCOMPILE=ON -DCMAKE_INSTALL_PREFIX=/usr/ ..
@@ -70,7 +71,7 @@ make -skj$(nproc)
 popd
 
 sudo git clone --branch 2.1.2 https://github.com/stp/stp.git /usr/local/src/stp
-chmod -R $(id -nu):$(id -ng) /usr/local/src/stp
+sudo chown -R $(id -nu):$(id -ng) /usr/local/src/stp
 mkdir /usr/local/src/stp/build
 pushd /usr/local/src/stp/build
 cmake -DBUILD_SHARED_LIBS:BOOL=OFF -DENABLE_PYTHON_INTERFACE:BOOL=OFF -DMINISAT_LIBRARY=/usr/local/src/minisat/build/libminisat.a -DMINISAT_INCLUDE_DIR=/usr/local/src/minisat ..
@@ -78,7 +79,7 @@ make -skj$(nproc)
 popd
 
 sudo git clone --branch klee_0_9_29 https://github.com/klee/klee-uclibc.git /usr/local/src/klee-uclibc
-chmod -R $(id -nu):$(id -ng) /usr/local/src/klee-uclibc
+sudo chown -R $(id -nu):$(id -ng) /usr/local/src/klee-uclibc
 pushd /usr/local/src/klee-uclibc
 /usr/local/src/klee-uclibc/configure --make-llvm-lib
 make -skj$(nproc)

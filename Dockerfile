@@ -6,9 +6,9 @@ RUN apt-get update && apt-get install -y sudo
 RUN useradd -m castan && \
     echo 'castan  ALL=(root) NOPASSWD: ALL' >> /etc/sudoers
 
-COPY . /home/castan/castan
-
 USER castan
 WORKDIR /home/castan
+
+COPY . /home/castan/castan
 
 RUN /home/castan/castan/install.sh
