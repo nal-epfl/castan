@@ -9,6 +9,6 @@ RUN useradd -m castan && \
 USER castan
 WORKDIR /home/castan
 
-COPY . /home/castan/castan
+COPY --chown=castan . /home/castan/castan
 
 RUN /home/castan/castan/install.sh
