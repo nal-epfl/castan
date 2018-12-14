@@ -4,6 +4,7 @@ set -exo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
+# Install packaged dependencies.
 sudo apt-get install -y \
   autoconf \
   automake \
@@ -40,6 +41,7 @@ sudo apt-get install -y \
   zlib1g \
   zlib1g-dev
 
+# Set up environment.
 cat > ~/.bashrc_castan <<EOF
 export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
 export CPLUS_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
@@ -52,10 +54,12 @@ EOF
 cat >> ~/.bashrc <<EOF
 
 . ~/.bashrc_castan
+. /usr/local/src/dpdk/env.sh
 EOF
 
 . ~/.bashrc_castan
 
+# Build LLVM
 sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
 sudo svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4/tools/clang
 sudo chown -R $(id -nu):$(id -ng) /usr/local/src/llvm-3.4
@@ -66,6 +70,7 @@ make -kj$(nproc)
 sudo ln -fs ld.gold /usr/bin/ld
 popd
 
+# Build MiniSAT
 sudo git clone https://github.com/stp/minisat.git /usr/local/src/minisat
 sudo chown -R $(id -nu):$(id -ng) /usr/local/src/minisat
 mkdir /usr/local/src/minisat/build
@@ -74,6 +79,7 @@ cmake -DSTATICCOMPILE=ON -DCMAKE_INSTALL_PREFIX=/usr/ ..
 make -skj$(nproc)
 popd
 
+# Build STP Solver
 sudo git clone --branch 2.1.2 https://github.com/stp/stp.git /usr/local/src/stp
 sudo chown -R $(id -nu):$(id -ng) /usr/local/src/stp
 mkdir /usr/local/src/stp/build
@@ -82,6 +88,7 @@ cmake -DBUILD_SHARED_LIBS:BOOL=OFF -DENABLE_PYTHON_INTERFACE:BOOL=OFF -DMINISAT_
 make -skj$(nproc)
 popd
 
+# Build KLEE-uClibC
 sudo git clone --branch klee_0_9_29 https://github.com/klee/klee-uclibc.git /usr/local/src/klee-uclibc
 sudo chown -R $(id -nu):$(id -ng) /usr/local/src/klee-uclibc
 pushd /usr/local/src/klee-uclibc
@@ -89,6 +96,16 @@ pushd /usr/local/src/klee-uclibc
 make -skj$(nproc)
 popd
 
+# Build CASTAN DPDK
+sudo git clone https://github.com/nal-epfl/castan-dpdk.git /usr/local/src/dpdk
+sudo chown -R $(id -nu):$(id -ng) /usr/local/src/dpdk
+pushd /usr/local/src/dpdk
+sudo apt-get install -y linux-headers-$(uname -r)
+/usr/local/src/dpdk/build.sh
+/usr/local/src/dpdk/build-llvm.sh
+popd
+
+# Build CASTAN
 mkdir $SCRIPT_DIR/build
 pushd $SCRIPT_DIR/build
 CXXFLAGS="-std=c++11" LDFLAGS=-L/usr/local/src/minisat/build $SCRIPT_DIR/configure --with-llvmsrc=/usr/local/src/llvm-3.4 --with-llvmobj=/usr/local/src/llvm-3.4/build --with-z3=/usr --with-stp=/usr/local/src/stp/build --with-uclibc=/usr/local/src/klee-uclibc --enable-posix-runtime
