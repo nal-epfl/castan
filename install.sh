@@ -58,7 +58,6 @@ cat >> ~/.bashrc <<EOF
 EOF
 
 . ~/.bashrc_castan
-. ~/dpdk/env.sh
 
 # Build LLVM
 sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
@@ -99,6 +98,7 @@ popd
 
 # Build CASTAN DPDK
 git clone https://github.com/nal-epfl/castan-dpdk.git ~/dpdk
+. ~/dpdk/env.sh
 pushd ~/dpdk
 sudo apt-get install -y linux-headers-$(uname -r)
 ~/dpdk/build.sh || true
