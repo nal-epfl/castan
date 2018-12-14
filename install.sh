@@ -97,11 +97,9 @@ make -skj$(nproc)
 popd
 
 # Build CASTAN DPDK
-sudo git clone https://github.com/nal-epfl/castan-dpdk.git /usr/local/src/dpdk
-sudo chown -R $(id -nu):$(id -ng) /usr/local/src/dpdk
-pushd /usr/local/src/dpdk
+git clone https://github.com/nal-epfl/castan-dpdk.git ~/dpdk
+pushd ~/dpdk
 sudo apt-get install -y linux-headers-$(uname -r)
-/usr/local/src/dpdk/build.sh
 /usr/local/src/dpdk/build-llvm.sh
 popd
 
