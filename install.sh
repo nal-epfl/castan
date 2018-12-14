@@ -101,7 +101,7 @@ popd
 git clone https://github.com/nal-epfl/castan-dpdk.git ~/dpdk
 pushd ~/dpdk
 sudo apt-get install -y linux-headers-$(uname -r)
-~/dpdk/build.sh
+~/dpdk/build.sh || true
 ~/dpdk/build-llvm.sh
 popd
 
