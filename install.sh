@@ -54,7 +54,7 @@ EOF
 cat >> ~/.bashrc <<EOF
 
 . ~/.bashrc_castan
-. /usr/local/src/dpdk/env.sh
+. ~/dpdk/env.sh
 EOF
 
 . ~/.bashrc_castan
@@ -100,7 +100,7 @@ popd
 git clone https://github.com/nal-epfl/castan-dpdk.git ~/dpdk
 pushd ~/dpdk
 sudo apt-get install -y linux-headers-$(uname -r)
-/usr/local/src/dpdk/build-llvm.sh
+~/dpdk/build-llvm.sh
 popd
 
 # Build CASTAN
