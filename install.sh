@@ -40,7 +40,7 @@ sudo apt-get install -y \
   zlib1g \
   zlib1g-dev
 
-cat >> ~/.bash_profile <<EOF
+cat >> ~/.bashrc <<EOF
 
 export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
 export CPLUS_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
@@ -50,7 +50,7 @@ export PATH="$PATH:/usr/local/src/llvm-3.4/build/Release+Debug+Asserts/bin:$SCRI
 ulimit -s unlimited
 EOF
 
-. ~/.bash_profile
+. ~/.bashrc
 
 sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
 sudo svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4/tools/clang
