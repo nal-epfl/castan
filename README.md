@@ -44,21 +44,47 @@ Additionally, several NFs were implemented and analyzed (in the examples/ direct
 
 ## Building CASTAN
 
-CASTAN follows the same build procedure as KLEE.
-It depends on LLVM and CLang 3.4, STP, MiniSAT, and KLEE uClibC (branch: klee_0_9_29).
-We have tested it on Ubuntu 16.04 LTS.
-We build CASTAN with the following commands (adapt as needed):
+### TL;DR:
+
+We have prepared a simple [install script](install.sh) that prepares all of CASTAN's build dependencies and builds CASTAN itself.
+It is difficult to make such scripts in a general way that works for all user environments so the script is kept simple to make it easy to edit as needed for the user's specific circumstances.
+The script currently assumes and has been tested on a fresh Ubuntu 16.04 installation.
+Simply clone the CASTAN repo and run the script to have a working environment:
+
+    $ git clone https://github.com/nal-epfl/castan.git
+    $ ./castan/install.sh
+
+We have also prepared a [Dockerfile](Dockerfile) that copies the locally cloned CASTAN repo into a fresh Ubuntu 16.04 container and runs the install script to create a working environment within a container:
+
+    $ cd castan
+    $ docker build -t castan .
+    $ docker run -it castan /bin/bash
+
+### Understanding the build process
+
+CASTAN is built as a fork of KLEE and thus has similar build requirements.
+Though it is possible to build on other platforms, we document here the build process for Ubuntu 16.04.
+The build prerequisites are:
+
+ * Ubuntu packages: autoconf, automake, bc, binutils-dev, binutils-gold, bison, build-essential, cmake, curl, doxygen, flex, g++, gcc, git, libboost-all-dev, libcap-dev, libffi-dev, libgoogle-perftools-dev, libncurses5-dev, libpcap-dev, libtcmalloc-minimal4, libtool, libz3-dev, m4, make, python, python-minimal, python-pip, subversion, texinfo, unzip, wget, zlib1g, zlib1g-dev
+ * LLVM 3.4 and CLang 3.4 (no need for compiler-rt), which we build from source.
+ * STP 2.1.2, which we build from source.
+ * MiniSAT (master branch, or commit 3db58943b6ffe855d3b8c9a959300d9a148ab554 in our latest build), which we build from source.
+ * KLEE uClibC (branch: klee_0_9_29), which we build from source.
+
+We build CASTAN with the following commands (adapt as needed, particularly the dependency folders):
 
     $ CXXFLAGS="-std=c++11" \
-      ./configure --with-llvm=../llvm-3.4 \
-                  --with-stp=../stp \
-                  --with-uclibc=../klee-uclibc \
+      ./configure --with-llvm=/path/to/llvm-3.4 \
+                  --with-stp=/path/to/stp \
+                  --with-uclibc=/path/to/klee-uclibc \
                   --enable-posix-runtime
     $ make ENABLE_OPTIMIZED=1
 
 CASTAN analyzes network functions built on the DPDK framework.
-Although CASTAN does not require any changes to DPDK itself to work (other than what is done in castan-dpdk.h), if the NF uses any DPDK libraries you may need to compile parts of DPDK into LLVM bit-code for analysis.
-We have prepared a fork of the DPDK repository with scripts to handle such scenarios:
+Although CASTAN does not require any changes to DPDK itself to work (other than what is done in [castan-dpdk.h](include/castan/castan-dpdk.h)), if the NF uses any DPDK data structures you may need to compile parts of DPDK into LLVM bit-code for analysis.
+If the NF uses DPDK only for sending and receiving messages, and is otherwise self-contained, this procedure is not necessary.
+We have prepared a fork of the DPDK repository with scripts to facilitate such a build:
 https://github.com/nal-epfl/castan-dpdk/
 
 
