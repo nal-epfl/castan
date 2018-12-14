@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -exo pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
@@ -90,3 +90,5 @@ pushd $SCRIPT_DIR/build
 CXXFLAGS="-std=c++11" LDFLAGS=-L/usr/local/src/minisat/build $SCRIPT_DIR/configure --with-llvmsrc=/usr/local/src/llvm-3.4 --with-llvmobj=/usr/local/src/llvm-3.4/build --with-z3=/usr --with-stp=/usr/local/src/stp/build --with-uclibc=/usr/local/src/klee-uclibc --enable-posix-runtime
 make -skj$(nproc) ENABLE_OPTIMIZED=1
 popd
+
+echo -e "\nCASTAN build complete."
