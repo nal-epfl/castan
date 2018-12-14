@@ -58,7 +58,8 @@ We have also prepared a [Dockerfile](Dockerfile) that copies the locally cloned 
 
     $ cd castan
     $ docker build -t castan .
-    $ docker run -it castan /bin/bash
+    $ docker create --name castan -it castan
+    $ docker start -ai castan
 
 ### Understanding the build process
 
