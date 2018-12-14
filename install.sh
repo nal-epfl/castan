@@ -51,7 +51,7 @@ EOF
 
 cat >> ~/.bashrc <<EOF
 
-. . ~/.bashrc_castan
+. ~/.bashrc_castan
 EOF
 
 . ~/.bashrc_castan
