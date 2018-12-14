@@ -40,8 +40,7 @@ sudo apt-get install -y \
   zlib1g \
   zlib1g-dev
 
-cat >> ~/.bashrc <<EOF
-
+cat > ~/.bashrc_castan <<EOF
 export C_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
 export CPLUS_INCLUDE_PATH="/usr/include/x86_64-linux-gnu"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/src/minisat/build"
@@ -50,7 +49,12 @@ export PATH="$PATH:/usr/local/src/llvm-3.4/build/Release+Debug+Asserts/bin:$SCRI
 ulimit -s unlimited
 EOF
 
-. ~/.bashrc
+cat >> ~/.bashrc <<EOF
+
+. . ~/.bashrc_castan
+EOF
+
+. ~/.bashrc_castan
 
 sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
 sudo svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4/tools/clang
