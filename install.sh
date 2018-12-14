@@ -58,6 +58,7 @@ cat >> ~/.bashrc <<EOF
 EOF
 
 . ~/.bashrc_castan
+. ~/dpdk/env.sh
 
 # Build LLVM
 sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
