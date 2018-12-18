@@ -28,18 +28,18 @@ The core components of CASTAN are:
 
 Additionally, several NFs were implemented and analyzed (in the examples/ directory):
 
- * dpdk-lb-basichash: Load Balancer implemented with a hash table.
- * dpdk-lb-hashring: Load Balancer implemented with a hash ring.
- * dpdk-lb-stlmap: Load Balancer implemented with a red-black tree.
- * dpdk-lb-tree: Load Balancer implemented with an unbalanced tree.
- * dpdk-lpm-btrie: Longest Prefix Match implemented with a patricia trie.
- * dpdk-lpm-da: Longest Prefix Match implemented with a lookup table.
- * dpdk-lpm-dpdklpm: Longest Prefix Match implemented with a hierarchical lookup table.
- * dpdk-nat-basichash: Network Address Translator implemented with a hash table.
- * dpdk-nat-hashring: Network Address Translator implemented with a hash ring.
- * dpdk-nat-stlmap: Network Address Translator implemented with a red-black tree.
- * dpdk-nat-tree: Network Address Translator implemented with an unbalanced tree.
- * dpdk-nop: NOP network function.
+ * [dpdk-lb-basichash](examples/dpdk-lb-basichash): Load Balancer implemented with a hash table.
+ * [dpdk-lb-hashring](examples/dpdk-lb-hashring): Load Balancer implemented with a hash ring.
+ * [dpdk-lb-stlmap](examples/dpdk-lb-stlmap): Load Balancer implemented with a red-black tree.
+ * [dpdk-lb-tree](examples/dpdk-lb-tree): Load Balancer implemented with an unbalanced tree.
+ * [dpdk-lpm-btrie](examples/dpdk-lpm-btrie): Longest Prefix Match implemented with a PATRICIA trie.
+ * [dpdk-lpm-da](examples/dpdk-lpm-da): Longest Prefix Match implemented with a lookup table.
+ * [dpdk-lpm-dpdklpm](examples/dpdk-lpm-dpdklpm): Longest Prefix Match implemented with a hierarchical lookup table.
+ * [dpdk-nat-basichash](examples/dpdk-nat-basichash): Network Address Translator implemented with a hash table.
+ * [dpdk-nat-hashring](examples/dpdk-nat-hashring): Network Address Translator implemented with a hash ring.
+ * [dpdk-nat-stlmap](examples/dpdk-nat-stlmap): Network Address Translator implemented with a red-black tree.
+ * [dpdk-nat-tree](examples/dpdk-nat-tree): Network Address Translator implemented with an unbalanced tree.
+ * [dpdk-nop](examples/dpdk-nop): NOP network function.
 
 
 ## Building CASTAN
@@ -138,6 +138,28 @@ Many of the NFs in the examples directory have an additional make target that au
     make castan
 
 This generates nf.pcap with the adversarial workload.
+
+Running this for the [examples/dpdk-lpm-btrie](LPM NF with a PATRICIA trie] looks like:
+
+    $ docker start -ai castan      # Start and attach to the container created earlier.
+                                   # The following commands run inside the container.
+    $ cd ~/castan/examples
+    $ bunzip2 XeonE52667v2.dat.bz2 # Extract the default cache model.
+    $ cd ~/castan/examples/dpdk-lpm-btrie
+    $ make nf.bc                   # Compile the NF into LLVM bit-code
+    $ castan --max-loops=5 nf.bc   # Press Ctrl-C once CASTAN starts outputting workloads.
+                                   # It will say: "Found path with 5 packets." after around 20 seconds.
+    $ ktest2pcap klee-last/test000001.ktest nf.pcap # Generate PCAP file.
+    $ sudo apt-get install tcpdump
+    $ tcpdump -ner nf.pcap # Show workload.
+      reading from file nf.pcap, link-type EN10MB (Ethernet)
+      00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 1.1.1.0.0: UDP, length 0
+      00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 3.1.1.1.0: UDP, length 0
+      00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 5.1.1.0.0: UDP, length 0
+      00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 2.1.1.0.0: UDP, length 0
+      00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 0.0.0.0.0: UDP, length 0
+
+Notice the generated workload sends packets to the IPs within the longer prefixes in the [routing table](examples/dpdk-lpm-btrie/testbed/routing-table.pfx2as).
 
 
 ## Measuring the Resulting Performance
