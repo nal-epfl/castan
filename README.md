@@ -139,7 +139,7 @@ Many of the NFs in the examples directory have an additional make target that au
 
 This generates nf.pcap with the adversarial workload.
 
-Running this for the [examples/dpdk-lpm-btrie](LPM NF with a PATRICIA trie] looks like:
+Running this for the [LPM NF with a PATRICIA trie](examples/dpdk-lpm-btrie] looks like:
 
     $ docker start -ai castan                       # Start and attach to the container created earlier.
                                                     # The following commands run inside the container.
@@ -160,7 +160,6 @@ Running this for the [examples/dpdk-lpm-btrie](LPM NF with a PATRICIA trie] look
       00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 0.0.0.0.0: UDP, length 0
 
 Notice the first four packets are sent to IPs within the longer prefixes in the [routing table](examples/dpdk-lpm-btrie/testbed/routing-table.pfx2as).
-
 
 
 ## Measuring the Resulting Performance
