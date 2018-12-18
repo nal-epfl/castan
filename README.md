@@ -141,17 +141,17 @@ This generates nf.pcap with the adversarial workload.
 
 Running this for the [examples/dpdk-lpm-btrie](LPM NF with a PATRICIA trie] looks like:
 
-    $ docker start -ai castan      # Start and attach to the container created earlier.
-                                   # The following commands run inside the container.
+    $ docker start -ai castan                       # Start and attach to the container created earlier.
+                                                    # The following commands run inside the container.
     $ cd ~/castan/examples
-    $ bunzip2 XeonE52667v2.dat.bz2 # Extract the default cache model.
+    $ bunzip2 XeonE52667v2.dat.bz2                  # Extract the default cache model.
     $ cd ~/castan/examples/dpdk-lpm-btrie
-    $ make nf.bc                   # Compile the NF into LLVM bit-code
-    $ castan --max-loops=5 nf.bc   # Press Ctrl-C once CASTAN starts outputting workloads.
-                                   # It will say: "Found path with 5 packets." after around 20 seconds.
+    $ make nf.bc                                    # Compile the NF into LLVM bit-code
+    $ castan --max-loops=5 nf.bc                    # Press Ctrl-C once CASTAN starts outputting workloads.
+                                                    # It will say: "Found path with 5 packets." after around 20 seconds.
     $ ktest2pcap klee-last/test000001.ktest nf.pcap # Generate PCAP file.
     $ sudo apt-get install tcpdump
-    $ tcpdump -ner nf.pcap # Show workload.
+    $ tcpdump -ner nf.pcap                          # Show workload.
       reading from file nf.pcap, link-type EN10MB (Ethernet)
       00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 1.1.1.0.0: UDP, length 0
       00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 3.1.1.1.0: UDP, length 0
@@ -159,7 +159,8 @@ Running this for the [examples/dpdk-lpm-btrie](LPM NF with a PATRICIA trie] look
       00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 2.1.1.0.0: UDP, length 0
       00:00:00.000000 00:00:00:00:00:00 > 00:00:00:00:00:00, ethertype IPv4 (0x0800), length 54: 0.0.0.0.0 > 0.0.0.0.0: UDP, length 0
 
-Notice the generated workload sends packets to the IPs within the longer prefixes in the [routing table](examples/dpdk-lpm-btrie/testbed/routing-table.pfx2as).
+Notice the first four packets are sent to IPs within the longer prefixes in the [routing table](examples/dpdk-lpm-btrie/testbed/routing-table.pfx2as).
+
 
 
 ## Measuring the Resulting Performance
