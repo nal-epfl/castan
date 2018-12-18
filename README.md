@@ -139,7 +139,7 @@ Many of the NFs in the examples directory have an additional make target that au
 
 This generates nf.pcap with the adversarial workload.
 
-Running this for the [LPM NF with a PATRICIA trie](examples/dpdk-lpm-btrie] looks like:
+Running this for the [LPM NF with a PATRICIA trie](examples/dpdk-lpm-btrie) looks like:
 
     $ docker start -ai castan                       # Start and attach to the container created earlier.
                                                     # The following commands run inside the container.
