@@ -48,11 +48,13 @@ Additionally, several NFs were implemented and analyzed (in the examples/ direct
 
 We have prepared a simple [install script](install.sh) that prepares all of CASTAN's build dependencies and builds CASTAN itself.
 It is difficult to make such scripts in a general way that works for all user environments so the script is kept simple to make it easy to edit as needed for the user's specific circumstances.
-The script currently assumes and has been tested on a fresh Ubuntu 16.04 installation.
+The script currently assumes and has been tested on a fresh Ubuntu Server 16.04 installation.
 Simply clone the CASTAN repo and run the script to have a working environment:
 
     $ git clone https://github.com/nal-epfl/castan.git
     $ ./castan/install.sh
+
+The script sets up environment variables from .bashrc so it is a good idea to close and reopen the terminal after running it.
 
 We have also prepared a [Dockerfile](Dockerfile) that copies the locally cloned CASTAN repo into a fresh Ubuntu 16.04 container and runs the install script to create a working environment within a container:
 
@@ -64,10 +66,10 @@ We have also prepared a [Dockerfile](Dockerfile) that copies the locally cloned 
 ### Understanding the build process
 
 CASTAN is built as a fork of KLEE and thus has similar build requirements.
-Though it is possible to build on other platforms, we document here the build process for Ubuntu 16.04.
+Though it is possible to build on other platforms, we document here the build process for Ubuntu Server 16.04.
 The build prerequisites are:
 
- * Ubuntu packages: autoconf, automake, bc, binutils-dev, binutils-gold, bison, build-essential, cmake, curl, doxygen, flex, g++, gcc, git, libboost-all-dev, libcap-dev, libffi-dev, libgoogle-perftools-dev, libncurses5-dev, libpcap-dev, libtcmalloc-minimal4, libtool, libz3-dev, m4, make, python, python-minimal, python-pip, subversion, texinfo, unzip, wget, zlib1g, zlib1g-dev
+ * Ubuntu packages: autoconf, automake, bc, binutils-dev, binutils-gold, bison, build-essential, cmake, curl, doxygen, flex, g++, gcc, git, libboost-all-dev, libcap-dev, libffi-dev, libgoogle-perftools-dev, libncurses5-dev, libpcap-dev, libtcmalloc-minimal4, libtool, libz3-dev, m4, make, parallel, python, python-minimal, python-pip, subversion, texinfo, unzip, wget, zlib1g, zlib1g-dev
  * LLVM 3.4 and CLang 3.4 (no need for compiler-rt), which we build from source.
  * STP 2.1.2, which we build from source.
  * MiniSAT (master branch, or commit 3db58943b6ffe855d3b8c9a959300d9a148ab554 in our latest build), which we build from source.

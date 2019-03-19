@@ -31,6 +31,7 @@ sudo apt-get install -y \
   libz3-dev \
   m4 \
   make \
+  parallel \
   python \
   python-minimal \
   python-pip \
