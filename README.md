@@ -11,11 +11,11 @@ We used our tool on 11 network functions that implement a variety of data struct
 
 For more information, the read the [paper](castan.pdf), or go to the [project website](https://pedrosa.2y.net/Projects/CASTAN).
 
-<center>
+<p align="center">
   <img src="artifacts_available.jpg" width="100px" alt="Artifacts Available: this badge indicates that author-created artifacts relevant to this paper have been placed on a publicly accessible archival repository" />
   <img src="artifacts_evaluated_functional.jpg" width="100px" alt="Artifacts Evaluated - Functional: this badge indicates that the artifacts associated with the research are found to be documented, consistent, complete, exercisable, and include appropriate evidence of verification and validation." />
   <img src="artifacts_evaluated_reusable.jpg" width="100px" alt="Artifacts Evaluated - Reusable: this badge indicates that the artifacts associated with the paper are of a quality that significantly exceeds minimal functionality." />
-</center>
+</p>
 
 
 ## Source Code
