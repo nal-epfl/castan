@@ -61,8 +61,8 @@ EOF
 . ~/.bashrc_castan
 
 # Build LLVM
-sudo svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4
-sudo svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_34/final/ /usr/local/src/llvm-3.4/tools/clang
+curl https://releases.llvm.org/3.4/llvm-3.4.src.tar.gz | sudo tar -C /usr/local/src/ -xz
+curl https://releases.llvm.org/3.4/clang-3.4.src.tar.gz | sudo tar -C /usr/local/src/llvm-3.4/tools/ -xz  --transform "s%^clang-3.4/%clang/%"
 sudo chown -R $(id -nu):$(id -ng) /usr/local/src/llvm-3.4
 mkdir -p /usr/local/src/llvm-3.4/build
 pushd /usr/local/src/llvm-3.4/build
